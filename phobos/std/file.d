@@ -127,6 +127,7 @@ else
     static assert(0);
 
 // Purposefully not documented. Use at your own risk
+version(WebAssembly) {} else
 @property string deleteme() @safe
 {
     import std.conv : text;
@@ -5386,6 +5387,8 @@ string tempDir() @trusted
             DWORD len = GetTempPathW(buf.length, buf.ptr);
             if (len) cache = buf[0 .. len].to!string;
         }
+	version (Emscripten)
+		assert(0, "function std.file.tempDir not implemented on Emscripten");
         else version (Posix)
         {
             import std.process : environment;

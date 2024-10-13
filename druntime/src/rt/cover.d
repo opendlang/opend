@@ -11,6 +11,8 @@
 
 module rt.cover;
 
+version(FreeStanding) {} else :
+
 import core.internal.util.math : min, max;
 
 private

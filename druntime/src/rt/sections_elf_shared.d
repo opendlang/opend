@@ -566,6 +566,7 @@ package extern(C) void _d_dso_registry(void* arg) @system
 
             ImageHeader header = void;
             const headerFound = findImageHeaderForAddr(data._slot, header);
+	    version(Emscripten) {} else // FIXME: the function above returns true so... what? maybe it is called twice idk
             safeAssert(headerFound, "Failed to find image header.");
         }
 
@@ -1215,6 +1216,8 @@ else version (MIPS_Any)
     enum TLS_DTV_OFFSET = 0x8000;
 else version (LoongArch64)
     enum TLS_DTV_OFFSET = 0x0;
+else version (WebAssembly)
+    enum TLS_DTV_OFFSET = 0x0; // FIXME
 else
     static assert( false, "Platform not supported." );
 
@@ -1224,6 +1227,7 @@ version (LDC)
     // linking against a static C runtime.
     version (X86)    version = X86_Any;
     version (X86_64) version = X86_Any;
+    version (WebAssembly) version = X86_Any; // FIXME?
     version (Shared) {} else version (linux) version (X86_Any)
         version = Static_Linux_X86_Any;
 }

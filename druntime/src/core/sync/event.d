@@ -24,6 +24,10 @@ else version (Posix)
     import core.sys.posix.sys.types;
     import core.sys.posix.time;
 }
+else version (FreeStanding)
+{
+
+}
 else
 {
     static assert(false, "Platform not supported");
@@ -222,6 +226,7 @@ nothrow @nogc:
         {
             return wait(Duration.max);
         }
+	else version (FreeStanding) assert(0);
     }
 
     /**
@@ -283,6 +288,7 @@ nothrow @nogc:
 
             return result == 0;
         }
+	else version (FreeStanding) assert(0);
     }
 
 private:

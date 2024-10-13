@@ -49,6 +49,9 @@ else version (Posix)
     import core.sys.posix.pthread;
     import core.sys.posix.semaphore;
 }
+else version (FreeStanding)
+{
+}
 else
 {
     static assert(false, "Platform not supported");
@@ -269,6 +272,7 @@ class Semaphore
                     throw new SyncError( "Unable to wait for semaphore" );
             }
         }
+	else version (FreeStanding) assert(0);
     }
 
 
@@ -341,6 +345,7 @@ class Semaphore
                     throw new SyncError( "Unable to wait for semaphore" );
             }
         }
+	else version (FreeStanding) assert(0);
     }
 
 
@@ -352,6 +357,7 @@ protected:
     else version (Darwin)    alias Handle = semaphore_t;
     /// ditto
     else version (Posix)     alias Handle = sem_t;
+    else version (FreeStanding) alias Handle = void*;
 
     /// Handle to the system-specific semaphore.
     Handle m_hndl;

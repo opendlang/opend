@@ -215,6 +215,14 @@ else version (Posix)
         pthread_mutex_unlock(mtx) && assert(0);
     }
 }
+else version(FreeStanding) {
+	import core.sync.mutex;
+
+	auto initMutex(Mutex* m) {}
+	auto destroyMutex(Mutex* m) {}
+	auto lockMutex(Mutex* m) {}
+	auto unlockMutex(Mutex* m) {}
+}
 else
 {
     static assert(0, "Unsupported platform");

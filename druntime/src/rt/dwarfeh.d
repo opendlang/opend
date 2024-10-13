@@ -99,6 +99,14 @@ else version (LoongArch64)
     enum eh_exception_regno = 4;
     enum eh_selector_regno = 5;
 }
+else version (WebAssembly)
+{
+	// FIXME this is just random nonsense to make it compile
+	// it is totally non-functional i think
+    enum eh_exception_regno = 0;
+    enum eh_selector_regno = 2;
+}
+
 else
 {
     static assert(0, "Unknown EH register numbers for this architecture");

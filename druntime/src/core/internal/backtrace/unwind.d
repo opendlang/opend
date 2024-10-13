@@ -145,6 +145,7 @@ _Unwind_Reason_Code _Unwind_ForcedUnwind(
 alias _Unwind_Trace_Fn = _Unwind_Reason_Code function(_Unwind_Context*, void*);
 
 void _Unwind_DeleteException(_Unwind_Exception* exception_object);
+version (WebAssembly) void _Unwind_Resume(void*) {} /* FIXME stub */ else
 version (LDC) // simplify runtime function forward declaration
     void _Unwind_Resume(void*);
 else

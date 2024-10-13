@@ -1,6 +1,6 @@
-project(runtime C)
-
 cmake_minimum_required(VERSION 3.4.3)
+
+project(runtime C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -141,7 +141,7 @@ message(STATUS "--  - Building LTO libraries (BUILD_LTO_LIBS): ${BUILD_LTO_LIBS}
 
 get_directory_property(PROJECT_PARENT_DIR DIRECTORY ${PROJECT_SOURCE_DIR} PARENT_DIRECTORY)
 set(RUNTIME_DIR ${PROJECT_SOURCE_DIR}/../../druntime CACHE PATH "druntime root directory")
-set(PHOBOS2_DIR ${PROJECT_SOURCE_DIR}/../../phobos CACHE PATH "Phobos root directory")
+# set(PHOBOS2_DIR) will be done later
 set(JITRT_DIR ${PROJECT_SOURCE_DIR}/jit-rt CACHE PATH "jit runtime root directory")
 
 #
@@ -204,12 +204,27 @@ elseif("${TARGET_SYSTEM}" MATCHES "UNIX")
     endif()
 endif()
 
-# druntime C parts
-file(GLOB_RECURSE DRUNTIME_C ${RUNTIME_DIR}/src/*.c)
-list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/rt/dylib_fixes.c)
-# remove unsupported valgrind.c on Windows
-if("${TARGET_SYSTEM}" MATCHES "Windows")
-    list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/etc/valgrind/valgrind.c)
+if("${TARGET_SYSTEM}" MATCHES "FreeStanding")
+    # intentionally blank
+else()
+    # enable Phobos
+    set(PHOBOS2_DIR ${PROJECT_SOURCE_DIR}/../../phobos CACHE PATH "Phobos root directory")
+    # druntime C parts
+    file(GLOB_RECURSE DRUNTIME_C ${RUNTIME_DIR}/src/*.c)
+    list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/rt/dylib_fixes.c)
+
+    if("${TARGET_SYSTEM}" MATCHES "WebAssembly")
+        list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/etc/valgrind/valgrind.c)
+        list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/ldc/arm_unwind.c)
+        list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/ldc/msvc.c)
+	# maybe this one can be salvaged...
+        list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/core/stdc/errno.c)
+    endif()
+
+    # remove unsupported valgrind.c on Windows
+    if("${TARGET_SYSTEM}" MATCHES "Windows")
+        list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/etc/valgrind/valgrind.c)
+    endif()
 endif()
 
 # druntime ASM parts
@@ -534,6 +549,7 @@ endmacro()
 
 # Sets up the targets for building the Phobos D object files, appending the
 # names of the (bitcode) files to link into the library to outlist_o (outlist_bc).
+if(PHOBOS2_DIR)
 macro(compile_phobos2 d_flags lib_suffix path_suffix emit_bc all_at_once single_obj outlist_o outlist_bc)
     get_target_suffix("${lib_suffix}" "${path_suffix}" target_suffix)
     if(${single_obj})
@@ -552,6 +568,7 @@ macro(compile_phobos2 d_flags lib_suffix path_suffix emit_bc all_at_once single_
        ${outlist_bc}
     )
 endmacro()
+endif()
 
 # Define an optional 'D' CMake linker language for the static runtime libs,
 # using LDC as archiver. LDC handles (cross-)archiving internally via LLVM
@@ -684,6 +701,7 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
        AND NOT ${all_d_files_at_once})
         set(phobos2_o "")
         set(phobos2_bc "")
+	if(PHOBOS2_DIR)
         compile_phobos2("${phobos2_d_flags};-relocation-model=pic;-fvisibility=public;-dllimport=all"
                         "${lib_suffix}${SHARED_LIB_SUFFIX}" "${path_suffix}"
                         "${emit_bc}" "${all_d_files_at_once}" "OFF" phobos2_o phobos2_bc)
@@ -694,6 +712,7 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
         # (at least with the make generator), a known CMake issue.
         set(phobos2_common phobos2-ldc${target_suffix}-common)
         add_custom_target(${phobos2_common} DEPENDS ${phobos2_o} ${phobos2_bc})
+	endif()
     endif()
 
     set(druntime_d_flags ${d_flags})
@@ -709,12 +728,14 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
                          "${emit_bc}" "${all_d_files_at_once}" "OFF" druntime_o druntime_bc)
 
         # compile Phobos (with hidden visibility on Windows)
+	if(PHOBOS2_DIR)
         if(phobos2_common STREQUAL "")
             set(phobos2_o "")
             set(phobos2_bc "")
             compile_phobos2("${phobos2_d_flags}" "${lib_suffix}" "${path_suffix}"
                             "${emit_bc}" "${all_d_files_at_once}" "OFF" phobos2_o phobos2_bc)
         endif()
+	endif()
 
         build_runtime_libs("${druntime_o}" "${druntime_bc}" "${phobos2_o}" "${phobos2_bc}"
                            "${c_flags}" "${ld_flags}" "${lib_suffix}" "${path_suffix}"

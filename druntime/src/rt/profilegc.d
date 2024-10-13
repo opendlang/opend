@@ -46,6 +46,9 @@ extern (C) void profilegc_setlogfilename(string name)
     logfilename = name ~ "\0";
 }
 
+version (FreeStanding)
+public void accumulate(string file, uint line, string funcname, string type, ulong sz) @nogc nothrow {}
+else
 public void accumulate(string file, uint line, string funcname, string type, ulong sz) @nogc nothrow
 {
     if (sz == 0)
@@ -89,6 +92,8 @@ public void accumulate(string file, uint line, string funcname, string type, ulo
         newCounts[key] = Entry(1, sz); // new entry
     }
 }
+
+version (FreeStanding) {} else:
 
 // Merge thread local newCounts into globalNewCounts
 static ~this()

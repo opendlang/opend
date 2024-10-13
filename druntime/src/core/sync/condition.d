@@ -40,6 +40,9 @@ else version (Posix)
     import core.sys.posix.pthread;
     import core.sys.posix.time;
 }
+else version (FreeStanding)
+{
+}
 else
 {
     static assert(false, "Platform not supported");
@@ -310,6 +313,7 @@ class Condition
                 return false;
             throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
         }
+	else version (FreeStanding) assert(0);
     }
 
     /**
@@ -610,6 +614,10 @@ private:
     {
         Mutex               m_assocMutex;
         pthread_cond_t      m_hndl;
+    }
+    else version (FreeStanding)
+    {
+    	Mutex m_assocMutex;
     }
 }
 

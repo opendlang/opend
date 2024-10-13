@@ -121,6 +121,10 @@ else version (Solaris)
 {
     noreturn __assert_c99(const(char)* exp, const(char)* file, uint line, const(char)* func);
 }
+else version (FreeStanding)
+{
+
+}
 else
 {
     static assert(0);

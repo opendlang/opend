@@ -101,6 +101,9 @@ version (linux)
     {
         alias slong_t blkcnt_t;
         alias ulong_t ino_t;
+	version(WebAssembly)
+        alias long off_t;
+	else
         alias slong_t off_t;
         /**
          * Musl versions before v1.2.0 (up to v1.1.24) had different

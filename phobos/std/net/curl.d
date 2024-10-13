@@ -157,6 +157,8 @@ Distributed under the Boost Software License, Version 1.0.
 */
 module std.net.curl;
 
+version(WebAssembly) {} else:
+
 public import etc.c.curl : CurlOption;
 import core.time : dur;
 import etc.c.curl : CURLcode;

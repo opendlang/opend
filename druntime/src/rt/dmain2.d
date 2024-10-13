@@ -127,6 +127,7 @@ extern (C) int rt_init()
         // this initializes mono time before anything else to allow usage
         // in other druntime systems.
         _d_initMonoTime();
+	version(FreeStanding) {} else
         thread_init();
         // TODO: fixme - calls GC.addRange -> Initializes GC
         initStaticDataGC();
@@ -319,6 +320,10 @@ extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc) @system
             arg = argv[i][0 .. strlen(argv[i])];
             totalArgsLength += arg.length;
         }
+    }
+    else version (FreeStanding) {
+    	char[][] args;
+	size_t totalArgsLength = 0;
     }
     else
         static assert(0);

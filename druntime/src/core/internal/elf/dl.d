@@ -11,6 +11,18 @@
 
 module core.internal.elf.dl;
 
+version (Emscripten)
+{
+    extern(C) void* emscripten_stack_get_base() @nogc nothrow;
+    // these only useful of the asyncify thing is active
+    // void emscripten_scan_stack(em_scan_func func)
+    // void emscripten_scan_registers(em_scan_func func)
+
+    // uintptr_t *emscripten_get_sbrk_ptr(void);
+}
+
+// no else here...
+
 version (linux)
 {
     import core.sys.linux.link;
@@ -65,6 +77,38 @@ struct SharedObjects
             return dg(SharedObject(*info));
         }
 
+	version(Emscripten) {
+		// dl_iterate_phdr not implemented here (tho there is an open feature request for it)
+		// so let's just fake it i guess
+		__gshared dl_phdr_info info;
+		if(info.dlpi_phnum == 0) {
+			import core.sys.elf;
+			__gshared ElfW!"Phdr" phdr;
+			phdr.p_type = PT_LOAD;
+
+			// FIXME: what I'm actually trying to do here is find where
+			// mutable static/global data is. This hack assumes it is
+			// in between the stack and the malloc range, which should
+			// be accurate, but very imprecise.
+			phdr.p_vaddr = cast(size_t) emscripten_stack_get_base();
+			import core.stdc.stdlib;
+			auto ptr = malloc(1);
+			phdr.p_memsz = cast(size_t) ptr - cast(size_t) phdr.p_vaddr;
+			free(ptr);
+			assert(phdr.p_memsz < cast(size_t) ptr); // janky overflow check
+			phdr.p_flags = PF_W;
+			phdr.p_align = void*.alignof;
+
+			info.dlpi_addr = 0;
+			info.dlpi_name = "";
+			info.dlpi_phdr = &phdr;
+			info.dlpi_phnum = 1;
+		}
+
+		dg(SharedObject(info));
+
+		return 0;
+	} else
         return dl_iterate_phdr(&nativeCallback, &dg);
     }
 }

@@ -83,6 +83,7 @@ else version (CRuntime_Musl)
 
     // off_t is always 64 bits on Musl
     enum _FILE_OFFSET_BITS   = 64;
+    enum __USE_FILE_OFFSET64 = true;
 
     version (D_LP64)
         enum __WORDSIZE = 64;

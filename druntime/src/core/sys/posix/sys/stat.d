@@ -1093,6 +1093,34 @@ version (linux)
         }
         static assert(stat_t.sizeof == 128);
     }
+    else version (Emscripten) {
+        struct stat_t {
+            dev_t st_dev;
+            int __st_dev_padding;
+            c_long __st_ino_truncated;
+            mode_t st_mode;
+            nlink_t st_nlink;
+            uid_t st_uid;
+            gid_t st_gid;
+            dev_t st_rdev;
+            int __st_rdev_padding;
+            off_t st_size;
+            blksize_t st_blksize;
+            blkcnt_t st_blocks;
+            timespec st_atim;
+            timespec st_mtim;
+            timespec st_ctim;
+            ino_t st_ino;
+
+                extern(D) @safe @property inout pure nothrow
+                {
+                    ref inout(time_t) st_atime() return { return st_atim.tv_sec; }
+                    ref inout(time_t) st_mtime() return { return st_mtim.tv_sec; }
+                    ref inout(time_t) st_ctime() return { return st_ctim.tv_sec; }
+                }
+
+        }
+    }
     else
         static assert(0, "unimplemented");
 

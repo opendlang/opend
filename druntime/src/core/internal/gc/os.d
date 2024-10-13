@@ -180,7 +180,7 @@ else static if (is(typeof(malloc))) // else version (GC_Use_Alloc_Malloc)
     const size_t PAGE_MASK = PAGESIZE - 1;
 
 
-    void *os_mem_map(size_t nbytes) nothrow @nogc
+    void *os_mem_map(size_t nbytes) nothrow @nogc @system
     {   byte *p, q;
         p = cast(byte *) malloc(nbytes + PAGESIZE);
         if (!p)
@@ -191,7 +191,7 @@ else static if (is(typeof(malloc))) // else version (GC_Use_Alloc_Malloc)
     }
 
 
-    int os_mem_unmap(void *base, size_t nbytes) nothrow @nogc
+    int os_mem_unmap(void *base, size_t nbytes) nothrow @nogc @system
     {
         free( *cast(void**)( cast(byte*) base + nbytes ) );
         return 0;

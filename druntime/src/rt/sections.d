@@ -67,6 +67,29 @@ else version (CRuntime_Bionic)
     public import rt.sections_android;
 else version (CRuntime_UClibc)
     public import rt.sections_elf_shared;
+else version (FreeStanding)
+{
+    import core.internal.container.array;
+    void initSections() nothrow @nogc {}
+    void finiSections() nothrow @nogc {}
+    Array!(void[])* initTLSRanges() nothrow @nogc { return null; }
+    void finiTLSRanges(Array!(void[])*) nothrow @nogc {}
+    void scanTLSRanges(Array!(void[])*, scope void delegate(void* pstart, void* pend) nothrow dg) nothrow {}
+
+    //struct FuncTable {}
+    struct SectionGroup {
+    	static int opApply(int delegate(ref SectionGroup sg)) {
+		return 0;
+	}
+    	static int opApplyReverse(int delegate(ref SectionGroup sg)) {
+		return 0;
+	}
+	immutable(ModuleInfo*)[] modules;
+	ModuleGroup moduleGroup;
+	//immutable(FuncTable)[] ehTables;
+	void[][] gcRanges;
+    }
+}
 else
     static assert(0, "unimplemented");
 

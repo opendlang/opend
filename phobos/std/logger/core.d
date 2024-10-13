@@ -1437,6 +1437,7 @@ private shared LogLevel stdLoggerGlobalLogLevel = LogLevel.all;
  */
 private @property shared(Logger) defaultSharedLoggerImpl() @trusted
 {
+	version(WebAssembly) { return null; } else {
     import core.lifetime : emplace;
     import std.stdio : stderr;
 
@@ -1450,6 +1451,8 @@ private @property shared(Logger) defaultSharedLoggerImpl() @trusted
     }());
 
     return atomicLoad(stdSharedDefaultLogger);
+
+	}
 }
 
 /** This property sets and gets the default `Logger`. Unless set to another

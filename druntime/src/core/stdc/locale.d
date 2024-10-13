@@ -281,6 +281,9 @@ else version (CRuntime_UClibc)
     ///
     enum LC_IDENTIFICATION = 12;
 }
+else version (FreeStanding)
+{
+}
 else
 {
     static assert(false, "Unsupported platform");

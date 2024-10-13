@@ -24,6 +24,12 @@ else version (TVOS)
 else version (WatchOS)
     version = Darwin;
 
+version (FreeStanding)
+{
+    struct FILE {}
+    alias fpos_t = long;
+}
+
 private
 {
     import core.stdc.config;
@@ -364,6 +370,7 @@ else version (WASI)
         L_tmpnam     = 20
     }
 }
+else version (FreeStanding) {}
 else
 {
     static assert( false, "Unsupported platform" );
@@ -820,6 +827,9 @@ else version (CRuntime_UClibc)
     ///
     alias shared(__STDIO_FILE_STRUCT) FILE;
 }
+else version (FreeStanding)
+{
+}
 else
 {
     static assert( false, "Unsupported platform" );
@@ -1173,6 +1183,12 @@ else version (WASI)
         ///
         _IONBF = 2,
     }
+}
+else version (FreeStanding)
+{
+	__gshared FILE* stdin;
+	__gshared FILE* stdout;
+	__gshared FILE* stderr;
 }
 else
 {
@@ -1914,6 +1930,10 @@ else version (WASI)
     int  snprintf(scope char* s, size_t n, scope const char* format, ...);
     ///
     int  vsnprintf(scope char* s, size_t n, scope const char* format, va_list arg);
+}
+else version (FreeStanding)
+{
+    int  snprintf(scope char* s, size_t n, scope const char* format, ...);
 }
 else
 {

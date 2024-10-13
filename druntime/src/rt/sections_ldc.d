@@ -32,6 +32,8 @@ else version (DragonFlyBSD) {}
 else version (NetBSD) {}
 else version (OpenBSD) {}
 else version (Windows) {}
+else version (WebAssembly) {}
+else version (FreeStanding) {}
 else version (LDC):
 
 import core.stdc.stdlib : alloca;

@@ -381,6 +381,8 @@ version (linux)
         private enum DEFAULTS = true;
     else version (LoongArch64)
         private enum DEFAULTS = true;
+    else version (WebAssembly)
+        private enum DEFAULTS = true;
     else
         static assert(0, "unimplemented");
 

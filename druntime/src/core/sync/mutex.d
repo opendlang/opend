@@ -28,6 +28,7 @@ else version (Posix)
 {
     import core.sys.posix.pthread;
 }
+else version (FreeStanding) { /* FIXME: this is a purely non-functional stub! */ }
 else
 {
     static assert(false, "Platform not supported");
@@ -268,6 +269,7 @@ class Mutex :
         {
             return pthread_mutex_trylock(&m_hndl) == 0;
         }
+	else version (FreeStanding) assert(0);
     }
 
 

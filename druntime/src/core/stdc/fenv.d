@@ -443,6 +443,29 @@ else version (CRuntime_Musl)
         }
         alias ushort fexcept_t;
     }
+    else version (WebAssembly)
+    {
+    	// FIXME: verify
+        struct fenv_t
+        {
+            ushort __control_word;
+            ushort __unused1;
+            ushort __status_word;
+            ushort __unused2;
+            ushort __tags;
+            ushort __unused3;
+            uint   __eip;
+            ushort __cs_selector;
+            ushort __opcode;
+            uint   __data_offset;
+            ushort __data_selector;
+            ushort __unused5;
+            version (X86_64)
+                uint __mxcsr;
+        }
+        alias ushort fexcept_t;
+    }
+
     else
     {
         static assert(false, "Architecture not supported.");
@@ -513,6 +536,11 @@ else version (CRuntime_UClibc)
     {
         static assert(false, "Architecture not supported.");
     }
+}
+else version (FreeStanding)
+{
+	struct fenv_t {}
+	alias fexcept_t = uint;
 }
 else
 {
@@ -817,6 +845,30 @@ else
             FE_DOWNWARD     = 0x300, ///
         }
     }
+    else version (WebAssembly)
+    {
+    	// FIXME
+        // Define bits representing the exception.
+        enum
+        {
+            FE_INVALID      = 0x01, ///
+            FE_DENORMAL     = 0x02, /// non-standard
+            FE_DIVBYZERO    = 0x04, ///
+            FE_OVERFLOW     = 0x08, ///
+            FE_UNDERFLOW    = 0x10, ///
+            FE_INEXACT      = 0x20, ///
+            FE_ALL_EXCEPT   = 0x3F, ///
+        }
+
+        // The ix87 FPU supports all of the four defined rounding modes.
+        enum
+        {
+            FE_TONEAREST    = 0, ///
+            FE_DOWNWARD     = 0x400, ///
+            FE_UPWARD       = 0x800, ///
+            FE_TOWARDZERO   = 0xC00, ///
+        }
+    }
     else
     {
         static assert(0, "Unimplemented architecture");
@@ -889,6 +941,11 @@ else version (CRuntime_Musl)
     enum FE_DFL_ENV = cast(fenv_t*)(-1);
 }
 else version (CRuntime_UClibc)
+{
+    ///
+    enum FE_DFL_ENV = cast(fenv_t*)(-1);
+}
+else version (FreeStanding)
 {
     ///
     enum FE_DFL_ENV = cast(fenv_t*)(-1);

@@ -26,6 +26,8 @@ version (SystemZ) version = IBMZ_Any;
 version (X86)     version = X86_Any;
 version (X86_64)  version = X86_Any;
 
+version (WebAssembly)  version = X86_Any; // FIXME?
+
 public import core.sys.posix.dlfcn;
 import core.sys.linux.config;
 

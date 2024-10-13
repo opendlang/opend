@@ -1084,6 +1084,7 @@ void cpuidSparc()
 }
 */
 
+version(WebAssembly) {} else
 pragma(crt_constructor) void cpuid_initialization()
 {
     auto cf = getCpuFeatures();

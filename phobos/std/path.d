@@ -95,7 +95,6 @@ $(TR $(TD Other) $(TD
 */
 module std.path;
 
-
 import std.file : getcwd;
 static import std.meta;
 import std.range;

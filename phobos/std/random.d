@@ -103,7 +103,6 @@ Distributed under the Boost Software License, Version 1.0.
 */
 module std.random;
 
-
 import std.range.primitives;
 import std.traits;
 
@@ -1720,11 +1719,13 @@ else
             x = (x ^ (x >>> 47)) * m;
             result = (result ^ x) * m;
         }
-        import core.thread : getpid, Thread;
         import core.time : MonoTime;
+	version(Emscripten) {} else {
+        import core.thread : getpid, Thread;
 
         updateResult(cast(ulong) cast(void*) Thread.getThis());
         updateResult(cast(ulong) getpid());
+	}
         updateResult(cast(ulong) MonoTime.currTime.ticks);
         result = (result ^ (result >>> 47)) * m;
         return result ^ (result >>> 47);

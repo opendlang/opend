@@ -7,16 +7,12 @@
  */
 module core.internal.gc.bits;
 
-import core.internal.gc.os : os_mem_map, os_mem_unmap;
+import core.internal.gc.os : os_mem_map, os_mem_unmap, HaveFork;
 
 import core.bitop;
 import core.stdc.string;
 import core.stdc.stdlib;
 import core.exception : onOutOfMemoryError;
-
-import rt.sys.config;
-
-@system:
 
 // use version gcbitsSingleBitOperation to disable optimizations that use
 //  word operands on bulk operation copyRange, setRange, clrRange, etc.
@@ -177,25 +173,25 @@ struct GCBits
     }
 
     // extract loops to allow inlining the rest
-    void clearWords(size_t firstWord, size_t lastWord) nothrow
+    void clearWords(size_t firstWord, size_t lastWord) nothrow @system
     {
         for (size_t w = firstWord; w < lastWord; w++)
             data[w] = 0;
     }
 
-    void setWords(size_t firstWord, size_t lastWord) nothrow
+    void setWords(size_t firstWord, size_t lastWord) nothrow @system
     {
         for (size_t w = firstWord; w < lastWord; w++)
             data[w] = ~0;
     }
 
-    void copyWords(size_t firstWord, size_t lastWord, const(wordtype)* source) nothrow
+    void copyWords(size_t firstWord, size_t lastWord, const(wordtype)* source) nothrow @system
     {
         for (size_t w = firstWord; w < lastWord; w++)
             data[w] = source[w - firstWord];
     }
 
-    void copyWordsShifted(size_t firstWord, size_t cntWords, size_t firstOff, const(wordtype)* source) nothrow
+    void copyWordsShifted(size_t firstWord, size_t cntWords, size_t firstOff, const(wordtype)* source) nothrow @system
     {
         wordtype mask = ~BITS_0 << firstOff;
         data[firstWord] = (data[firstWord] & ~mask) | (source[0] << firstOff);
@@ -222,7 +218,7 @@ struct GCBits
         }
     }
 
-    void copyRangeZ(size_t target, size_t len, const(wordtype)* source) nothrow
+    void copyRangeZ(size_t target, size_t len, const(wordtype)* source) nothrow @system
     {
         mixin RangeVars!();
 
@@ -310,7 +306,7 @@ struct GCBits
         }
     }
 
-    void setRangeZ(size_t target, size_t len) nothrow
+    void setRangeZ(size_t target, size_t len) nothrow @system
     {
         mixin RangeVars!();
 
@@ -342,7 +338,7 @@ struct GCBits
         }
     }
 
-    void clrRangeZ(size_t target, size_t len) nothrow
+    void clrRangeZ(size_t target, size_t len) nothrow @system
     {
         mixin RangeVars!();
         if (firstWord == lastWord)

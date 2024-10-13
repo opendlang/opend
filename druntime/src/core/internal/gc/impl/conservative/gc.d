@@ -28,10 +28,15 @@ module core.internal.gc.impl.conservative.gc;
 //debug = GC_RECURSIVE_LOCK;    // check for recursive locking on the same thread
 //debug = VALGRIND;             // Valgrind memcheck integration
 
+
 /***************************************************/
-version = COLLECT_PARALLEL;  // parallel scanning
-version (Posix)
-    version = COLLECT_FORK;
+version(WebAssembly) {
+    // parallel/fork not actually supported on emscripten
+} else {
+    version = COLLECT_PARALLEL;  // parallel scanning
+    version (Posix)
+        version = COLLECT_FORK;
+}
 
 import core.internal.gc.bits;
 import core.internal.gc.os;
@@ -1266,7 +1271,7 @@ class ConservativeGC : GC
      */
     size_t fullCollect() nothrow
     {
-        debug(PRINTF) printf("GC.fullCollect()\n");
+       debug(PRINTF) printf("GC.fullCollect()\n");
 
         // Since a finalizer could launch a new thread, we always need to lock
         // when collecting.
@@ -1911,6 +1916,9 @@ struct Gcx
 
     private @property bool lowMem() const nothrow
     {
+        // size_t emscripten_get_heap_size(void);
+        // size_t emscripten_get_heap_max(void);
+
         return isLowOnMem(cast(size_t)mappedPages * PAGESIZE);
     }
 
@@ -2283,7 +2291,7 @@ struct Gcx
         alias toscan = scanStack!precise;
 
         debug(MARK_PRINTF)
-            printf("marking range: [%p..%p] (%#llx)\n", pbot, ptop, cast(long)(ptop - pbot));
+            printf("marking range: [%p..%p] (%#llx)\n", rng.pbot, rng.ptop, cast(long)(rng.ptop - rng.pbot));
 
         // limit the amount of ranges added to the toscan stack
         enum FANOUT_LIMIT = 32;
@@ -3018,6 +3026,20 @@ struct Gcx
      */
     size_t fullcollect(bool nostack = false, bool block = false, bool isFinal = false) nothrow @system
     {
+        version(Emscripten) {
+            if(!webassemblyStackIsEmpty) {
+                // queue the collect upon return to the browser's main thread
+                // since we can't see the webassembly stack and don't want to
+                // free things prematurely
+                if(!gcCollectQueued) {
+                    emscripten_async_call(&__d_gcFromEmscripten, null, 0);
+                    gcCollectQueued = true;
+                    printf("Queuing GC\n");
+                }
+                return 0;
+            }
+        }
+
         // It is possible that `fullcollect` will be called from a thread which
         // is not yet registered in runtime (because allocating `new Thread` is
         // part of `thread_attachThis` implementation). In that case it is
@@ -3025,6 +3047,8 @@ struct Gcx
 
         if (Thread.getThis() is null)
             return 0;
+
+        printf("Running GC\n");
 
         MonoTime start, stop, begin;
         begin = start = currTime;
@@ -5133,4 +5157,26 @@ void undefinedWrite(T)(ref T var, T value) nothrow
     }
     else
         var = value;
+}
+
+version(Emscripten) {
+    __gshared bool webassemblyStackIsEmpty;
+    __gshared bool gcCollectQueued;
+
+    extern(C)
+    void __d_gcFromEmscripten(void*) nothrow {
+        webassemblyStackIsEmpty = true;
+        scope(exit)
+            webassemblyStackIsEmpty = false;
+        import core.memory;
+        GC.collect();
+        gcCollectQueued = false;
+        webassemblyStackIsEmpty = false;
+
+        import core.stdc.stdio;
+        printf("GC collection complete.\n");
+    }
+
+    extern(C)
+        int emscripten_async_call(void function(void*) cb, void* user, int ms) nothrow @nogc;
 }

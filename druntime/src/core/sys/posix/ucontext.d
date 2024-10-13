@@ -47,6 +47,8 @@ version (SystemZ) version = IBMZ_Any;
 version (X86)     version = X86_Any;
 version (X86_64)  version = X86_Any;
 
+version (WebAssembly)  version = X86_Any; // FIXME?
+
 //
 // XOpen (XSI)
 //
@@ -811,6 +813,10 @@ version (linux)
             sigset_t    uc_sigmask;
             mcontext_t  uc_mcontext;
         }
+    }
+    else version (WebAssembly)
+    {
+		// FIXME?
     }
     else
         static assert(0, "unimplemented");

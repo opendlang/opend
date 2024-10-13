@@ -26,7 +26,10 @@ import core.internal.container.array;
 import cstdlib = core.stdc.stdlib : calloc, free, malloc, realloc;
 static import core.memory;
 
+version(D_BetterC)
 extern (C) void onOutOfMemoryError(void* pretend_sideffect = null) @trusted pure nothrow @nogc; /* dmd @@@BUG11461@@@ */
+else
+extern (C) void onOutOfMemoryError(void* pretend_sideffect = null, string file = __FILE__, size_t line = __LINE__) @trusted nothrow @nogc;
 
 // register GC in C constructor (_STI_)
 private pragma(crt_constructor) void gc_manual_ctor()
@@ -102,13 +105,14 @@ class ManualGC : GC
         return 0;
     }
 
-    void* malloc(size_t size, uint bits, const TypeInfo ti) nothrow
+    void* malloc(size_t size, uint bits, const TypeInfo ti) nothrow @system
     {
-        void* p = cstdlib.malloc(size);
+        void* p = cstdlib.malloc(size + spaceForMetainfo);
+        updateMetainfoBlock(null, p, size, ti);
 
         if (size && p is null)
             onOutOfMemoryError();
-        return p;
+        return p + spaceForMetainfo;
     }
 
     BlkInfo qalloc(size_t size, uint bits, const scope TypeInfo ti) nothrow @system
@@ -120,22 +124,28 @@ class ManualGC : GC
         return retval;
     }
 
-    void* calloc(size_t size, uint bits, const TypeInfo ti) nothrow
+    void* calloc(size_t size, uint bits, const TypeInfo ti) nothrow @system
     {
-        void* p = cstdlib.calloc(1, size);
+        void* p = cstdlib.calloc(1, size + spaceForMetainfo);
+        updateMetainfoBlock(null, p, size, ti);
 
         if (size && p is null)
             onOutOfMemoryError();
-        return p;
+        return p + spaceForMetainfo;
     }
 
     void* realloc(void* p, size_t size, uint bits, const TypeInfo ti) nothrow @system
     {
-        p = cstdlib.realloc(p, size);
+        updateMetainfoBlock(p, null, 0, null); // free the old block to ensure we never refer to the thing after free
+        p = cstdlib.realloc(p, size + spaceForMetainfo);
 
+        // if realloc fails we're broken uh oh but that's fatal to druntime anyway
         if (size && p is null)
             onOutOfMemoryError();
-        return p;
+
+        updateMetainfoBlock(null, p, size, ti); // alloc the new block
+
+        return p + spaceForMetainfo;
     }
 
     size_t extend(void* p, size_t minsize, size_t maxsize, const TypeInfo ti) nothrow
@@ -150,6 +160,7 @@ class ManualGC : GC
 
     void free(void* p) nothrow @nogc
     {
+        updateMetainfoBlock(p, null, 0, null);
         cstdlib.free(p);
     }
 
@@ -159,6 +170,15 @@ class ManualGC : GC
      */
     void* addrOf(void* p) nothrow @nogc
     {
+        // __delete depends on this returning the same thing malloc returned
+        if(p is null)
+            return null;
+        MetainfoBlock* b = rootMeta;
+        while(b !is null) {
+            if(b.contains(p))
+                return b;
+            b = b.next;
+        }
         return null;
     }
 
@@ -170,6 +190,55 @@ class ManualGC : GC
     {
         return 0;
     }
+
+    // metadata to make __delete possible
+    private void updateMetainfoBlock(void* oldPtr, void* newPtr, size_t size, const TypeInfo ti) nothrow @nogc {
+        if(oldPtr is null && newPtr is null)
+            return;
+
+        auto oldBlock = cast(MetainfoBlock*) addrOf(oldPtr);
+        auto newBlock = cast(MetainfoBlock*) newPtr;
+
+        // three cases left:
+        if(oldBlock is null && newBlock !is null) {
+            // malloc, add it to the list
+            newBlock.size = size;
+            cast() newBlock.ti = cast() ti;
+
+            newBlock.prev = null;
+            newBlock.next = rootMeta;
+            rootMeta = newBlock;
+        } else if(oldBlock !is null && newBlock is null) {
+            // free, remove it from the list
+            auto p = oldBlock.prev;
+            auto n = oldBlock.next;
+            if(p is null)
+                rootMeta = n;
+            else {
+                p.next = n;
+                if(n)
+                    n.prev = p;
+            }
+        } else {
+            // should never happen since we treat realloc  as free / malloc in two steps
+            assert(0);
+        }
+    }
+    private struct MetainfoBlock {
+        MetainfoBlock* prev;
+        MetainfoBlock* next;
+        size_t size;
+        const TypeInfo ti;
+
+        bool contains(void* p) @nogc nothrow @system {
+            void* t = cast(void*) &this;
+            return p >= t && p < t+size;
+        }
+    }
+    private MetainfoBlock* rootMeta;
+    private enum spaceForMetainfo = MetainfoBlock.sizeof;
+    // done
+
 
     /**
      * Determine the base address of the block containing p.  If p is not a gc

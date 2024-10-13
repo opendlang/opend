@@ -35,6 +35,8 @@
 
 module etc.c.curl;
 
+version(WebAssembly) {} else:
+
 import core.stdc.config;
 import core.stdc.time;
 import std.socket;

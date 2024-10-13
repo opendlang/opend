@@ -21,6 +21,53 @@ import core.time;
 import core.exception : onOutOfMemoryError;
 import core.internal.traits : externDFunc;
 
+version(Emscripten) {
+    extern(C) void* emscripten_stack_get_current() nothrow @nogc;
+
+    extern(C) {
+        int SIGRTMIN() nothrow @nogc {
+            return 33;
+        }
+
+        int pthread_kill(pthread_t thread, int sig) nothrow @nogc {
+            return 0;
+        }
+
+        int sigsuspend(const sigset_t *mask) nothrow @nogc { return -1; }
+    }
+}
+
+/+
+version(FreeStanding) {
+	class Thread {
+		static void yield() @nogc nothrow { assert(0); }
+		static void sleep(Duration d) @nogc nothrow { assert(0); }
+                __gshared Thread t = new Thread; // CTFE'd so it isn't null
+                static Thread getThis() @nogc nothrow {
+                    return t;
+                }
+	}
+
+	extern (C) void thread_init() @nogc nothrow @system { }
+	extern (C) void thread_suspendAll() @nogc nothrow @system { }
+
+        private extern (D) void resume(ThreadBase _t) nothrow @nogc {}
+
+
+        package extern(D) void callWithStackShell(scope callWithStackShellDg fn) nothrow @system
+        {
+            //assert(0);
+            fn(emscripten_stack_get_current());
+        }
+
+        int createLowLevelThread(void delegate() nothrow dg, uint stacksize = 0,
+                                      void delegate() nothrow cbDllUnload = null) nothrow @nogc @system
+        { assert(0); }
+
+        void joinLowLevelThread(int) @nogc nothrow {}
+} else:
++/
+
 version (LDC)
 {
     import ldc.attributes;
@@ -46,6 +93,9 @@ version (LDC)
     }
 }
 
+version (FreeStanding) {
+	import core.stdc.stdlib; // for realloc
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Platform Detection and Memory Allocation
@@ -734,6 +784,10 @@ class Thread : ThreadBase
                 result.PRIORITY_MAX != -1 ||
                     assert(0, "Internal error in sched_get_priority_max");
             }
+	    else version (FreeStanding)
+	    {
+		assert(0);
+	    }
             else
             {
                 static assert(0, "Your code here.");
@@ -817,6 +871,7 @@ class Thread : ThreadBase
             }
             return param.sched_priority;
         }
+    	else version (FreeStanding) { assert(0); }
     }
 
 
@@ -955,6 +1010,7 @@ class Thread : ThreadBase
         {
             return atomicLoad(m_isRunning);
         }
+    	else version (FreeStanding) { assert(0); }
     }
 
 
@@ -1616,6 +1672,12 @@ in (fn)
             asm pure nothrow @nogc { ( "st.d $fp, %0") : "=m" (regs[17]); }
             asm pure nothrow @nogc { ( "st.d $sp, %0") : "=m" (sp); }
         }
+        else version (Emscripten) {
+            sp = emscripten_stack_get_current();
+        }
+	else version (FreeStanding) {
+            assert(0);
+	}
         else
         {
             static assert(false, "Architecture not supported.");
@@ -1809,6 +1871,7 @@ package extern(D) void* getStackBottom() nothrow @nogc @system
         thr_stksegment(&stk);
         return stk.ss_sp;
     }
+    else version (FreeStanding) { assert(0); }
     else
         static assert(false, "Platform not supported.");
 }
@@ -2630,6 +2693,10 @@ else version (Posix)
 
         }
     }
+}
+else version (FreeStanding)
+{
+
 }
 else
 {

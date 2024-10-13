@@ -1599,6 +1599,10 @@ else version (CRuntime_Bionic)
     ///
     pragma(mangle, "__signbitl") pure int signbit(real x);
 }
+else version (FreeStanding)
+{
+	bool isnan(T)(T f) { assert(0); }
+}
 
 extern (D)
 {

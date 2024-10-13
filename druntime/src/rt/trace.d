@@ -11,6 +11,8 @@
 
 module rt.trace;
 
+version(FreeStanding) {} else:
+
 import core.demangle;
 import core.stdc.ctype;
 import core.stdc.stdio;

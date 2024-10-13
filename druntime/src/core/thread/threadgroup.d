@@ -13,6 +13,8 @@ module core.thread.threadgroup;
 
 import core.thread.osthread;
 
+version(WebAssembly) {} else:
+
 
 /**
  * This class is intended to simplify certain common programming techniques.

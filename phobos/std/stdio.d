@@ -6009,6 +6009,7 @@ private size_t readlnImpl(FILE* fps, ref char[] buf, dchar terminator, File.Orie
         Bugs:
                 Only works on Linux
 */
+version(WebAssembly) {} else
 version (linux)
 {
     File openNetwork(string host, ushort port)

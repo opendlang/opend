@@ -41,6 +41,14 @@ void abort(scope string msg, scope string filename = __FILE__, size_t line = __L
             }
         }
     }
+    else version(FreeStanding)
+    {
+        void writeStr(scope const(char)[][] m...) @nogc nothrow @trusted
+	{
+		// FIXME
+	}
+
+    }
     else
         static assert(0, "Unsupported OS");
 

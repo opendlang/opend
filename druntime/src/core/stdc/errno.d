@@ -39,6 +39,8 @@ version (SystemZ) version = IBMZ_Any;
 version (X86)     version = X86_Any;
 version (X86_64)  version = X86_Any;
 
+version (WebAssembly)  version = X86_Any; // FIXME
+
 @trusted: // Only manipulates errno.
 nothrow:
 @nogc:
@@ -152,6 +154,17 @@ else version (Haiku)
         ref int _errnop();
         alias errno = _errnop;
     }
+}
+else version (FreeStanding)
+{
+	__gshared int errno_;
+
+	ref int errno() { return errno_; }
+
+	extern(C)
+	int getErrno() { return errno; }
+	extern(C)
+	void setErrno(int i) { errno = i; }
 }
 else
 {
@@ -2319,6 +2332,7 @@ else version (WASI)
     enum ERFKILL         = 132;
     enum EHWPOISON       = 133;
 }
+else version (FreeStanding) {}
 else
 {
     static assert(false, "Unsupported platform");

@@ -330,6 +330,10 @@ else version (Solaris) enum ClockType
     second = 6,
     threadCPUTime = 7,
 }
+else version (FreeStanding) enum ClockType
+{
+    normal = 0,
+}
 else
 {
     // It needs to be decided (and implemented in an appropriate version branch
@@ -2124,6 +2128,10 @@ struct MonoTimeImpl(ClockType clockType)
     {
         enum clockArg = _posixClock(clockType);
     }
+    else version (FreeStanding)
+    {
+        enum clockArg = cast(int) clockType;
+    }
     else
         static assert(0, "Unsupported platform");
 
@@ -2189,6 +2197,8 @@ struct MonoTimeImpl(ClockType clockType)
                                               1_000_000_000L,
                                               ticksPerSecond));
         }
+	else version (FreeStanding)
+		return MonoTimeImpl();
     }
 
 
@@ -2584,6 +2594,9 @@ extern(C) void _d_initMonoTime() @nogc nothrow @system
             }
         }
     }
+    else version(FreeStanding) {
+	tps[] = 1; // FIXME
+    }
 }
 
 
@@ -2850,6 +2863,7 @@ deprecated:
     }
 
 
+    version(WebAssembly) {} else // FIXME: this should actually work
     static pragma(crt_constructor) void time_initializer() @system
     {
         version (Windows)
@@ -3450,6 +3464,7 @@ deprecated:
                                     tv.tv_usec * TickDuration.ticksPerSec / 1000 / 1000);
             }
         }
+	else version (FreeStanding) assert(0);
     }
 
     version (CoreUnittest) @safe nothrow unittest

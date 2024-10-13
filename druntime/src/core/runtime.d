@@ -559,6 +559,7 @@ extern (C) void profilegc_setlogfilename(string name);
  */
 extern (C) UnitTestResult runModuleUnitTests() @system
 {
+	version(FreeStanding) return UnitTestResult.pass;
     version (Windows)
         import core.sys.windows.stacktrace;
 

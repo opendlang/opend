@@ -76,6 +76,12 @@
  */
 module std.concurrency;
 
+version(WebAssembly) {
+	struct Tid {}
+	auto thisTid() { return Tid.init; }
+	auto ref initOnce(alias var)(lazy typeof(var) init) { return var = init; }
+} else:
+
 public import std.variant;
 
 import core.atomic;

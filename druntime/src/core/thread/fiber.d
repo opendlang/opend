@@ -18,6 +18,8 @@ import core.thread.context;
 
 import core.memory : pageSize;
 
+version(WebAssembly) {} else:
+
 ///////////////////////////////////////////////////////////////////////////////
 // Fiber Platform Detection
 ///////////////////////////////////////////////////////////////////////////////
@@ -389,6 +391,8 @@ private
             swapcontext( **(cast(ucontext_t***) oldp),
                           *(cast(ucontext_t**)  newp) );
         }
+	else version (FreeStanding)
+		assert(0); // FIXME this should be possible tbh
         else
             static assert(0, "Not implemented");
     }
@@ -1485,6 +1489,8 @@ private:
             //       be a pointer to the ucontext_t struct for that fiber.
             push( cast(size_t) &m_utxt );
         }
+	else version (FreeStanding)
+		assert(0);
         else
             static assert(0, "Not implemented");
     }
