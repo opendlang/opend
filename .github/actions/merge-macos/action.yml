@@ -30,7 +30,8 @@ runs:
         # merge executables to universal ones
         for exe in bin/*; do
           rm $exe
-          lipo -create -output $exe ../opend-x86_64/$exe ../opend-arm64/$exe
+          # make fat binary if possible, if not just keep the x86 one (probably dmd)
+          lipo -create -output $exe ../opend-x86_64/$exe ../opend-arm64/$exe || cp ../opend-x86_64/$exe $exe
         done
 
         # ldc2.conf: replace the default section and add extra sections
