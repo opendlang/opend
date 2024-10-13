@@ -73,9 +73,10 @@ else
  */
 void logo()
 {
-    printf("DMD%llu OpenD Compiler %.*s\n%.*s %.*s\n",
+    printf("DMD%llu OpenD Compiler %.*s %s\n%.*s %.*s\n",
         cast(ulong)size_t.sizeof * 8,
         cast(int) global.versionString().length, global.versionString().ptr,
+	__TIMESTAMP__.ptr,
         cast(int)global.copyright.length, global.copyright.ptr,
         cast(int)global.written.length, global.written.ptr
     );
