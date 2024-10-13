@@ -362,7 +362,6 @@ SRCS=\
 	src\core\sys\solaris\link.d \
 	src\core\sys\solaris\stdlib.d \
 	src\core\sys\solaris\time.d \
-	\
 	src\core\sys\solaris\sys\elf.d \
 	src\core\sys\solaris\sys\elf_386.d \
 	src\core\sys\solaris\sys\elf_amd64.d \
@@ -590,37 +589,6 @@ SRCS=\
 	src\rt\tlsgc.d \
 	src\rt\trace.d \
 	src\rt\tracegc.d \
-	\
-	src\rt\sys\config.d \
-	\
-	src\rt\sys\darwin\config.d \
-	src\rt\sys\darwin\osmemory.d \
-	src\rt\sys\darwin\ossemaphore.d \
-	\
-	src\rt\sys\freebsd\config.d \
-	\
-	src\rt\sys\dragonflybsd\config.d \
-	\
-	src\rt\sys\linux\config.d \
-	\
-	src\rt\sys\netbsd\config.d \
-	\
-	src\rt\sys\openbsd\config.d \
-	\
-	src\rt\sys\posix\osevent.d \
-	src\rt\sys\posix\osmemory.d \
-	src\rt\sys\posix\osmutex.d \
-	src\rt\sys\posix\ossemaphore.d \
-	src\rt\sys\posix\oscondition.d \
-	\
-	src\rt\sys\solaris\config.d \
-	\
-	src\rt\sys\windows\config.d \
-	src\rt\sys\windows\osevent.d \
-	src\rt\sys\windows\osmemory.d \
-	src\rt\sys\windows\osmutex.d \
-	src\rt\sys\windows\ossemaphore.d \
-	src\rt\sys\windows\oscondition.d \
 	\
 	src\rt\util\typeinfo.d \
 	src\rt\util\utility.d \

@@ -880,7 +880,7 @@ version (LDC) version (Windows)
 }
 
 // only Errors for now as those are rarely chained
-T staticError(T, Args...)(auto ref Args args)
+package T staticError(T, Args...)(auto ref Args args)
     if (is(T : Error))
 {
     // pure hack, what we actually need is @noreturn and allow to call that in pure functions

@@ -557,35 +557,4 @@ COPY=\
 	$(IMPDIR)\core\thread\package.d \
 	\
 	$(IMPDIR)\etc\valgrind\valgrind.d \
-	$(IMPDIR)\etc\linux\memoryerror.d \
-	\
-	$(IMPDIR)\rt\sys\config.d \
-	\
-	$(IMPDIR)\rt\sys\darwin\config.d \
-	$(IMPDIR)\rt\sys\darwin\osmemory.d \
-	$(IMPDIR)\rt\sys\darwin\ossemaphore.d \
-	\
-	$(IMPDIR)\rt\sys\freebsd\config.d \
-	\
-	$(IMPDIR)\rt\sys\dragonflybsd\config.d \
-	\
-	$(IMPDIR)\rt\sys\linux\config.d \
-	\
-	$(IMPDIR)\rt\sys\netbsd\config.d \
-	\
-	$(IMPDIR)\rt\sys\openbsd\config.d \
-	\
-	$(IMPDIR)\rt\sys\posix\osevent.d \
-	$(IMPDIR)\rt\sys\posix\osmemory.d \
-	$(IMPDIR)\rt\sys\posix\osmutex.d \
-	$(IMPDIR)\rt\sys\posix\ossemaphore.d \
-	$(IMPDIR)\rt\sys\posix\oscondition.d \
-	\
-	$(IMPDIR)\rt\sys\solaris\config.d \
-	\
-	$(IMPDIR)\rt\sys\windows\config.d \
-	$(IMPDIR)\rt\sys\windows\oscondition.d \
-	$(IMPDIR)\rt\sys\windows\osevent.d \
-	$(IMPDIR)\rt\sys\windows\osmemory.d \
-	$(IMPDIR)\rt\sys\windows\osmutex.d \
-	$(IMPDIR)\rt\sys\windows\ossemaphore.d
+	$(IMPDIR)\etc\linux\memoryerror.d

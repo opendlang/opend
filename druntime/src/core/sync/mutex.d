@@ -18,9 +18,20 @@ module core.sync.mutex;
 
 public import core.sync.exception;
 
-import rt.sys.config;
-
-mixin("import " ~ osMutexImport ~ ";");
+version (Windows)
+{
+    import core.sys.windows.winbase /+: CRITICAL_SECTION, DeleteCriticalSection,
+        EnterCriticalSection, InitializeCriticalSection, LeaveCriticalSection,
+        TryEnterCriticalSection+/;
+}
+else version (Posix)
+{
+    import core.sys.posix.pthread;
+}
+else
+{
+    static assert(false, "Platform not supported");
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mutex
@@ -34,8 +45,7 @@ mixin("import " ~ osMutexImport ~ ";");
 /**
  * This class represents a general purpose, recursive mutex.
  *
- * Implemented using `pthread_mutex` on Posix and `CRITICAL_SECTION`    
- 
+ * Implemented using `pthread_mutex` on Posix and `CRITICAL_SECTION`
  * on Windows.
  */
 class Mutex :
@@ -65,7 +75,27 @@ class Mutex :
     private this(this Q)(bool _unused_) @trusted nothrow @nogc
         if (is(Q == Mutex) || is(Q == shared Mutex))
     {
-        (cast(OsMutex)osMutex).create();
+        version (Windows)
+        {
+            InitializeCriticalSection(cast(CRITICAL_SECTION*) &m_hndl);
+        }
+        else version (Posix)
+        {
+            import core.internal.abort : abort;
+            pthread_mutexattr_t attr = void;
+
+            !pthread_mutexattr_init(&attr) ||
+                abort("Error: pthread_mutexattr_init failed.");
+
+            scope (exit) !pthread_mutexattr_destroy(&attr) ||
+                abort("Error: pthread_mutexattr_destroy failed.");
+
+            !pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) ||
+                abort("Error: pthread_mutexattr_settype failed.");
+
+            !pthread_mutex_init(cast(pthread_mutex_t*) &m_hndl, &attr) ||
+                abort("Error: pthread_mutex_init failed.");
+        }
 
         m_proxy.link = this;
         this.__monitor = cast(void*) &m_proxy;
@@ -108,8 +138,16 @@ class Mutex :
 
     ~this() @trusted nothrow @nogc
     {
-        (cast(OsMutex)osMutex).destroy();
-
+        version (Windows)
+        {
+            DeleteCriticalSection(&m_hndl);
+        }
+        else version (Posix)
+        {
+            import core.internal.abort : abort;
+            !pthread_mutex_destroy(&m_hndl) ||
+                abort("Error: pthread_mutex_destroy failed.");
+        }
         this.__monitor = null;
     }
 
@@ -142,7 +180,19 @@ class Mutex :
     final void lock_nothrow(this Q)() nothrow @trusted @nogc
         if (is(Q == Mutex) || is(Q == shared Mutex))
     {
-        (cast(OsMutex)osMutex).lockNoThrow();
+        version (Windows)
+        {
+            EnterCriticalSection(&m_hndl);
+        }
+        else version (Posix)
+        {
+            if (pthread_mutex_lock(&m_hndl) == 0)
+                return;
+
+            SyncError syncErr = cast(SyncError) __traits(initSymbol, SyncError).ptr;
+            syncErr.msg = "Unable to lock mutex.";
+            throw syncErr;
+        }
     }
 
     /**
@@ -168,7 +218,19 @@ class Mutex :
     final void unlock_nothrow(this Q)() nothrow @trusted @nogc
         if (is(Q == Mutex) || is(Q == shared Mutex))
     {
-        (cast(OsMutex)osMutex).unlockNoThrow();
+        version (Windows)
+        {
+            LeaveCriticalSection(&m_hndl);
+        }
+        else version (Posix)
+        {
+            if (pthread_mutex_unlock(&m_hndl) == 0)
+                return;
+
+            SyncError syncErr = cast(SyncError) __traits(initSymbol, SyncError).ptr;
+            syncErr.msg = "Unable to unlock mutex.";
+            throw syncErr;
+        }
     }
 
     /**
@@ -198,12 +260,26 @@ class Mutex :
     final bool tryLock_nothrow(this Q)() nothrow @trusted @nogc
         if (is(Q == Mutex) || is(Q == shared Mutex))
     {
-        return (cast(OsMutex)osMutex).tryLockNoThrow();
+        version (Windows)
+        {
+            return TryEnterCriticalSection(&m_hndl) != 0;
+        }
+        else version (Posix)
+        {
+            return pthread_mutex_trylock(&m_hndl) == 0;
+        }
     }
 
-    OsMutex osMutex;
 
 private:
+    version (Windows)
+    {
+        CRITICAL_SECTION    m_hndl;
+    }
+    else version (Posix)
+    {
+        pthread_mutex_t     m_hndl;
+    }
 
     struct MonitorProxy
     {
@@ -211,6 +287,16 @@ private:
     }
 
     MonitorProxy            m_proxy;
+
+
+package:
+    version (Posix)
+    {
+        pthread_mutex_t* handleAddr() @nogc
+        {
+            return &m_hndl;
+        }
+    }
 }
 
 ///
