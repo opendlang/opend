@@ -7652,6 +7652,8 @@ private void aliasAssignSemantic(AliasAssign ds, Scope* sc)
     Dsymbol s;
 
     // Try AliasSeq optimization
+    /+
+    // actually don't because it is cause of https://issues.dlang.org/show_bug.cgi?id=24366
     if (auto ti = ds.type.isTypeInstance())
     {
         if (!ti.tempinst.findTempDecl(sc, null))
@@ -7664,6 +7666,7 @@ private void aliasAssignSemantic(AliasAssign ds, Scope* sc)
             goto Lsymdone;
         }
     }
+    +/
 
     /* This section is needed because Type.resolve() will:
      *   const x = 3;
@@ -7723,9 +7726,12 @@ private void aliasAssignSemantic(AliasAssign ds, Scope* sc)
     if (s) // it's a symbolic alias
     {
     Lsymdone:
-        //printf("alias %s resolved to %s %s\n", toChars(), s.kind(), s.toChars());
+        // printf("alias %s resolved to %s %s\n", ds.toChars(), s.kind(), s.toChars());
         aliassym.type = null;
         aliassym.aliassym = s;
+
+	// printf("test %s\n", s.isTupleDeclaration.objects.toChars());
+
         aliassym.storage_class |= sc.stc & STC.deprecated_;
         aliassym.visibility = sc.visibility;
         aliassym.userAttribDecl = sc.userAttribDecl;
@@ -7853,6 +7859,7 @@ private TupleDeclaration aliasAssignInPlace(Scope* sc, TemplateInstance tempinst
             // just assign tiargs if tuple = AliasSeq!(nottuple, nottuple...)
             td.objects = tempinst.tiargs;
     }
+
     return td;
 }
 
