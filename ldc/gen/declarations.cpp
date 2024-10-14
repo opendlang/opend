@@ -208,8 +208,15 @@ public:
       m->accept(this);
     }
 
-    if(decl->classKind == ClassKind::objc)
+    if(decl->classKind == ClassKind::objc) {
+        // for non-extern classes, we need to ensure they are
+        // referenced to populate the global list of them, so
+        // do that here, even though we ignore the return value
+        // it will still populate that list
+        if(!decl->objc.isExtern && !decl->objc.isMeta)
+            gIR->objc.getClassReference(*decl);
         return;
+    }
 
     IrClass *ir = getIrAggr(decl);
 

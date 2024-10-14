@@ -11,7 +11,7 @@
 
 namespace ldc {
 
-const char * const ldc_version = "@LDC_VERSION@";
+const char * const ldc_version = "@LDC_VERSION@ - OpenD " __DATE__ " " __TIME__;
 const char * const dmd_version = "v@DMD_VERSION@";
 const char * const llvm_version = "@LLVM_VERSION_STRING@";
 const char * const llvm_version_base = "@LLVM_VERSION_BASE_STRING@";
