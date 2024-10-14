@@ -432,6 +432,8 @@ llvm::GlobalVariable *ObjCState::getClassName(const ClassDeclaration& cd, bool i
 	}
 }
 
+// make sure to call this for non-extern things as parsed so it is always referenced!
+// as calling this will generate the global list of user-defined classes
 llvm::GlobalVariable *ObjCState::getClassReference(const ClassDeclaration& cd) {
         hasSymbols_ = true;
 
@@ -510,7 +512,7 @@ void ObjCState::finalize() {
   if (!retainedSymbols.empty()) {
     std::vector<llvm::Constant*> members;
     for (auto cls = classes.begin(); cls != classes.end(); ++cls) {
-    	auto c = *cls;
+        ClassDeclaration* c = *cls;
         if (c->classKind == ClassKind::objc && !c->objc.isExtern && !c->objc.isMeta) {
             // this is the only kind of class that should be in the list but still
             // put it out
@@ -520,9 +522,11 @@ void ObjCState::finalize() {
     }
     // categories? idk what that even is
 
-    auto sym = getGlobalWithBytes(module, "L_OBJC_LABEL_CLASS_$", members);
-    sym->setSection("__DATA,__objc_classlist,regular,no_dead_strip");
-    retainedSymbols.push_back(sym);
+    if(!members.empty()) {
+        auto sym = getGlobalWithBytes(module, "L_OBJC_LABEL_CLASS_$", members);
+        sym->setSection("__DATA,__objc_classlist,regular,no_dead_strip");
+        retainedSymbols.push_back(sym);
+    }
 
     genImageInfo();
 
