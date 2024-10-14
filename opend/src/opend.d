@@ -14,7 +14,7 @@ int main(string[] args) {
 			foreach(memberName; __traits(allMembers, Commands))
 				case memberName:
 					return __traits(getMember, Commands, memberName)(args[2 .. $]);
-			case "--help":
+			case "-h", "--help":
 				import std.stdio, std.string;
 				foreach(memberName; __traits(allMembers, Commands))
 					writeln(memberName, "\n\t", strip(__traits(docComment, __traits(getMember, Commands, memberName))));
@@ -34,7 +34,10 @@ struct Commands {
 
 	/// Does a debug build and immediately runs the program
 	int run(string[] args) {
+		import std.stdio, std.string;
 		if(args.length == 0)
+			foreach(memberName; __traits(allMembers, Commands))
+				writeln(memberName, "\n\t", strip(__traits(docComment, __traits(getMember, Commands, memberName))));
 			return 1;
 		if(auto err = build(args))
 			return err;
