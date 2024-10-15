@@ -4840,12 +4840,6 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     ax.push(s);
                     s = new AST.LinkDeclaration(linkloc, link, ax);
                 }
-                if (udas)
-                {
-                    auto ax = new AST.Dsymbols();
-                    ax.push(s);
-                    s = new AST.UserAttributeDeclaration(udas, ax);
-                }
 
                 /* A template parameter list means it's a function template
                  */
@@ -4884,6 +4878,14 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                         s = new AST.StorageClassDeclaration(stc2, ax);
                     }
                 }
+
+                if (udas)
+                {
+                    auto ax = new AST.Dsymbols();
+                    ax.push(s);
+                    s = new AST.UserAttributeDeclaration(udas, ax);
+                }
+
                 a.push(s);
                 addComment(s, comment);
             }
