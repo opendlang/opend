@@ -12,43 +12,34 @@ import core.internal.abort : abort;
 
 struct OsEvent
 {
-    void create(bool manualReset, bool initialState) nothrow @trusted @nogc
+    this(bool manualReset, bool initialState) nothrow @trusted @nogc
     {
-        if (m_event)
-            return;
         m_event = CreateEvent(null, manualReset, initialState, null);
         m_event || abort("Error: CreateEvent failed.");
     }
 
-    void destroy() nothrow @trusted @nogc
+    ~this() nothrow @trusted @nogc
     {
-        if (m_event)
-            CloseHandle(m_event);
-        m_event = null;
+        CloseHandle(m_event);
     }
 
-    void setIfInitialized() nothrow @trusted @nogc
+    void set() nothrow @trusted @nogc
     {
-        if (m_event)
-            SetEvent(m_event);
+        SetEvent(m_event);
     }
 
     void reset() nothrow @trusted @nogc
     {
-        if (m_event)
-            ResetEvent(m_event);
+        ResetEvent(m_event);
     }
 
     bool wait() nothrow @trusted @nogc
     {
-        return m_event && WaitForSingleObject(m_event, INFINITE) == WAIT_OBJECT_0;
+        return WaitForSingleObject(m_event, INFINITE) == WAIT_OBJECT_0;
     }
 
     bool wait(Duration tmout) nothrow @trusted @nogc
     {
-        if (!m_event)
-            return false;
-
         auto maxWaitMillis = dur!("msecs")(uint.max - 1);
 
         while (tmout > maxWaitMillis)
