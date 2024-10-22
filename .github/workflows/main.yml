@@ -105,7 +105,7 @@ jobs:
         uses: ./.github/actions/5a-ios
         with:
           arch: ${{ matrix.arch }}
-      - name: 'Linux: Cross-compile emscripten druntime+phobos
+      - name: 'Linux: Cross-compile emscripten druntime+phobos'
         if: runner.os == 'Linux'
         uses: ./.github/actions/5a-emscripten
         with:
