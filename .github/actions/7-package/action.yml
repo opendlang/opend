@@ -59,7 +59,7 @@ runs:
         git clean -dffx
         cd ..
         artifactName="opend-latest-xpack-win64"
-        tar -cJf artifacts/$artifactName.tar.xz --exclude-vcs --owner=0 --group=0 --transform="s,^../installed,$artifactName," ../installed/lib ../installed/bin/*.dll
+        tar -cJf $artifactName.tar.xz --exclude-vcs --owner=0 --group=0 --transform="s,^installed,$artifactName," installed/lib installed/bin/*.dll
 
     - name: Pack installation dir
       shell: bash
@@ -74,6 +74,9 @@ runs:
         else
           artifactID="latest"
         fi
+
+        mv opend-latest-xpack-emscripten.tar.xz artifacts || true
+        mv opend-latest-xpack-win64.tar.xz artifacts || true
 
         os='${{ inputs.os }}'
         if [[ "$os" == '' ]]; then

@@ -11,11 +11,11 @@ runs:
         cd ..
 
         # use bootstrap-ldc, which is guaranteed to be native
-        # add ;-fvisibility=hidden ?
         bootstrap-ldc/bin/ldc-build-runtime --ninja \
           --buildDir="build-libs-emscripten" \
-          --dFlags="-mtriple=wasm32-emscripten;-fvisibility=hidden" \
+          --targetSystem "WebAssembly" \
+          --dFlags="-mtriple=wasm32-unknown-emscripten;-fvisibility=hidden" \
           --ldcSrcDir="$PWD/opend/ldc"
 
         artifactName="opend-latest-xpack-emscripten"
-        tar -cJf artifacts/$artifactName.tar.xz --exclude-vcs --owner=0 --group=0 --transform="s,^../build-libs-emscripten,$artifactName," build-libs-emscripten/lib/*.a
+        tar -cJf $artifactName.tar.xz --exclude-vcs --owner=0 --group=0 --transform="s,^build-libs-emscripten,$artifactName," build-libs-emscripten/lib/*.a
