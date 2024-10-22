@@ -110,20 +110,6 @@ runs:
         echo "ARTIFACT_ID=$artifactID" >> $GITHUB_ENV
         echo "ARTIFACT_NAME=$os-${{ inputs.arch }}" >> $GITHUB_ENV
 
-    - name: 'Linux: Pack source dir'
-      if: runner.os == 'Linux' && inputs.os == ''
-      shell: bash
-      run: |
-        set -eux
-        git clean -dffx
-        cd ..
-        artifactName="opend-$ARTIFACT_ID-src"
-        chmod -R go=rX opend/ldc
-        GZIP=-9 tar -czf artifacts/$artifactName.tar.gz --exclude-vcs --owner=0 --group=0 --transform="s,^opend/ldc,$artifactName," opend/ldc
-        # unpack & create zip
-        tar -xf artifacts/$artifactName.tar.gz
-        zip -r -9 artifacts/$artifactName.zip $artifactName >/dev/null
-
     - name: 'Move artifacts dir for uploading'
       shell: bash
       run: mv ../artifacts ./

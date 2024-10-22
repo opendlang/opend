@@ -52,7 +52,8 @@ runs:
         fi
 
         ls -lh
-        sha256sum * > "opend-$ARTIFACT_ID.sha256sums.txt"
+        # $ARTIFACT_ID
+        sha256sum * > "opend-latest.sha256sums.txt"
 
     - name: Upload to GitHub release
       uses: ncipollo/release-action@v1

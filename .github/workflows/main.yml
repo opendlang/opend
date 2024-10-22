@@ -229,6 +229,7 @@ jobs:
     needs:
       - build-native
       - build-cross
+      - merge-macos
     permissions:
       contents: write
     steps:
