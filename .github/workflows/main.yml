@@ -105,6 +105,12 @@ jobs:
         uses: ./.github/actions/5a-ios
         with:
           arch: ${{ matrix.arch }}
+      - name: 'Linux: Cross-compile emscripten druntime+phobos
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/5a-emscripten
+        with:
+          arch: ${{ matrix.arch }}
+
       - name: Create package & upload artifact(s)
         uses: ./.github/actions/7-package
         with:
@@ -203,6 +209,17 @@ jobs:
           os: ${{ matrix.os }}
           cross_target_triple: ${{ env.CROSS_TRIPLE }}
 
+  merge-macos:
+    name: macOS universal
+    runs-on: macos-latest
+    timeout-minutes: 30
+    needs:
+      - build-native
+      - build-cross
+    steps:
+      - uses: actions/checkout@v4
+      - name: Merge x86_64 & arm64 packages to universal one
+        uses: ./.github/actions/merge-macos
 
   upload-to-github:
     name: Upload to GitHub

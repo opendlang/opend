@@ -52,7 +52,7 @@ runs:
         fi
 
         ls -lh
-        sha256sum * > "ldc2-$ARTIFACT_ID.sha256sums.txt"
+        sha256sum * > "opend-$ARTIFACT_ID.sha256sums.txt"
 
     - name: Upload to GitHub release
       uses: ncipollo/release-action@v1

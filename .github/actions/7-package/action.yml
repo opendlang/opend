@@ -51,6 +51,16 @@ runs:
         # $DMD -w -de -dip1000 DustMite/dustmite.d DustMite/splitter.d DustMite/polyhash.d -of=bin/dustmite
         cp bin/ddemangle ../installed/bin/
 
+    - name: 'Windows: Pack libs for cross compile'
+      if: runner.os == 'Windows' && inputs.os == ''
+      shell: bash
+      run: |
+        set -eux
+        git clean -dffx
+        cd ..
+        artifactName="opend-latest-xpack-win64"
+        tar -cJf artifacts/$artifactName.tar.xz --exclude-vcs --owner=0 --group=0 --transform="s,^../installed,$artifactName," ../installed/lib ../installed/bin/*.dll
+
     - name: Pack installation dir
       shell: bash
       run: |
