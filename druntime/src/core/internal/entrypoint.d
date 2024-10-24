@@ -24,9 +24,20 @@ template _d_cmain()
 
         int _Dmain(char[][] args);
 
-        int main(int argc, char **argv)
-        {
-            return _d_run_main(argc, argv, &_Dmain);
+	version (Emscripten)
+	{
+            pragma(mangle, "__main_argc_argv")
+            export int main(int argc, char **argv)
+            {
+                return _d_run_main(argc, argv, &_Dmain);
+            }
+	}
+	else
+	{
+            int main(int argc, char **argv)
+            {
+                return _d_run_main(argc, argv, &_Dmain);
+            }
         }
 
         // Solaris, for unknown reasons, requires both a main() and an _main()
