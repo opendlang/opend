@@ -216,6 +216,39 @@ unittest
 }
 
 /**
+ * Cast a `ubyte[]` to an array of larger integers as if we are on a big endian architecture
+ * Params:
+ *   data = array with big endian data
+ *   size = 1 for ubyte[], 2 for ushort[], 4 for uint[], 8 for ulong[]
+ * Returns: copy of `data`, with bytes shuffled if compiled for `version(LittleEndian)`
+ */
+ubyte[] arrayCastBigEndian(const ubyte[] data, size_t size)
+{
+    ubyte[] impl(T)()
+    {
+        auto result = new T[](data.length / T.sizeof);
+        foreach (i; 0 .. result.length)
+        {
+            result[i] = 0;
+            foreach (j; 0 .. T.sizeof)
+            {
+                result[i] |= T(data[i * T.sizeof + j]) << ((T.sizeof - 1 - j) * 8);
+            }
+        }
+        return cast(ubyte[]) result;
+    }
+    switch (size)
+    {
+        case 1: return data.dup;
+        case 2: return impl!ushort;
+        case 4: return impl!uint;
+        case 8: return impl!ulong;
+        default: assert(0);
+    }
+}
+
+
+/**
  * Convert string to integer.
  *
  * Params:

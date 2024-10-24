@@ -6142,6 +6142,8 @@ public:
                     return;
                 }
 
+		import dmd.utils : arrayCastBigEndian;
+
                 auto str = arrayCastBigEndian(se.peekData(), sz);
                 emplaceExp!(StringExp)(pue, e1.loc, str, se.len / sz, cast(ubyte) sz);
                 result = pue.exp();
