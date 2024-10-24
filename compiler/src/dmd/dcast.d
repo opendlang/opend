@@ -1943,6 +1943,19 @@ Expression castTo(Expression e, Scope* sc, Type t, Type att = null)
         Type tb = t.toBasetype();
         Type typeb = e.type.toBasetype();
 
+        if (e.hexString && !e.committed && tb.nextOf().isIntegral)
+        {
+            const szx = cast(ubyte) tb.nextOf().size();
+            if (szx != se.sz && (e.len % szx) == 0)
+            {
+                import dmd.utils: arrayCastBigEndian;
+                const data = e.peekData();
+                se.setData(arrayCastBigEndian(data, szx).ptr, data.length / szx, szx);
+                se.type = t;
+                return se;
+            }
+        }
+
         //printf("\ttype = %s\n", e.type.toChars());
         if (tb.ty == Tdelegate && typeb.ty != Tdelegate)
         {

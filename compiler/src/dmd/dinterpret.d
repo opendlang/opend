@@ -6129,6 +6129,25 @@ public:
         // types of identical size.
         if ((e.to.ty == Tsarray || e.to.ty == Tarray) && (e1.type.ty == Tsarray || e1.type.ty == Tarray) && !isSafePointerCast(e1.type.nextOf(), e.to.nextOf()))
         {
+            auto se = e1.isStringExp();
+            // Allow casting a hex string literal to short[], int[] or long[]
+            if (se && se.hexString && se.postfix == StringExp.NoPostfix && e.to.nextOf().isIntegral)
+            {
+                const sz = cast(size_t) e.to.nextOf().size;
+                if ((se.len % sz) != 0)
+                {
+                    error(e.loc, "hex string length %d must be a multiple of %d to cast to `%s`",
+                        cast(int) se.len, cast(int) sz, e.to.toChars());
+                    result = CTFEExp.cantexp;
+                    return;
+                }
+
+                auto str = arrayCastBigEndian(se.peekData(), sz);
+                emplaceExp!(StringExp)(pue, e1.loc, str, se.len / sz, cast(ubyte) sz);
+                result = pue.exp();
+                result.type = e.to;
+                return;
+            }
             error(e.loc, "array cast from `%s` to `%s` is not supported at compile time", e1.type.toChars(), e.to.toChars());
             result = CTFEExp.cantexp;
             return;
