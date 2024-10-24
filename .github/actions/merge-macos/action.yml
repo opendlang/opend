@@ -109,7 +109,7 @@ runs:
           artifactID="${artifactID:0:8}"
         fi
 
-        artifactName="opend-$artifactID-osx-universal"
+        artifactName="opend-latest-osx-universal"
         mv opend-universal $artifactName
         chmod -R go=rX $artifactName
         sudo chown -R root:wheel $artifactName
