@@ -3048,7 +3048,7 @@ struct Gcx
         if (Thread.getThis() is null)
             return 0;
 
-        printf("Running GC\n");
+        // printf("Running GC\n");
 
         MonoTime start, stop, begin;
         begin = start = currTime;
