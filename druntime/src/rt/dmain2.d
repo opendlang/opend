@@ -524,8 +524,16 @@ private extern (C) int _d_run_main2(char[][] args, size_t totalArgsLength, MainF
         else
             result = EXIT_FAILURE;
 
-        if (!rt_term())
-            result = (result == EXIT_SUCCESS) ? EXIT_FAILURE : result;
+	version(WebAssembly) {
+            // for wasm, it is possible that main is set up to run async;
+            // it just set up event handlers and keeps going. as such we will not
+            // actually call rt_term as the program does not actually exit until
+            // the browser tab is closed
+            result = EXIT_SUCCESS;
+        } else {
+            if (!rt_term())
+                result = (result == EXIT_SUCCESS) ? EXIT_FAILURE : result;
+        }
     }
 
     tryExec(&runAll);

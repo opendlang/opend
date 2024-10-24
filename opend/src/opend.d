@@ -321,7 +321,7 @@ struct Commands {
 				`);
 
 				import std.stdio;
-				writeln("Installation complete, build with `opend build -mtriple=wasm32-emscripten <other args>`");
+				writeln("Installation complete, build with `opend --target=emscripten <other args>`");
 				writeln("You will need the emsdk. Install that separately and follow its instructions to activate it before trying to build D code because opend will use emcc to finish the link step.");
 				writeln("https://emscripten.org/docs/getting_started/downloads.html");
 
@@ -339,7 +339,7 @@ struct Commands {
 				`);
 
 				import std.stdio;
-				writeln("Installation complete, build with `opend build -mtriple=x86_64-windows-msvc <other args>`");
+				writeln("Installation complete, build with `opend --target=win64 <other args>`");
 
 				return 0;
 			default:
