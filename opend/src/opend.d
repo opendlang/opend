@@ -420,6 +420,7 @@ void downloadXpack(string which) {
 
 	string url = "https://github.com/opendlang/opend/releases/download/CI/opend-latest-" ~ which ~ ".tar.xz";
 	string destination = getXpackPath();
+	bool done;
 
 	void processor() {
 		TarFileHeader tfh;
@@ -429,20 +430,33 @@ void downloadXpack(string which) {
 		import std.stdio;
 		File file;
 		long currentFileSize;
+		bool skippingFile;
 
 		decompressLzma(
 			(in ubyte[] chunk) => cast(void) processTar(&tfh, &size, chunk,
 				(header, isNewFile, fileFinished, data) {
 					if(isNewFile) {
-						import std.stdio; writeln("inflating xpack file ", header.filename);
-						import std.path, std.file;
-						mkdirRecurse(dirName(buildPath(destination, header.filename)));
-						file = File(buildPath(destination, header.filename), "wb");
-						currentFileSize = header.size;
+						if(header.type == TarFileType.normal)
+							skippingFile = false;
+						else
+							skippingFile = true;
+
+						if(!skippingFile) {
+							import std.stdio; writeln("inflating xpack file ", header.filename);
+							import std.path, std.file;
+							mkdirRecurse(dirName(buildPath(destination, header.filename)));
+							file = File(buildPath(destination, header.filename), "wb");
+							currentFileSize = header.size;
+						} else {
+						}
 					}
-					file.rawWrite(data);
-					if(fileFinished)
-						file.close();
+					if(!skippingFile)
+						file.rawWrite(data);
+					if(fileFinished) {
+						if(!skippingFile)
+							file.close();
+						skippingFile = false;
+					}
 				}),
 			(ubyte[] buffer) {
 				try_again:
@@ -458,6 +472,8 @@ void downloadXpack(string which) {
 			},
 			tarBuffer[]
 		);
+
+		done = true;
 	}
 
 	auto fiber = new Fiber(&processor, 1 * 1024 * 1024 /* reserve 1 MB stack */);
@@ -468,8 +484,9 @@ void downloadXpack(string which) {
         auto http = HTTP(url);
         http.onReceive = (ubyte[] data) {
 		availableData = data;
-		fiber.call();
-                return data.length - availableData.length;
+		if(!done)
+			fiber.call();
+                return data.length;
         };
         http.perform();
 
