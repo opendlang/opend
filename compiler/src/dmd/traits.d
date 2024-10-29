@@ -2171,6 +2171,87 @@ version (IN_LLVM)
         return tup.expressionSemantic(sc);
     }
 
+    if (e.ident == Id.resolveFunctionCall) {
+
+        if (dim < 1) {
+            error(e.loc, "Not enough arguments, first argument is function rest is argument types");
+            return ErrorExp.get();
+        }
+
+        auto o = (*e.args)[0];
+        Dsymbol sym = getDsymbol(o);
+
+        // FIX: Delegates and function pointers saused segfaults
+        if (!sym) {
+            error(e.loc, "Unable to get symbol from first argument, has to be a function type.");
+            return ErrorExp.get();
+        }
+
+        Expression ex = new DsymbolExp(e.loc, sym);
+
+        Expression eorig = ex;
+        uint errors = global.errors;
+
+        ex = ex.expressionSemantic(sc);
+        if (errors < global.errors)
+                error(e.loc, "`%s` cannot be resolved", eorig.toChars());
+
+
+        FuncDeclaration fd;
+        TypeFunction tf = toTypeFunction(o, fd);
+
+        // FIX: templated functions are not handled by `toTypeFunction`
+        // TODO: More robust check, TemplateDeclaration is too broad.
+        TemplateDeclaration td = sym.isTemplateDeclaration();
+
+        const invalid = (tf is null) && (td is null);
+
+        if (invalid) {
+            error(e.loc, "Fisrt argument has to be a function type.");
+            return ErrorExp.get();
+        }
+
+        // NOTE: Copied from getOverloads
+        // ignore symbol visibility and disable access checks for these traits
+        Scope* scx = sc.push();
+        scx.flags |= SCOPE.ignoresymbolvisibility | SCOPE.noaccesscheck;
+        scope (exit) scx.pop();
+
+
+        // Arguments are VoidInitExp-ressions created from provided types.
+        auto args_types = (*e.args)[1 .. dim];
+        auto arguments = new Expressions(args_types.length);
+        foreach(idx, it; args_types) {
+            auto at = isType(it);
+            if (at is null) {
+                error(e.loc, "argument %llu is not a type but '%s'.", idx + 1, it.toChars);
+                return ErrorExp.get();
+            }
+
+            auto vd = VarDeclaration.create(e.loc, at, Identifier.generateAnonymousId(""), null);
+            (*arguments)[idx] = new VoidInitExp(vd);
+        }
+        ArgumentList argumentList = ArgumentList(arguments, null);
+
+        auto resolvedFd = resolveFuncCall(e.loc, scx, sym, null, null, argumentList, FuncResolveFlag.quiet);
+
+        if (resolvedFd) {
+            auto fa = new FuncAliasDeclaration(resolvedFd.ident, resolvedFd, false);
+            fa.visibility = resolvedFd.visibility;
+            auto sym_ex = new DsymbolExp(Loc.initial, fa, false);
+
+            return sym_ex;
+        }
+
+        // error(e.loc, "no match found %s", o.toChars());
+        // NOTE: o.toChars() returns one the overloads and the error message feels missleading.
+        // TODO: Add the name of the function
+        error(e.loc, "no match found");
+        return ErrorExp.get();
+
+    }
+
+
     /* Can't find the identifier. Try a spell check for a better error message
      */
     traitNotFound(e);
@@ -2320,7 +2401,7 @@ private void traitNotFound(TraitsExp e) @system
         initialized = true;     // lazy initialization
 
         // All possible traits
-        __gshared Identifier*[60] idents =
+        __gshared Identifier*[61] idents =
         [
             &Id.allMembers,
             &Id.child,
@@ -2382,6 +2463,7 @@ private void traitNotFound(TraitsExp e) @system
             &Id.isZeroInit,
             &Id.parameters,
             &Id.parent,
+            &Id.resolveFunctionCall,
         ];
 
         StringTable!(bool)* stringTable = cast(StringTable!(bool)*) &traitsStringTable;
