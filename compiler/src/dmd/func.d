@@ -3641,6 +3641,22 @@ FuncDeclaration resolveFuncCall(const ref Loc loc, Scope* sc, Dsymbol s,
                         }
                     }
                 }
+		foreach(iface; classType.sym.interfaces)
+		{
+                    if (auto baseFunction = iface.sym.search(iface.sym.loc, fd.ident))
+                    {
+                        MatchAccumulator mErr;
+                        functionResolve(mErr, baseFunction, loc, sc, tiargs, iface.type, argumentList);
+                        if (mErr.last > MATCH.nomatch && mErr.lastf)
+                        {
+                            errorSupplemental(loc, "%s `%s` hides interface function `%s`",
+                                    fd.kind, fd.toPrettyChars(), mErr.lastf.toPrettyChars());
+                            errorSupplemental(loc, "add `alias %s = %s` to `%s`'s body to merge the overload sets",
+                                    fd.toChars(), mErr.lastf.toPrettyChars(), tthis.toChars());
+                            return null;
+                        }
+                    }
+		}
             }
         }
         const(char)* failMessage;
