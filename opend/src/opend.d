@@ -1,6 +1,8 @@
 import std.process;
 import std.file;
 
+// FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
+
 int main(string[] args) {
 	// maybe override the normal config files
 	// --opend-config-file

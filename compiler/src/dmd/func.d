@@ -3651,7 +3651,7 @@ FuncDeclaration resolveFuncCall(const ref Loc loc, Scope* sc, Dsymbol s,
                         {
                             errorSupplemental(loc, "%s `%s` hides interface function `%s`",
                                     fd.kind, fd.toPrettyChars(), mErr.lastf.toPrettyChars());
-                            errorSupplemental(loc, "add `alias %s = %s` to `%s`'s body to merge the overload sets",
+                            errorSupplemental(loc, "add `alias %s = %s` to `%s`'s body to merge the overload sets or call `yourObject.DesiredInterface.func()` at the usage site", // FIXME make the suggestion better
                                     fd.toChars(), mErr.lastf.toPrettyChars(), tthis.toChars());
                             return null;
                         }

@@ -629,22 +629,34 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
 
                 if (auto ad = isAggregate(p.type))
                 if (ad.hasImplicitConstructor()) {
-                    auto tmp = new VarDeclaration(arg.loc, p.type, Identifier.generateId("__ictorcmp"), null);
-                    tmp.storage_class = STC.rvalue | STC.temp | STC.ctfe;
-                    tmp.dsymbolSemantic(sc);
 
-                    Expression ve = new VarExp(arg.loc, tmp);
-                    Expression e = new DotIdExp(arg.loc, ve, Id.ctor);
-                    auto ce = new CallExp(arg.loc, e, arg);
-                    e = ce;
+	            static int recursionCount;
 
-                    //printf("%s to %s @ %s in %llx   dddddddd\n", e.toChars(), p.type.toChars(), arg.loc.toChars(), cast(ulong)sc);
-                    if (sc && .trySemantic(e, sc)) {
-                        if (hasImplicitAttr(ce.f)) {
-                            auto cast_m = argumentMatchParameter(tf, p, e, wildmatch, flag, sc, pMessage);
-                            if (cast_m == MATCH.exact) {
-                                // printf("ctor complete %s(%s) @ %s\n", p.type.toChars(), arg.toChars(), arg.loc.toChars());
-                                m = MATCH.convert;
+                    recursionCount++;
+                    scope(exit) recursionCount--;
+
+                    // FIXME the recursionCount is about
+                    // https://github.com/opendlang/opend/issues/81
+                    // and i think the real cause is that this might also be trying to implicitly construct itself
+                    if(recursionCount < 3) {
+
+                        auto tmp = new VarDeclaration(arg.loc, p.type, Identifier.generateId("__ictorcmp"), null);
+                        tmp.storage_class = STC.rvalue | STC.temp | STC.ctfe;
+                        tmp.dsymbolSemantic(sc);
+
+                        Expression ve = new VarExp(arg.loc, tmp);
+                        Expression e = new DotIdExp(arg.loc, ve, Id.ctor);
+                        auto ce = new CallExp(arg.loc, e, arg);
+                        e = ce;
+
+                        //printf("%s to %s @ %s in %llx   dddddddd\n", e.toChars(), p.type.toChars(), arg.loc.toChars(), cast(ulong)sc);
+                        if (sc && .trySemantic(e, sc)) {
+                            if (hasImplicitAttr(ce.f)) {
+                                auto cast_m = argumentMatchParameter(tf, p, e, wildmatch, flag, sc, pMessage);
+                                if (cast_m == MATCH.exact) {
+                                    // printf("ctor complete %s(%s) @ %s\n", p.type.toChars(), arg.toChars(), arg.loc.toChars());
+                                    m = MATCH.convert;
+                                }
                             }
                         }
                     }

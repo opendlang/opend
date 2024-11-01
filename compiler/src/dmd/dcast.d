@@ -145,13 +145,19 @@ Expression implicitCastTo(Expression e, Scope* sc, Type t)
                 auto tmp = new VarDeclaration(e.loc, t, Identifier.generateId("__ictorcmp"), null);
                 tmp.dsymbolSemantic(sc);
 
+                Expression decl = new DeclarationExp(e.loc, tmp);
+                decl = decl.expressionSemantic(sc);
+
                 Expression ve = new VarExp(e.loc, tmp);
                 Expression e2 = new DotIdExp(e.loc, ve, Id.ctor);
                 auto ce = new CallExp(e.loc, e2, e);
                 e2 = ce;
+
+                auto declareTmps = new CommaExp(e.loc, decl, e2);
+
                 if (sc && .trySemantic(e2, sc)) {
                         if (hasImplicitAttr(ce.f)) {
-                            result = e2.expressionSemantic(sc);
+                            result = declareTmps.expressionSemantic(sc);
                             // printf("implicit construction of %s @ %s\n", t.toChars(), e.loc.toChars());
                             return result;
                         }
