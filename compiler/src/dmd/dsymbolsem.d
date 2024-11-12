@@ -8053,7 +8053,7 @@ bool evalPragmaExplicitGc(Loc loc, Scope* sc, Expressions* args){
         return true;
     if (args && args.length > 1)
     {
-        .error(loc, "one boolean expression expected for `pragma(inline)`, not %llu", cast(ulong) args.length);
+        .error(loc, "one boolean expression expected for `pragma(explicit_gc)`, not %llu", cast(ulong) args.length);
         args.setDim(1);
         (*args)[0] = ErrorExp.get();
     }
