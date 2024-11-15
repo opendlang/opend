@@ -3812,6 +3812,10 @@ version (IN_LLVM)
         }
 
         assert(sc.func);
+
+        if(sc && sc.flags & SCOPE.Cfile)
+            goto skip_checks; // just assume import c functions don't care about attributes in asm
+
         if (!(cas.stc & STC.pure_) && sc.func.setImpure(cas.loc, "`asm` statement is assumed to be impure - mark it with `pure` if it is not"))
             error(cas.loc, "`asm` statement is assumed to be impure - mark it with `pure` if it is not");
         if (!(cas.stc & STC.nogc) && sc.func.setGC(cas.loc, "`asm` statement in %s `%s` is assumed to use the GC - mark it with `@nogc` if it does not"))
@@ -3825,6 +3829,8 @@ version (IN_LLVM)
         {
             sc.setUnsafe(false, cas.loc, "`asm` statement is assumed to be `@system` - mark it with `@trusted` if it is not", false);
         }
+
+        skip_checks:
 
         sc.pop();
         result = cas;
