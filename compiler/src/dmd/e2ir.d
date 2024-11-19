@@ -621,7 +621,7 @@ elem* toElem(Expression e, ref IRState irs)
         {
             if (se.type.isTypeDArray())
             {
-                assert(se.type == Type.tvoid.arrayOf().constOf(), se.toString());
+                assert(se.type == Type.tvoid.arrayOf().constOf() || se.type == Type.tvoid.constOf().arrayOf(), se.toString());
 
                 // Generate s[0 .. Aggregate.sizeof] for non-zero initialised aggregates
                 // Otherwise create (null, Aggregate.sizeof)
