@@ -6865,7 +6865,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             }
 
         case TOK.asm_:
-            s = parseAsm(false);
+            s = parseAsm(false, asmFromImportC);
             break;
 
         case TOK.import_:
@@ -7241,7 +7241,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
      * Returns:
      *   inline assembler block as a Statement
      */
-    AST.Statement parseAsm(bool endOfLine)
+    AST.Statement parseAsm(bool endOfLine, bool fromC)
     {
         // Parse the asm block into a sequence of AsmStatements,
         // each AsmStatement is one instruction.
@@ -7255,6 +7255,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         StorageClass stc = parsePostfix(STC.undefined_, null);  // optional FunctionAttributes
         if (stc & (STC.const_ | STC.immutable_ | STC.shared_ | STC.wild))
             error("`const`/`immutable`/`shared`/`inout` attributes are not allowed on `asm` blocks");
+
+	if(fromC)
+		stc |= STC.nothrow_; // just assume it since it is coming from C and we have no other option to set the attr
 
         check(TOK.leftCurly);
         Token* toklist = null;
