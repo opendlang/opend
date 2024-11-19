@@ -305,6 +305,8 @@ extern (C++) public Statement gccAsmSemantic(GccAsmStatement s, Scope *sc)
     const bool doUnittests = global.params.parsingUnittestsRequired();
     scope p = new Parser!ASTCodegen(sc._module, ";", false, global.errorSink, &global.compileEnv, doUnittests);
 
+    p.asmFromImportC = (sc.flags & SCOPE.Cfile) ? true : false;
+
     // Make a safe copy of the token list before parsing.
     Token *toklist = null;
     Token **ptoklist = &toklist;

@@ -52,6 +52,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
     bool transitionIn = false; /// `-transition=in` is active, `in` parameters are listed
     bool allowPrivateThis = true;
 
+    bool asmFromImportC = false;
+
     /*********************
      * Use this constructor for string mixins.
      * Input:
@@ -8488,10 +8490,12 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                             postfix = token.postfix;
                         }
 
+			if(!asmFromImportC) {
                         error("implicit string concatenation is error-prone and disallowed in D");
                         eSink.errorSupplemental(token.loc, "Use the explicit syntax instead " ~
                              "(concatenating literals is `@nogc`): %s ~ %s",
                              prev.toChars(), token.toChars());
+			}
 
                         const len1 = len;
                         const len2 = token.len;
