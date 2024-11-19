@@ -41,7 +41,7 @@ jobs:
             arch: x86_64
             bootstrap_cmake_flags: >-
               -DBUILD_LTO_LIBS=ON
-              -DD_COMPILER_FLAGS="-gcc=/usr/bin/c++
+              -DD_COMPILER_FLAGS="-gcc=/usr/bin/c++"
             # https://github.com/ldc-developers/ldc/issues/4462:
             # When using LTO, we need to explicitly export ~all symbols for plugin support via `ld64 -exported_symbol '__*'`.
             # Additionally `-w` to suppress resulting linker warnings.
