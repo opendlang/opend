@@ -2150,7 +2150,7 @@ private bool checkNogc(FuncDeclaration f, ref Loc loc, Scope* sc)
         return false;
     if (sc.intypeof == 1)
         return false;
-    if (sc.flags & (SCOPE.ctfe | SCOPE.debug_))
+    if (sc.flags & (SCOPE.ctfe | SCOPE.debug_ | SCOPE.ctfeBlock))
         return false;
     /* The original expressions (`new S(...)` or `new S[...]``) will be
      * verified instead. This is to keep errors related to the original code
@@ -6553,7 +6553,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 if (exp.f.checkNestedReference(sc, exp.loc))
                     return setError();
             }
-            else if (sc.func && sc.intypeof != 1 && !(sc.flags & (SCOPE.ctfe | SCOPE.debug_)))
+            else if (sc.func && sc.intypeof != 1 && !(sc.flags & (SCOPE.ctfe | SCOPE.debug_ | SCOPE.ctfeBlock)))
             {
                 bool err = false;
                 if (!tf.purity && sc.func.setImpure(exp.loc, "`pure` %s `%s` cannot call impure `%s`", exp.e1))
