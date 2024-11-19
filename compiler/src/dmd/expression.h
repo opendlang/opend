@@ -103,6 +103,8 @@ public:
     Loc loc;                    // file location
     EXP op;                     // to minimize use of dynamic_cast
 
+    bool ctfe; // is in a if(__ctfe) block
+
     size_t size() const;
     static void _init();
     virtual Expression *syntaxCopy();
