@@ -150,7 +150,7 @@ public:
         if (global.params.ehnogc && e.thrownew)
             return;                     // separate allocator is called for this, not the GC
         if (explicit_gc)
-	        return;                     // `new` is an explicit allocation
+            return;                     // `new` is an explicit allocation
         if (setGC(e, "cannot use `new` in `@nogc` %s `%s`"))
             return;
         f.printGCUsage(e.loc, "`new` causes a GC allocation");
@@ -217,6 +217,9 @@ public:
 Expression checkGC(Scope* sc, Expression e)
 {
     if (sc.flags & SCOPE.ctfeBlock)     // ignore GC in ctfe blocks
+        return e;
+
+    if (e.ctfe)
         return e;
 
     /* If betterC, allow GC to happen in non-CTFE code.

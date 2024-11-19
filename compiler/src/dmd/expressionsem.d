@@ -2899,9 +2899,27 @@ private bool functionParameters(const ref Loc loc, Scope* sc,
                 arg = p.defaultArg;
                 if (!arg.type)
                     arg = arg.expressionSemantic(sc);
+
+                if (auto efd = sc.getEnclosingFunction()) {
+                    TypeFunction etf = efd.type.toTypeFunction();
+                    if (etf && etf.isnogc) {
+                        if (auto ce = arg.isCallExp()) {
+                            if (TypeFunction atf = ce.f.type.toTypeFunction()) {
+                                // Both conditions works
+                                if (!atf.isnogc) {
+                                    // if (!ce.f.setGC(arg.loc, "`@nogc` %s `%s` cannot call non-@nogc")) {
+                                    error(loc, "`@nogc` `%s`  cannot call `%s` with non-@nogc argument `%s`", efd.toChars(), tf.toChars(), arg.toChars());
+                                    return true;
+                                }
+                                }
+                            }
+                        }
+                    }
+
                 arg = inlineCopy(arg, sc);
                 // __FILE__, __LINE__, __MODULE__, __FUNCTION__, and __PRETTY_FUNCTION__
                 arg = arg.resolveLoc(loc, sc);
+
                 if (i >= nargs)
                 {
                     arguments.push(arg);
@@ -14190,7 +14208,13 @@ extern (C++) Expression expressionSemantic(Expression e, Scope* sc)
 {
     scope v = new ExpressionSemanticVisitor(sc);
     e.accept(v);
-    return v.result;
+
+    auto res = v.result;
+
+    if(sc && (sc.flags & SCOPE.ctfeBlock))
+        e.ctfe = true;
+
+    return res;
 }
 
 private Expression dotIdSemanticPropX(DotIdExp exp, Scope* sc)

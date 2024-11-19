@@ -348,6 +348,8 @@ extern (C++) /* IN_LLVM abstract */ class Expression : ASTNode
     Loc loc;        // file location
     const EXP op;   // to minimize use of dynamic_cast
 
+    bool ctfe = false; // TODO: bake this byte flag or move to relevant Expressions
+
     extern (D) this(const ref Loc loc, EXP op) scope @safe
     {
         //printf("Expression::Expression(op = %d) this = %p\n", op, this);
