@@ -7121,6 +7121,12 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 s = new TupleDeclaration(e.loc, e.id, &tup.objects);
             else
                 s = new AliasDeclaration(e.loc, e.id, tded);
+
+            // NOTE(mojo): If we are in CTFE context, I assume static if and add STC.local
+            if (sc.flags & SCOPE.ctfe) if (auto decl = s.isDeclaration()) {
+                decl.storage_class |= STC.local;
+            }
+
             s.dsymbolSemantic(sc);
 
             /* The reason for the !tup is unclear. It fails Phobos unittests if it is not there.
