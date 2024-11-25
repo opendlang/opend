@@ -1093,7 +1093,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         {
             if (dsym.storage_class & (STC.static_ | STC.extern_ | STC.gshared | STC.manifest | STC.field) || dsym.isDataseg())
             {
-                .error(dsym.loc, "%s `%s` - only parameters or stack-based variables can be `inout`", dsym.kind, dsym.toPrettyChars);
+                //.error(dsym.loc, "%s `%s` - only parameters or stack-based variables can be `inout`", dsym.kind, dsym.toPrettyChars);
             }
             FuncDeclaration func = sc.func;
             if (func)
@@ -1111,7 +1111,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
                 }
                 if (!isWild)
                 {
-                    .error(dsym.loc, "%s `%s` - `inout` variables can only be declared inside `inout` functions", dsym.kind, dsym.toPrettyChars);
+                    //.error(dsym.loc, "%s `%s` - `inout` variables can only be declared inside `inout` functions", dsym.kind, dsym.toPrettyChars);
                 }
             }
         }
