@@ -983,6 +983,8 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             return loopReturn(e, fs.cases, loc);
         }
 
+        ulong maxForIndex;
+
         switch (tab.ty)
         {
         case Tarray:
@@ -1033,6 +1035,11 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                                 err = ale.elements.length > maxLen;
                             else if (auto se = fs.aggr.isSliceExp())
                                 err = !(se.upr && se.upr.isConst() && se.upr.toInteger() <= maxLen);
+
+                            if(err) {
+                                maxForIndex = maxLen;
+                                err = false; // we'll check it at runtime below w/ an assert
+                            }
                         }
                         if (err)
                             deprecation(fs.loc, "foreach: loop index implicitly converted from `size_t` to `%s`",
@@ -1182,6 +1189,14 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     cs.push(new ExpStatement(loc, vinit));
                 cs.push(new ExpStatement(loc, tmp));
                 cs.push(new ExpStatement(loc, fs.key));
+
+                if(maxForIndex) {
+                    cs.push(new ExpStatement(loc, new AssertExp(loc,
+                        new CmpExp(EXP.lessThan, loc, new DotIdExp(loc, new VarExp(loc, tmp), Id.length), new IntegerExp(loc, maxForIndex, Type.tsize_t)),
+                        new StringExp(loc, "Array too large for index type")
+                    )));
+                }
+
                 Statement forinit = new CompoundDeclarationStatement(loc, cs);
 
                 Expression cond;
