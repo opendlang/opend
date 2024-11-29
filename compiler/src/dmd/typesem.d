@@ -630,7 +630,7 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
                 if (auto ad = isAggregate(p.type))
                 if (ad.hasImplicitConstructor()) {
 
-	            static int recursionCount;
+	            __gshared static int recursionCount;
 
                     recursionCount++;
                     scope(exit) recursionCount--;
