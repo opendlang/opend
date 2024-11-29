@@ -67,6 +67,7 @@ import dmd.semantic3;
 import dmd.sideeffect;
 import dmd.target;
 import dmd.tokens;
+	            __gshared int recursionCount;
 
 /*************************************
  * Resolve a tuple index, `s[oindex]`, by figuring out what `s[oindex]` represents.
@@ -629,8 +630,6 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
 
                 if (auto ad = isAggregate(p.type))
                 if (ad.hasImplicitConstructor()) {
-
-	            __gshared static int recursionCount;
 
                     recursionCount++;
                     scope(exit) recursionCount--;
