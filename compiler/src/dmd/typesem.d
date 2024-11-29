@@ -67,7 +67,6 @@ import dmd.semantic3;
 import dmd.sideeffect;
 import dmd.target;
 import dmd.tokens;
-	            __gshared int recursionCount;
 
 /*************************************
  * Resolve a tuple index, `s[oindex]`, by figuring out what `s[oindex]` represents.
@@ -630,6 +629,8 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
 
                 if (auto ad = isAggregate(p.type))
                 if (ad.hasImplicitConstructor()) {
+
+	            __gshared static int recursionCount; // FIXME: the gshared is cuz of a random error on macos x86_64 build of dmd on the ci idk why it wont let the tls thing happen but this whole thing is a hack anyway so meh
 
                     recursionCount++;
                     scope(exit) recursionCount--;
