@@ -1,4 +1,4 @@
-module d.container.ringarray;
+module odc.container.ringarray;
 
 enum string defaultoverflow="assert(false,
     q{how a ring array overflows should probaly be userdefined, consider ring!(T,true,64,donothing)});";
