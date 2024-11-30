@@ -24,10 +24,15 @@ inputs:
 runs:
   using: composite
   steps:
-    - if: inputs.build_dmd == 'true' && runner.os != 'Windows'
+    - if: inputs.build_dmd == 'true' && runner.os != 'Windows' && runner.os != 'macOS'
       shell: bash
       run: |
         make HOST_DMD=${{ inputs.host_dc }} ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
+
+    - if: inputs.build_dmd == 'true' && runner.os == 'macOS'
+      shell: bash
+      run: |
+        make HOST_DMD=${{ inputs.host_dc }} ENABLE_RELEASE=1 ENABLE_LTO=0 dmd druntime phobos
 
     - if: inputs.build_dmd == 'true' && runner.os == 'Windows'
       shell: cmd
