@@ -7,22 +7,29 @@ config flags? nah, just edit the code if you dislike the behavor
 whats size_t? no int everywhere
 
 api target:
-	~= //todo mojo in thoery wants bool returns
+	~= // mojo in thoery wants bool returns CONSIDER: saying no
 	+=
-	.reset
-	[].map
-	.remove(delete is taken)
-	.last
+	.reset //delete everything
+	[].map //opSlice returns a phoboes sorta compadable range
+	.remove(delete is taken) //NOTE: remove(void) and removefast() *may* be defined if applicable, but no promises
+	CONSIDER:.last, maybe to redudent with opIndex[lastindex]
 	.lastindex (typeof(lastindex) being important)
-	CONSIDER: mojo says he defines isEmpty and IsFull(I dont see these as generic tho, is 2darray suppose to scan for zeros?)
-	.isstatic
-	
+	.isstatic (enum)
 */
+
 module odc.datastructures;
 
 /* RANT: fail-safe vs fail-dangerous
 
-todo
+consider the door of a neclear code safe and a grocery store door, each are doors, each may get a tilt sensor, consider a `class door` and you wanted to assume a `bool isTilted` in the interface; after an earthquake the grocey store may design its doors to auto open, while the neclear safe may burn its contents
+
+how would you impliment a `runsafetycheck(Door d){ if(isTilted){...}` do you run `d.burnitall` or `d.open`?
+
+Would you want a neclear safe that opens its door when tilted on the side or a grocecy store to burst into flames when theres a mild earthquake? Or would you grant that these are different safety profiles with common sense dictating different meanings of safe.
+
+Different usecases should make bipolar safety tradeoffs, and you dont really want to mix the two.
+
+all my data structures will be start-off as "fail-safe" in the real sense of the word, if theres need for adding options later we can talk about that api design for communicating the tradeoffs in template hell code, all at once, not case by case. Maybe an magic enum, maybe a compiler flag?
 */
 //copied from `belongsinstd` see that for rants, TODO: merge something and import that
 template innate(T,T startingvalue=T.init,discrimination...){
@@ -40,6 +47,7 @@ unittest{
 	assert(10.clamp(0,5)==5);
 }
 //copied from min viable std TODO: belongs elsewhere
+alias seq(T...)=T;
 auto tuple(T...)(T args){
 	struct Tuple{
 		enum istuple=true;
@@ -76,8 +84,11 @@ struct maxlengtharray(T,int N){
 	T[N] data;
 	int length;
 	alias opDollar=length;
+	int lastindex()=>length-1;
+	enum isstatic=false;
 	ref opIndex(int i)=>data[i.clamp(0,$-1)];
 	void opOpAssign(string op:"~")(T a){
+		if(length>=10){return;}
 		data[length++]=a;
 	}
 	/*CONSIDER: by abstracting this im changing the behavoir to not react when you append 
@@ -100,6 +111,7 @@ hacks; would it be possible to make simple range know?*/
 		foreach(j;i..length--){
 			data[j]=data[j+1];
 	}}
+	void remove(){length--;}
 	void removefast(int i){//swaping changes the order and is therefore less correct, meta-programming vs you know what your doing tradeoff //TODO test
 		data[i]=data[$-1];
 		length--;
@@ -107,13 +119,14 @@ hacks; would it be possible to make simple range know?*/
 }
 struct set(T){
 	typeof(null)[T] data;
+	enum isstatic=false;
+	T lastindex;
 	void opOpAssign(string op:"~")(T a){
 		data[a]=null;
+		lastindex=a;
 	}
 	bool opIndex(T a)=>(a in data)!is null;
 	void opIndexAssign(T a,T b){
-		//import std;
-		//writeln(a," ",b);
 		remove(b);
 		this~=a;
 	}
@@ -125,7 +138,14 @@ struct set(T){
 		data.remove(a);
 	}
 	void reset(){data=null;}
-	auto opSlice()=>data.byKey;//TODO: make work with .key
+	auto opSlice(){
+		struct range{//CONSIDER: is this a bad place for an alias this hack?
+			typeof(data.byKey) data_;
+			alias data_ this;
+			auto key()=>data_.front; 
+		}
+		return range(data.byKey);
+	}
 }
 
 /* RANT:
@@ -151,6 +171,9 @@ I would not upgrade this to an nd array unless like 3 poeple say they want one t
 */
 struct array2d(T,int W,int H){
 	T[W*H] data;
+	enum isstatic=true;
+	int lastindex_;
+	auto lastindex()=>tuple!(int,int)(lastindex_%W,lastindex_/W);
 	ref opIndex(int i,int j)=>data[i%W+j*W];
 	ref opIndex(int i)=>data[i];
 	ref opIndex(T)(T i)if(T.istuple)=>this[i.expand];
@@ -165,21 +188,23 @@ struct array2d(T,int W,int H){
 			e=T.init;
 	}}
 	void remove(I)(I args){this[args]=T.init;}//unnessery but I want a delete api
-	auto opSlice(){//TODO: make the 2d slice api
+	auto opIndex(int x1,int y1,int x2,int y2){//TODO: test
 		struct range{
 			array2d!(T,W,H)* parent;
+			int x1/*,y1*/,x2,y2;
 			int x,y;
 			auto key()=>tuple(x,y);
 			ref front()=>(*parent)[x,y];
 			void popFront(){
-				if(++x>=W){
-					x-=W;
+				if(++x>=x2){
+					x=x1;
 					y++;
 			}}
-			bool empty()=>y>=H;
+			bool empty()=>y>=y2;
 		}
-		return range(&this);
+		return range(&this,x1,x2,y2,x1,y1);
 	}
+	auto opSlice()=>this[0,0,W,H];
 }
 //unittest{
 //	array2d!(int,3,5) foo;
@@ -195,8 +220,10 @@ struct array2d(T,int W,int H){
 struct ringarray(T,int N){//note: spelling cuircluar hard
 	T[N] data;
 	int start,end;
+	enum isstatic=false;
+	auto lastindex()=>end-1;
 	void opOpAssign(string op:"~")(T a){
-		data[end++]=a;
+		this[end++]=a;
 		if(start>=N&&end>N){
 			start-=N;end-=N;
 		}
@@ -240,6 +267,8 @@ struct stack(T,int N=-1){
 		void remove(int i)=>data.remove(length-i-1);
 		void reset()=>data.reset;
 	}
+	enum isstatic=false;
+	auto lastindex()=>cast(int)data.length-1;
 	void opOpAssign(string op:"~")(T a){
 		data~=a;
 	}
@@ -344,7 +373,58 @@ void test3(D)(){
 	}
 	foo.printkeys;
 }
-
+void test4(D)(){
+	D foo;
+	static if(D.isstatic){
+		foo[foo.lastindex]=2;
+	} else {
+		foo~=2;
+	}
+	foo[foo.lastindex]+=3;
+	static if(is(typeof(foo[foo.lastindex])==int)){//i.e. not a set
+		assert(foo[foo.lastindex]==5);
+	} else {
+		assert(foo[foo.lastindex]==true);
+	}
+}
+void test5(D)(){
+	static if( ! D.isstatic){
+		D foo;
+		import std;
+		foreach(i;iota(1000)){
+			foo~=i;
+		}
+	}
+}
+void test6(D)(){
+	import std;
+	D foo;
+	//typeof(foo.lastindex) i;
+	auto i=foo.lastindex;
+	//typeof((){return foo.lastindex;}()) i=foo.lastindex;
+	static if(D.isstatic){
+		auto r=foo[];
+		foreach(e;iota(5)){
+			foo[r.key]=e;
+			if(e==3){
+				i=r.key;
+			}
+			r.popFront;
+		}
+	} else {
+		foreach(e;iota(5)){
+			foo~=e;
+		}
+		auto r=foo[];
+		while(r.front!=3){
+			r.popFront;
+		}
+		i=r.key;
+	}
+	assert(foo.reduce!("a+b")==10);
+	foo.remove(i);
+	assert(foo.reduce!("a+b")==7);
+}
 unittest{
 	alias mla=maxlengtharray!(int,10);
 	alias s=set!int;
@@ -352,22 +432,69 @@ unittest{
 	alias r=ringarray!(int,10);
 	alias k=stack!(int,10);
 	alias c=stack!int;
-	test1!mla;
-	//test1!s;
-	//test1!d;
-	//test1!r;
-	test1!k;
-	test1!c;
-	test2!mla;
-	//test2!s;
-	//test2!d;
-	//test2!r;
-	test2!k;
-	test2!c;
-	test3!mla;
-	////test3!s;//doesnt work yet
-	//test3!d;
-	//test3!r;
-	test3!k;//NOTE: incoherent test for stacks due to reverse order of removal; CONSIDER: api for bulk removal by key?
-	test3!c;
+	//test1!mla;
+	////test1!s;
+	////test1!d;
+	////test1!r;
+	//test1!k;
+	//test1!c;
+	//test2!mla;
+	////test2!s;
+	////test2!d;
+	////test2!r;
+	//test2!k;
+	//test2!c;
+	//test3!mla;
+	//////test3!s;//doesnt work yet
+	////test3!d;
+	////test3!r;
+	//test3!k;//NOTE: incoherent test for stacks due to reverse order of removal; CONSIDER: api for bulk removal by key?
+	//test3!c;
+	
+	//NOTE: tests 1-3 print or have spooky templates effects, test 4 is where I swap to more pure tests
+	
+	enum numtest=6;
+	enum numdata=6;//for adding tests 1 data structure at a time
+	
+	static foreach(I;4..numtest+1){
+	static foreach(D;seq!(mla,s,d,r,k,c)[0..numdata]){
+		mixin("test"~I.stringof~"!(D);");
+	}}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//oh no 500 lines of code, better call it quits and submit
