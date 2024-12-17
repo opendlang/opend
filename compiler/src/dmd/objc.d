@@ -111,7 +111,7 @@ struct ObjcSelector
         const nparams = ftype.parameterList.length;
 
         // Special case: property setter
-        if (ftype.isProperty && nparams == 1)
+        if (ftype.isproperty && nparams == 1)
         {
 
             // Special case: "isXYZ:"
