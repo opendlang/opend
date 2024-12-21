@@ -69,6 +69,11 @@ auto maybetuple(T...)(T a){
 	} else {
 		return tuple(a);
 }}
+enum istuple(T)=is(typeof(T.istuple));
+unittest{
+	assert(istuple!(typeof(tuple(1,2)))==true);
+	assert(istuple!int==false);
+}
 struct simplerange(D){
 	D* data;
 	int key;
@@ -174,9 +179,9 @@ struct array2d(T,int W,int H){
 	enum isstatic=true;
 	int lastindex_;
 	auto lastindex()=>tuple!(int,int)(lastindex_%W,lastindex_/W);
-	ref opIndex(int i,int j)=>data[i%W+j*W];
-	ref opIndex(int i)=>data[i];
-	ref opIndex(T)(T i)if(T.istuple)=>this[i.expand];
+	ref opIndex(int i,int j)=>data[clamp(i,0,W-1)+clamp(j,0,H-1)*W];
+	ref opIndex(int i)=>data[clamp(i,0,$-1)];
+	ref opIndex(T)(T i)if(istuple!T)=>this[i.expand];
 	deprecated("WARN: ~= on a static datastructure is incoherent, the behavoir here is hacky and its only by luck if it works as expected")
 	void opOpAssign(string op:"~")(T a){//TODO: bug adr about pargma(warn)
 		data[innate!(int,0,array2d!(T,W,H))++]=a;
@@ -206,16 +211,19 @@ struct array2d(T,int W,int H){
 	}
 	auto opSlice()=>this[0,0,W,H];
 }
-//unittest{
-//	array2d!(int,3,5) foo;
-//	foo[0,0]=10;
-//	foo[1,0]=1;
-//	foo[0,1]=5;
-//	foo[2,4]=9;
-//	foo~=1;
-//	import std;
-//	foo.printkeys;
-//}
+unittest{
+	array2d!(int,3,5) foo;
+	foo[0,0]=10;
+	foo[1,0]=1;
+	foo[0,1]=5;
+	foo[2,4]=9;
+	assert(foo[-1,0]==10);
+	foo[10,10]=3;
+	foo[0,-1000]=5;
+	foo[100000]=100;
+	//import std;
+	//foo[1000].writeln;
+}
 
 struct ringarray(T,int N){//note: spelling cuircluar hard
 	T[N] data;
@@ -250,6 +258,7 @@ struct ringarray(T,int N){//note: spelling cuircluar hard
 	}
 	int length()=>end-start;
 }
+
 //TODO: stress test ring array after bursting and several random writes and deletions
 
 struct stack(T,int N=-1){
