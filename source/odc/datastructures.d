@@ -48,12 +48,12 @@ unittest{
 }
 //copied from min viable std TODO: belongs elsewhere
 alias seq(T...)=T;
+struct Tuple(T...){
+	enum istuple=true;
+	T expand; alias expand this;
+}
 auto tuple(T...)(T args){
-	struct Tuple{
-		enum istuple=true;
-		T expand; alias expand this;
-	}
-	return Tuple(args);
+	return Tuple!T(args);
 }
 unittest{
 	auto foo=tuple(1,"hi");
@@ -93,7 +93,7 @@ struct maxlengtharray(T,int N){
 	enum isstatic=false;
 	ref opIndex(int i)=>data[i.clamp(0,$-1)];
 	void opOpAssign(string op:"~")(T a){
-		if(length>=10){return;}
+		if(length>=N){return;}
 		data[length++]=a;
 	}
 	/*CONSIDER: by abstracting this im changing the behavoir to not react when you append 
@@ -117,11 +117,22 @@ hacks; would it be possible to make simple range know?*/
 			data[j]=data[j+1];
 	}}
 	void remove(){length--;}
-	void removefast(int i){//swaping changes the order and is therefore less correct, meta-programming vs you know what your doing tradeoff //TODO test
-		data[i]=data[$-1];
+	void removefast(int i){//swaping changes the order and is therefore less correct, meta-programming vs you know what your doing tradeoff
+		this[i]=this[$-1];
 		length--;
 	}
 }
+//unittest{//TODO formalize
+//	import std;
+//	maxlengtharray!(int,5) foo;
+//	foo~=1;
+//	foo~=2;
+//	foo~=3;
+//	foo~=4;
+//	foo[].writeln;
+//	foo.removefast(1);
+//	foo[].writeln;
+//}
 struct set(T){
 	typeof(null)[T] data;
 	enum isstatic=false;
@@ -245,7 +256,6 @@ struct ringarray(T,int N){//note: spelling cuircluar hard
 			return;
 		}
 		if(end-start>N){assert(0,"not yet implimented");}
-		//CONSIDER: do I care to make this decide between which direction it slides? O(N) vs O(N/2)?
 		foreach(j;i..length-1){
 			this[j]=this[j+1];
 		}
@@ -470,40 +480,3 @@ unittest{
 		mixin("test"~I.stringof~"!(D);");
 	}}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//oh no 500 lines of code, better call it quits and submit
