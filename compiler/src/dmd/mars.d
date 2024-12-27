@@ -1909,7 +1909,7 @@ version (IN_LLVM) {} else
 
     /* Deduce what to do with a file based on its extension
         */
-    if (FileName.equals(ext, target.obj_ext))
+    if (FileName.equals(ext, "obj") || FileName.equals(ext, "o"))
     {
         global.params.objfiles.push(file);
         libmodules.push(file);
