@@ -53,7 +53,7 @@
     deserializeJSONFromString!Foo("{}"); // Error
     ---
 +/
-module d.serialization.json;
+module odc.serialization.json;
 
 import std.traits;
 import std.conv : to;

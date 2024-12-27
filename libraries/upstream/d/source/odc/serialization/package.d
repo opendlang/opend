@@ -89,7 +89,7 @@
     Please refer to the provided JSON serialization module for a comprehensive example!
 +/
 
-module d.serialization;
+module odc.serialization;
 
 import std.meta : Filter, AliasSeq;
 import std.traits;
