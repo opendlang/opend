@@ -37,10 +37,11 @@ struct Commands {
 	/// Does a debug build and immediately runs the program
 	int run(string[] args) {
 		import std.stdio, std.string;
-		if(args.length == 0)
+		if(args.length == 0) {
 			foreach(memberName; __traits(allMembers, Commands))
 				writeln(memberName, "\n\t", strip(__traits(docComment, __traits(getMember, Commands, memberName))));
 			return 1;
+		}
 		if(auto err = build(args))
 			return err;
 
@@ -49,7 +50,6 @@ struct Commands {
 		return spawnProcess([oe.exe] ~ oe.args, [
 			"LD_LIBRARY_PATH": getRuntimeLibPath()
 		]).wait;
-		return 0;
 	}
 
 	/// Builds the code and runs its unittests
