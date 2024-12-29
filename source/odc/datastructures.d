@@ -295,6 +295,30 @@ struct stack(T,int N=-1){
 	ref opIndex(int i)=>data[$-i-1];
 	auto opSlice()=>simplerange!(typeof(this))(&this,0,length);
 }
+struct queue(T,int N=-1){
+	static if(N==-1){
+		T[] data;
+		void remove(int i){
+			foreach_reverse(j;i..data.length-1){
+				this[cast(int)j]=this[cast(int)j+1];
+			}
+			data=data[0..$-1];
+		}
+		void reset(){data=[];}
+	} else {
+		maxlengtharray!(T,N) data;
+		void remove(int i)=>data.remove(i);
+		void reset()=>data.reset;
+	}
+		enum isstatic=false;
+	auto lastindex()=>cast(int)data.length-1;
+	void opOpAssign(string op:"~")(T a){
+		data~=a;
+	}
+	auto length()=>cast(int)data.length;
+	ref opIndex(int i)=>data[i];
+	auto opSlice()=>simplerange!(typeof(this))(&this,0,length);
+}
 //--- lazy temp-ish functions
 void print(D)(D data){
 	import std;
@@ -451,6 +475,8 @@ unittest{
 	alias r=ringarray!(int,10);
 	alias k=stack!(int,10);
 	alias c=stack!int;
+	alias q=queue!(int,10);
+	alias que=queue!int;
 	//test1!mla;
 	////test1!s;
 	////test1!d;
@@ -473,10 +499,10 @@ unittest{
 	//NOTE: tests 1-3 print or have spooky templates effects, test 4 is where I swap to more pure tests
 	
 	enum numtest=6;
-	enum numdata=6;//for adding tests 1 data structure at a time
+	enum numdata=8;//for adding tests 1 data structure at a time
 	
 	static foreach(I;4..numtest+1){
-	static foreach(D;seq!(mla,s,d,r,k,c)[0..numdata]){
+	static foreach(D;seq!(mla,s,d,r,k,c,q,que)[0..numdata]){
 		mixin("test"~I.stringof~"!(D);");
 	}}
 }
