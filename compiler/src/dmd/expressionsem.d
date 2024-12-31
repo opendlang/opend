@@ -7439,6 +7439,13 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                     m = tp.matchArg(e.loc, sc, &tiargs, i, e.parameters, &dedtypes, &s);
                     if (m == MATCH.nomatch)
                         return no();
+
+                    // NOTE(mojo+adr): If we are in CTFE context, I assume static if and add STC.local, same as above, but this
+                    // for the is(foo == bar!x, string x) case
+                    if (sc.flags & SCOPE.ctfe) if (auto decl = s.isDeclaration()) {
+                        decl.storage_class |= STC.local;
+                    }
+
                     s.dsymbolSemantic(sc);
                     if (!sc.insert(s))
                     {
