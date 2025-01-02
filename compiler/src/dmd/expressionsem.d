@@ -14683,7 +14683,7 @@ Expression dotIdSemanticProp(DotIdExp exp, Scope* sc, bool gag)
 
         const flag = cast(DotExpFlag) (exp.noderef * DotExpFlag.noDeref | gag * DotExpFlag.gag);
 
-        Expression e = exp.e1.type.dotExp(sc, exp.e1, exp.ident, flag);
+        Expression e = dotExp(exp.e1.type, sc, exp.e1, exp.ident, flag);
         if (e)
         {
             e = e.expressionSemantic(sc);
