@@ -54,12 +54,12 @@ struct Commands {
 
 	/// Builds the code and runs its unittests
 	int test(string[] args) {
-		return run(["-unittest", "-main"] ~ args);
+		return run(["-unittest", "-main", "-checkaction=context"] ~ args);
 	}
 
-	/// Builds the code and runs unittests but only for files explicitly listed
+	/// Builds the code and runs unittests but only for files explicitly listed, not auto-imported files
 	int testOnly(string[] args) {
-		return run(["-unittest=explicit", "-main"] ~ args);
+		return run(["-unittest=explicit", "-main", "-checkaction=context"] ~ args);
 	}
 
 	/// Performs quick syntax and semantic tests, without performing code generation
