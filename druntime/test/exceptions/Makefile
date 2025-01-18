@@ -37,6 +37,35 @@ GDB:=gdb
 
 .PHONY: all clean
 all: $(addprefix $(ROOT)/,$(addsuffix .done,$(TESTS)))
+ifeq ($(OS),linux)
+    TESTS+=line_trace line_trace_21656 long_backtrace_trunc rt_trap_exceptions cpp_demangle \
+		   memoryerror_null_read memoryerror_null_write memoryerror_null_call memoryerror_stackoverflow
+    line_trace_dflags:=-L--export-dynamic
+endif
+
+ifeq ($(OS),linux)
+# Only add this test if gdb is available.
+    ifneq (,$(shell which $(GDB) > /dev/null 2>&1 && echo 1))
+	TESTS+=rt_trap_exceptions_drt_gdb
+    endif
+endif
+
+ifeq ($(OS),freebsd)
+    TESTS+=line_trace line_trace_21656 long_backtrace_trunc cpp_demangle
+    line_trace_dflags:=-L--export-dynamic
+endif
+ifeq ($(OS),dragonflybsd)
+    TESTS+=line_trace line_trace_21656 long_backtrace_trunc cpp_demangle
+    line_trace_dflags:=-L--export-dynamic
+endif
+ifeq ($(OS),osx)
+    TESTS+=line_trace line_trace_21656 cpp_demangle
+    line_trace_dflags:=
+endif
+ifeq ($(OS)-$(BUILD),windows-debug)
+    TESTS+=winstack
+endif
+include ../common.mak
 
 $(ROOT)/line_trace.done: $(ROOT)/line_trace$(DOTEXE)
 	@echo Testing line_trace
@@ -75,20 +104,24 @@ $(ROOT)/winstack.done: $(ROOT)/winstack$(DOTEXE)
 	$(QUIET)$(TIMELIMIT)$(ROOT)/winstack $(RUN_ARGS)
 	@touch $@
 
-$(ROOT)/stderr_msg.done: STDERR_EXP="stderr_msg msg"
-$(ROOT)/unittest_assert.done: STDERR_EXP="unittest_assert msg"
-$(ROOT)/invalid_memory_operation.done: STDERR_EXP="InvalidMemoryOperationError"
-$(ROOT)/unknown_gc.done: STDERR_EXP="'unknowngc'"
-$(ROOT)/static_dtor.done: STDERR_EXP="dtor_called_more_than_once"
-$(ROOT)/static_dtor.done: NEGATE=!
-$(ROOT)/future_message.done: STDERR_EXP="exception I have a custom message. exception exception "
-$(ROOT)/catch_in_finally.done: STDERR_EXP="success."
-$(ROOT)/rt_trap_exceptions.done: STDERR_EXP="object.Exception@src/rt_trap_exceptions.d(12): this will abort"
-$(ROOT)/rt_trap_exceptions.done: STDERR_EXP2="src/rt_trap_exceptions.d:8 main"
-$(ROOT)/assert_fail.done: STDERR_EXP="success."
-$(ROOT)/cpp_demangle.done: STDERR_EXP="thrower(int)"
-
-$(ROOT)/message_with_null.done: STDERR_EXP=" world"
+$(ROOT)/stderr_msg.done: stderr_exp="stderr_msg msg"
+$(ROOT)/unittest_assert.done: stderr_exp="unittest_assert msg"
+$(ROOT)/invalid_memory_operation.done: stderr_exp="InvalidMemoryOperationError"
+$(ROOT)/unknown_gc.done: stderr_exp="'unknowngc'"
+$(ROOT)/static_dtor.done: stderr_exp="dtor_called_more_than_once"
+$(ROOT)/static_dtor.done: private negate=!
+$(ROOT)/future_message.done: stderr_exp="exception I have a custom message. exception exception "
+$(ROOT)/catch_in_finally.done: stderr_exp="success."
+$(ROOT)/rt_trap_exceptions.done: stderr_exp="object.Exception@src/rt_trap_exceptions.d(12): this will abort"
+$(ROOT)/rt_trap_exceptions.done: stderr_exp2="src/rt_trap_exceptions.d:8 main"
+$(ROOT)/assert_fail.done: stderr_exp="success."
+$(ROOT)/cpp_demangle.done: stderr_exp="thrower(int)"
+$(ROOT)/message_with_null.done: stderr_exp=" world"
+$(ROOT)/memoryerror_null_read.done: stderr_exp="segmentation fault: null pointer read/write operation"
+$(ROOT)/memoryerror_null_write.done: stderr_exp="segmentation fault: null pointer read/write operation"
+$(ROOT)/memoryerror_null_call.done: stderr_exp="segmentation fault: null pointer read/write operation"
+$(ROOT)/memoryerror_null_call.done: stderr_exp2="uncaught exception reached top of stack"
+$(ROOT)/memoryerror_stackoverflow.done: stderr_exp="segmentation fault: call stack overflow"
 
 $(ROOT)/%.done: $(ROOT)/%$(DOTEXE)
 	@echo Testing $*
