@@ -1387,6 +1387,7 @@ private bool entryPointFunctions(Obj objmod, FuncDeclaration fd)
                 break;
             case Target.ObjectFormat.coff:
                 objmod.external_def("main");
+                objmod.includelib("OLDNAMES");
                 break;
             case Target.ObjectFormat.omf:
                 objmod.external_def("_main");
