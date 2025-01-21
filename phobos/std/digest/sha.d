@@ -101,6 +101,10 @@ module std.digest.sha;
     hash1 = sha1.finish();
 }
 
+version(LDC) {
+	// we took in a LDC patch that broke the asm on dmd
+	// so just not gonna use it except on ldc
+
 version (D_InlineAsm_X86)
 {
     version (D_PIC) {} // https://issues.dlang.org/show_bug.cgi?id=9378
@@ -109,6 +113,8 @@ version (D_InlineAsm_X86)
 else version (D_InlineAsm_X86_64)
 {
     private version = USE_SSSE3;
+}
+
 }
 
 import core.bitop;
