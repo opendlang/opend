@@ -3,6 +3,8 @@ import std.file;
 
 // FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
 
+// FIXME: tell people to install xpack if not already done when then use --target
+
 int main(string[] args) {
 	// maybe override the normal config files
 	// --opend-config-file
@@ -388,7 +390,13 @@ struct OutputExecutable {
 OutputExecutable getOutputExecutable(string[] args) {
 	// FIXME: make sure we have the actual output name here... maybe should ask the compiler itself
 	size_t splitter = args.length;
+	string first;
 	string name;
+	string extension;
+	bool nameExplicitlyGiven = false;
+	version(Windows)
+		extension = ".exe";
+
 	foreach(idx, arg; args) {
 		if(arg == "--") {
 			splitter = idx + 1;
@@ -397,15 +405,35 @@ OutputExecutable getOutputExecutable(string[] args) {
 		if(arg.length > 1 && arg[0] == '-') {
 			if(arg.length > 3 && arg[0 .. 3] == "-of") {
 				name = arg[3 .. $];
+				extension = null;
+				nameExplicitlyGiven = true;
 				break;
+			}
+			if(arg == "-lib") {
+				version(Windows)
+					extension = ".lib";
+				else
+					extension = ".a";
+			}
+			if(arg == "-shared") {
+				version(Windows)
+					extension = ".dll";
+				else version(OSX)
+					extension = ".dylib";
+				else
+					extension = ".so";
 			}
 			continue;
 		} else {
 			import std.path;
-			name = arg.stripExtension;
-			break;
+			if(first is null) {
+				first = arg.stripExtension;
+			}
 		}
 	}
+
+	if(!nameExplicitlyGiven)
+		name ~= extension;
 
 	import std.path;
 	return OutputExecutable(buildPath(".", name), args[splitter .. $]);

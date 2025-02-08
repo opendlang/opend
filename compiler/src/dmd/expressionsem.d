@@ -10687,7 +10687,7 @@ version (IN_LLVM)
                         import dmd.root.speller : speller;
                         if (auto s = speller!findParameter(dve1.var.ident.toString))
                         {
-                            deprecationSupplemental(sc.func.loc, "did you mean to use parameter `%.*s`?\n", cast(int) s.length, s.ptr);
+                            deprecationSupplemental(sc.func.loc, "did you mean to use parameter `%.*s`?\n", cast(int) s.length, s.ptr);//.fTuple.expand);
                         }
                     }
 

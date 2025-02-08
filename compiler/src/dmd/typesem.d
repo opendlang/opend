@@ -1968,6 +1968,8 @@ extern(C++) Type typeSemantic(Type type, const ref Loc loc, Scope* sc)
                         }
                         else
                         {
+				// FIXME: undo deprecation
+
                             // Note that this deprecation will not trigger on `in ref` / `ref in`
                             // parameters, however the parser will trigger a deprecation on them.
                             .deprecation(loc, "using `in` parameters with `extern(%s)` functions is deprecated",

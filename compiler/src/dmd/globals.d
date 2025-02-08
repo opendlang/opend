@@ -233,9 +233,9 @@ extern (C++) struct Param
     FeatureState useDIP1000;     // implement https://dlang.org/spec/memory-safe-d.html#scope-return-params
     bool ehnogc;                 // use @nogc exception handling
     bool useDIP1021;             // implement https://github.com/dlang/DIPs/blob/master/DIPs/accepted/DIP1021.md
-    FeatureState fieldwise;      // do struct equality testing field-wise rather than by memcmp()
-    bool fixAliasThis;           // if the current scope has an alias this, check it before searching upper scopes
-    FeatureState rvalueRefParam; // allow rvalues to be arguments to ref parameters
+    FeatureState fieldwise = FeatureState.enabled;      // do struct equality testing field-wise rather than by memcmp()
+    bool fixAliasThis = true;           // if the current scope has an alias this, check it before searching upper scopes
+    FeatureState rvalueRefParam = FeatureState.enabled; // allow rvalues to be arguments to ref parameters
                                  // https://dconf.org/2019/talks/alexandrescu.html
                                  // https://gist.github.com/andralex/e5405a5d773f07f73196c05f8339435a
                                  // https://digitalmars.com/d/archives/digitalmars/D/Binding_rvalues_to_ref_parameters_redux_325087.html
@@ -244,7 +244,7 @@ extern (C++) struct Param
     bool previewIn;              // `in` means `[ref] scope const`, accepts rvalues
     bool inclusiveInContracts;   // 'in' contracts of overridden methods must be a superset of parent contract
     bool shortenedMethods = true;       // allow => in normal function declarations
-    bool fixImmutableConv;       // error on unsound immutable conversion - https://github.com/dlang/dmd/pull/14070
+    bool fixImmutableConv = true;       // error on unsound immutable conversion - https://github.com/dlang/dmd/pull/14070
     bool fix16997 = true;        // fix integral promotions for unary + - ~ operators
                                  // https://issues.dlang.org/show_bug.cgi?id=16997
     FeatureState dtorFields;     // destruct fields of partially constructed objects
