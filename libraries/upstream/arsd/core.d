@@ -271,6 +271,71 @@ auto ref T castTo(T, S)(auto ref S v) {
 ///
 alias typeCast = castTo;
 
+/++
+	Treats the memory of one variable as if it is the type of another variable.
+
+	History:
+		Added January 20, 2025
++/
+ref T reinterpretCast(T, V)(return ref V value) @system {
+	return *cast(T*)& value;
+}
+
+/++
+	Does math as a 64 bit number, but saturates at int.min and int.max when converting back to a 32 bit int.
+
+	History:
+		Added January 1, 2025
++/
+alias NonOverflowingInt = NonOverflowingIntBase!(int.min, int.max);
+
+/// ditto
+alias NonOverflowingUint = NonOverflowingIntBase!(0, int.max);
+
+/// ditto
+struct NonOverflowingIntBase(int min, int max) {
+	this(long v) {
+		this.value = v;
+	}
+
+	private long value;
+
+	NonOverflowingInt opBinary(string op)(long rhs) {
+		return NonOverflowingInt(mixin("this.value", op, "rhs"));
+	}
+	NonOverflowingInt opBinary(string op)(NonOverflowingInt rhs) {
+		return this.opBinary!op(rhs.value);
+	}
+	NonOverflowingInt opUnary(string op)() {
+		return NonOverflowingInt(mixin(op, "this.value"));
+	}
+	NonOverflowingInt opOpAssign(string op)(long rhs) {
+		return this = this.opBinary!(op)(rhs);
+	}
+	NonOverflowingInt opOpAssign(string op)(NonOverflowingInt rhs) {
+		return this = this.opBinary!(op)(rhs.value);
+	}
+
+	int getValue() const {
+		if(value < min)
+			return min;
+		else if(value > max)
+			return max;
+		return cast(int) value;
+	}
+
+	alias getValue this;
+}
+
+unittest {
+	assert(-5.NonOverflowingInt - int.max == int.min);
+	assert(-5.NonOverflowingInt + 5 == 0);
+
+	assert(NonOverflowingInt(5) + int.max - 5 == int.max);
+	assert(NonOverflowingInt(5) + int.max - int.max - 5 == 0); // it truncates at the end of the op chain, not at intermediates
+	assert(NonOverflowingInt(0) + int.max * 2L == int.max); // note the L there is required to pass since the order of operations means mul done before it gets to the NonOverflowingInt controls
+}
+
 // enum stringz : const(char)* { init = null }
 
 /++
@@ -1758,7 +1823,7 @@ private auto toDelegate(T)(T t) {
 	else static assert(0, "could not get return value");
 }
 
-unittest {
+@system unittest {
 	int function(int) fn;
 	fn = (a) { return a; };
 
@@ -3002,28 +3067,383 @@ package(arsd) class CallbackHelper {
 	}
 }
 
+inout(char)[] trimSlashesRight(inout(char)[] txt) {
+	//if(txt.length && (txt[0] == '/' || txt[0] == '\\'))
+		//txt = txt[1 .. $];
+
+	if(txt.length && (txt[$-1] == '/' || txt[$-1] == '\\'))
+		txt = txt[0 .. $-1];
+
+	return txt;
+}
+
+enum TreatAsWindowsPath {
+	guess,
+	ifVersionWindows,
+	yes,
+	no,
+}
+
+// FIXME add uri from cgi/http2 and make sure the relative methods are reasonable compatible
+
 /++
 	This represents a file. Technically, file paths aren't actually strings (for example, on Linux, they need not be valid utf-8, while a D string is supposed to be), even though we almost always use them like that.
 
 	This type is meant to represent a filename / path. I might not keep it around.
 +/
 struct FilePath {
-	string path;
+	private string path;
 
-	bool isNull() {
+	this(string path) {
+		this.path = path;
+	}
+
+	bool isNull() const {
 		return path is null;
 	}
 
-	bool opCast(T:bool)() {
+	bool opCast(T:bool)() const {
 		return !isNull;
 	}
 
-	string toString() {
+	string toString() const {
 		return path;
 	}
 
 	//alias toString this;
+
+	/+ +++++++++++++++++ +/
+	/+  String analysis  +/
+	/+ +++++++++++++++++ +/
+
+	FilePath makeAbsolute(FilePath base, TreatAsWindowsPath treatAsWindowsPath = TreatAsWindowsPath.guess) const {
+		if(base.path.length == 0)
+			return this.removeExtraParts();
+		if(base.path[$-1] != '/' && base.path[$-1] != '\\')
+			base.path ~= '/';
+
+		bool isWindowsPath;
+		final switch(treatAsWindowsPath) {
+			case TreatAsWindowsPath.guess:
+			case TreatAsWindowsPath.yes:
+				isWindowsPath = true;
+			break;
+			case TreatAsWindowsPath.no:
+				isWindowsPath = false;
+			break;
+			case TreatAsWindowsPath.ifVersionWindows:
+				version(Windows)
+					isWindowsPath = true;
+				else
+					isWindowsPath = false;
+			break;
+		}
+		if(isWindowsPath) {
+			if(this.isUNC)
+				return this.removeExtraParts();
+			if(this.driveName)
+				return this.removeExtraParts();
+			if(this.path.length >= 1 && (this.path[0] == '/' || this.path[0] == '\\')) {
+				// drive-relative path, take the drive from the base
+				return FilePath(base.driveName ~ this.path).removeExtraParts();
+			}
+			// otherwise, take the dir name from the base and add us onto it
+			return FilePath(base.directoryName ~ this.path).removeExtraParts();
+		} else {
+			if(this.path.length >= 1 && this.path[0] == '/')
+				return this.removeExtraParts();
+			else
+				return FilePath(base.directoryName ~ this.path).removeExtraParts();
+		}
+	}
+
+	// dg returns true to continue, false to break
+	void foreachPathComponent(scope bool delegate(size_t index, in char[] component) dg) const {
+		size_t start;
+		size_t skip;
+		if(isUNC()) {
+			dg(start, this.path[start .. 2]);
+			start = 2;
+			skip = 2;
+		}
+		foreach(idx, ch; this.path) {
+			if(skip) { skip--; continue; }
+			if(ch == '/' || ch == '\\') {
+				if(!dg(start, this.path[start .. idx + 1]))
+					return;
+				start = idx + 1;
+			}
+		}
+		if(start != path.length)
+			dg(start, this.path[start .. $]);
+	}
+
+	// remove cases of // or /. or /.. Only valid to call this on an absolute path.
+	private FilePath removeExtraParts() const {
+		bool changeNeeded;
+		foreachPathComponent((idx, component) {
+			auto name = component.trimSlashesRight;
+			if(name.length == 0 && idx != 0)
+				changeNeeded = true;
+			if(name == "." || name == "..")
+				changeNeeded = true;
+			return !changeNeeded;
+		});
+
+		if(!changeNeeded)
+			return this;
+
+		string newPath;
+		foreachPathComponent((idx, component) {
+			auto name = component.trimSlashesRight;
+			if(component == `\\`) // must preserve unc paths
+				newPath ~= component;
+			else if(name.length == 0 && idx != 0)
+				{}
+			else if(name == ".")
+				{}
+			else if(name == "..") {
+				// remove the previous component, unless it is the first component
+				auto sofar = FilePath(newPath);
+				size_t previousComponentIndex;
+				sofar.foreachPathComponent((idx2, component2) {
+					if(idx2 != newPath.length)
+						previousComponentIndex = idx2;
+					return true;
+				});
+
+				if(previousComponentIndex && previousComponentIndex != newPath.length) {
+					newPath = newPath[0 .. previousComponentIndex];
+					//newPath.assumeSafeAppend();
+				}
+			} else {
+				newPath ~= component;
+			}
+
+			return true;
+		});
+
+		return FilePath(newPath);
+	}
+
+	// assuming we're looking at a Windows path...
+	bool isUNC() const {
+		return (path.length > 2 && path[0 .. 2] == `\\`);
+	}
+
+	// assuming we're looking at a Windows path...
+	string driveName() const {
+		if(path.length < 2)
+			return null;
+		if((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) {
+			if(path[1] == ':') {
+				if(path.length == 2 || path[2] == '\\' || path[2] == '/')
+					return path[0 .. 2];
+			}
+		}
+		return null;
+	}
+
+	/+
+	bool isAbsolute() {
+		if(path.length && path[0] == '/')
+			return true;
+
+	}
+
+	FilePath relativeTo() {
+
+	}
+
+	bool matchesGlobPattern(string globPattern) {
+
+	}
+
+	this(string directoryName, string filename) {}
+	this(string directoryName, string basename, string extension) {}
+
+	// remove ./, ../, stuff like that
+	FilePath normalize(FilePath relativeTo) {}
+	+/
+
+	/++
+		Returns the path with the directory cut off.
+	+/
+	string filename() {
+		foreach_reverse(idx, ch; path) {
+			if(ch == '\\' || ch == '/')
+				return path[idx + 1 .. $];
+		}
+		return path;
+	}
+
+	/++
+		Returns the path with the filename cut off.
+	+/
+	string directoryName() {
+		auto fn = this.filename();
+		if(fn is path)
+			return null;
+		return path[0 .. $ - fn.length];
+	}
+
+	/++
+		Returns the file extension, if present, including the last dot.
+	+/
+	string extension() {
+		foreach_reverse(idx, ch; path) {
+			if(ch == '.')
+				return path[idx .. $];
+		}
+		return null;
+	}
+
+	/++
+		Guesses the media (aka mime) content type from the file extension for this path.
+
+		Only has a few things supported. Returns null if it doesn't know.
+
+		History:
+			Moved from arsd.cgi to arsd.core.FilePath on October 28, 2024
+	+/
+	string contentTypeFromFileExtension() {
+		switch(this.extension) {
+			// images
+			case ".png":
+				return "image/png";
+			case ".apng":
+				return "image/apng";
+			case ".svg":
+				return "image/svg+xml";
+			case ".jpg":
+			case ".jpeg":
+				return "image/jpeg";
+
+			case ".txt":
+				return "text/plain";
+
+			case ".html":
+				return "text/html";
+			case ".css":
+				return "text/css";
+			case ".js":
+				return "application/javascript";
+			case ".wasm":
+				return "application/wasm";
+
+			case ".mp3":
+				return "audio/mpeg";
+
+			case ".pdf":
+				return "application/pdf";
+
+			default:
+				return null;
+		}
+	}
 }
+
+unittest {
+	FilePath fn;
+
+	fn = FilePath("dir/name.ext");
+	assert(fn.directoryName == "dir/");
+	assert(fn.filename == "name.ext");
+	assert(fn.extension == ".ext");
+
+	fn = FilePath(null);
+	assert(fn.directoryName is null);
+	assert(fn.filename is null);
+	assert(fn.extension is null);
+
+	fn = FilePath("file.txt");
+	assert(fn.directoryName is null);
+	assert(fn.filename == "file.txt");
+	assert(fn.extension == ".txt");
+
+	fn = FilePath("dir/");
+	assert(fn.directoryName == "dir/");
+	assert(fn.filename == "");
+	assert(fn.extension is null);
+
+	assert(fn.makeAbsolute(FilePath("/")).path == "/dir/");
+	assert(fn.makeAbsolute(FilePath("file.txt")).path == "file.txt/dir/"); // FilePaths as a base are ALWAYS treated as a directory
+	assert(FilePath("file.txt").makeAbsolute(fn).path == "dir/file.txt");
+
+	assert(FilePath("c:/file.txt").makeAbsolute(FilePath("d:/")).path == "c:/file.txt");
+	assert(FilePath("../file.txt").makeAbsolute(FilePath("d:/")).path == "d:/file.txt");
+
+	assert(FilePath("../file.txt").makeAbsolute(FilePath("d:/foo")).path == "d:/file.txt");
+	assert(FilePath("../file.txt").makeAbsolute(FilePath("d:/")).path == "d:/file.txt");
+	assert(FilePath("../file.txt").makeAbsolute(FilePath("/home/me")).path == "/home/file.txt");
+	assert(FilePath("../file.txt").makeAbsolute(FilePath(`\\arsd\me`)).path == `\\arsd\file.txt`);
+	assert(FilePath("../../file.txt").makeAbsolute(FilePath("/home/me")).path == "/file.txt");
+	assert(FilePath("../../../file.txt").makeAbsolute(FilePath("/home/me")).path == "/file.txt");
+
+	assert(FilePath("test/").makeAbsolute(FilePath("/home/me/")).path == "/home/me/test/");
+	assert(FilePath("/home/me/test/").makeAbsolute(FilePath("/home/me/test/")).path == "/home/me/test/");
+}
+
+version(HasFile)
+/++
+	History:
+		Added January 2, 2024
++/
+FilePath getCurrentWorkingDirectory() {
+	version(Windows) {
+		wchar[256] staticBuffer;
+		wchar[] buffer = staticBuffer[];
+
+		try_again:
+		auto ret = GetCurrentDirectoryW(cast(DWORD) buffer.length, buffer.ptr);
+		if(ret == 0)
+			throw new WindowsApiException("GetCurrentDirectoryW", GetLastError());
+		if(ret < buffer.length) {
+			return FilePath(makeUtf8StringFromWindowsString(buffer[0 .. ret]));
+		} else {
+			buffer.length = ret;
+			goto try_again;
+		}
+	} else version(Posix) {
+		char[128] staticBuffer;
+		char[] buffer = staticBuffer[];
+
+		try_again:
+		auto ret = getcwd(buffer.ptr, buffer.length);
+		if(ret is null && errno == ERANGE && buffer.length < 4096 / 2) {
+			buffer.length = buffer.length * 2;
+			goto try_again;
+		} else if(ret is null) {
+			throw new ErrnoApiException("getcwd", errno);
+		}
+		return FilePath(stringz(ret).borrow.idup);
+	} else
+		assert(0, "Not implemented");
+}
+
+/+
+struct FilePathGeneric {
+
+}
+
+struct FilePathWin32 {
+
+}
+
+struct FilePathPosix {
+
+}
+
+struct FilePathWindowsUnc {
+
+}
+
+version(Windows)
+	alias FilePath = FilePathWin32;
+else
+	alias FilePath = FilePathPosix;
++/
+
 
 /++
 	Represents a generic async, waitable request.
@@ -4882,6 +5302,14 @@ version(HasFile) GetFilesResult getFiles(string directory, scope void delegate(s
 		try_more:
 
 		string name = makeUtf8StringFromWindowsString(data.cFileName[0 .. findIndexOfZero(data.cFileName[])]);
+
+		/+
+  FILETIME ftLastWriteTime;
+  DWORD    nFileSizeHigh;
+  DWORD    nFileSizeLow;
+
+  but these not available on linux w/o statting each file!
+		+/
 
 		dg(name, (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? true : false);
 
@@ -7622,6 +8050,9 @@ unittest {
 	================
 +/
 /++
+	DO NOT USE THIS YET IT IS NOT FUNCTIONAL NOR STABLE
+
+
 	The arsd.core logger works differently than many in that it works as a ring buffer of objects that are consumed (or missed; buffer overruns are possible) by a different thread instead of as strings written to some file.
 
 	A library (or an application) defines a log source. They write to this source.
@@ -7641,22 +8072,64 @@ unittest {
 
 	Examples:
 	---
-		mixin LoggerOf!X mylogger;
+		auto logger = new shared LoggerOf!GenericEmbeddableInterpolatedSequence;
 
-		mylogger.log(i"$this heartbeat"); // creates an ad-hoc log message
+		mylogger.info(i"$this heartbeat");
 	---
 
 	History:
 		Added May 27, 2024
-+/
-mixin template LoggerOf(T) {
-	void log(LogLevel l, T message) {
 
+		Not actually implemented until February 6, 2025, when it changed from mixin template to class.
++/
+class LoggerOf(T, size_t bufferSize = 16) {
+	private LoggedMessage!T[bufferSize] ring;
+	private uint writeBufferPosition;
+
+	void log(LoggedMessage!T message) shared {
+		synchronized(this) {
+			auto unshared = cast() this;
+			unshared.ring[writeBufferPosition] = message;
+			unshared.writeBufferPosition += 1;
+
+			// import std.stdio; std.stdio.writeln(message);
+		}
+	}
+
+	void log(LogLevel level, T message, SourceLocation sourceLocation = SourceLocation(__FILE__, __LINE__)) shared {
+		log(LoggedMessage!T(LogLevel.Info, sourceLocation, 0, message));
+	}
+
+	void info(T message, SourceLocation sourceLocation = SourceLocation(__FILE__, __LINE__)) shared {
+		log(LogLevel.Info, message, sourceLocation);
 	}
 }
 
+struct SourceLocation {
+	string file;
+	size_t line;
+}
+
+struct LoggedMessage(T) {
+	LogLevel level;
+	SourceLocation sourceLocation;
+	ulong timestamp;
+	T message;
+
+	// process id?
+	// thread id?
+	// callstack?
+}
+
+//mixin LoggerOf!GenericEmbeddableInterpolatedSequence GeisLogger;
+
 enum LogLevel {
 	Info
+}
+
+unittest {
+	auto logger = new shared LoggerOf!GenericEmbeddableInterpolatedSequence;
+	logger.info(GenericEmbeddableInterpolatedSequence(i"hello world"));
 }
 
 /+

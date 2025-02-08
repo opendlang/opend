@@ -813,8 +813,6 @@ interface->SetProgressValue(hwnd, 40, 100);
 +/
 module arsd.simpledisplay;
 
-import arsd.core;
-
 // FIXME: tetris demo
 // FIXME: space invaders demo
 // FIXME: asteroids demo
@@ -1161,6 +1159,8 @@ unittest {
 // FIXME: tetris demo
 // FIXME: space invaders demo
 // FIXME: asteroids demo
+
+import arsd.core;
 
 version(OSX) version(DigitalMars) version=OSXCocoa;
 
@@ -2406,6 +2406,8 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 						setTo = setRequestedInputFocus();
 					if(setTo is null)
 						setTo = this;
+
+					// sdpyPrintDebugString("grabInput() ", setTo.impl.window;
 					XSetInputFocus(XDisplayConnection.get, setTo.impl.window, RevertToParent, CurrentTime);
 				}
 			}
@@ -2575,6 +2577,7 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 				setTo = setRequestedInputFocus();
 			if(setTo is null)
 				setTo = this;
+			// sdpyPrintDebugString("sdpy.focus() ", setTo.impl.window);
 			XSetInputFocus(XDisplayConnection.get, setTo.impl.window, RevertToParent, CurrentTime);
 		} else version(Windows) {
 			SetFocus(this.impl.hwnd);
@@ -11786,6 +11789,14 @@ version(WebAssembly) {
 
 }
 
+char keyToLetterCharAssumingLotsOfThingsThatYouMightBetterNotAssume(Key key) {
+	version(OSXCocoa) {
+		return char.init; // FIXME
+	} else {
+		return cast(char)(key - Key.A + 'a');
+	}
+}
+
 /* Additional utilities */
 
 
@@ -12938,6 +12949,8 @@ version(Windows) {
 					if (this.closeQuery !is null) this.closeQuery(); else this.close();
 				break;
 				case WM_DESTROY:
+					if (this.visibilityChanged !is null && this._visible) this.visibilityChanged(false);
+
 					if (this.onDestroyed !is null) try { this.onDestroyed(); } catch (Exception e) {} // sorry
 					SimpleWindow.nativeMapping.remove(hwnd);
 					CapableOfHandlingNativeEvent.nativeHandleMapping.remove(hwnd);
@@ -13126,6 +13139,7 @@ version(Windows) {
 					GetSysColorBrush(COLOR_3DFACE);
 				//break;
 				case WM_SHOWWINDOW:
+					auto before = this._visible;
 					this._visible = (wParam != 0);
 					if (!this._visibleForTheFirstTimeCalled && this._visible) {
 						this._visibleForTheFirstTimeCalled = true;
@@ -13133,7 +13147,7 @@ version(Windows) {
 							this.visibleForTheFirstTime();
 						}
 					}
-					if (this.visibilityChanged !is null) this.visibilityChanged(this._visible);
+					if (this.visibilityChanged !is null && this._visible != before) this.visibilityChanged(this._visible);
 					break;
 				case WM_PAINT: {
 					if (!this._visibleForTheFirstTimeCalled) {
@@ -16348,14 +16362,16 @@ version(X11) {
 		  break;
 		  case EventType.VisibilityNotify:
 				if(auto win = e.xfocus.window in SimpleWindow.nativeMapping) {
+					auto before = (*win)._visible;
+					(*win)._visible = (e.xvisibility.state != VisibilityNotify.VisibilityFullyObscured);
 					if (e.xvisibility.state == VisibilityNotify.VisibilityFullyObscured) {
-						if (win.visibilityChanged !is null) {
+						if (win.visibilityChanged !is null && before == true) {
 								XUnlockDisplay(display);
 								scope(exit) XLockDisplay(display);
 								win.visibilityChanged(false);
 							}
 					} else {
-						if (win.visibilityChanged !is null) {
+						if (win.visibilityChanged !is null && before == false) {
 							XUnlockDisplay(display);
 							scope(exit) XLockDisplay(display);
 							win.visibilityChanged(true);
@@ -16400,6 +16416,7 @@ version(X11) {
 
 						// FIXME: so this is actually supposed to focus to a relevant child window if appropriate
 
+						// sdpyPrintDebugString("WM_TAKE_FOCUS ", setTo.impl.window);
 						XSetInputFocus(display, setTo.impl.window, RevertToParent, e.xclient.data.l[1]);
 					}
 				} else if(e.xclient.message_type == GetAtom!"MANAGER"(e.xany.display)) {
@@ -16500,6 +16517,7 @@ version(X11) {
 		  break;
 		  case EventType.MapNotify:
 				if(auto win = e.xmap.window in SimpleWindow.nativeMapping) {
+					auto before = (*win)._visible;
 					(*win)._visible = true;
 					if (!(*win)._visibleForTheFirstTimeCalled) {
 						(*win)._visibleForTheFirstTimeCalled = true;
@@ -16509,7 +16527,7 @@ version(X11) {
 							(*win).visibleForTheFirstTime();
 						}
 					}
-					if ((*win).visibilityChanged !is null) {
+					if ((*win).visibilityChanged !is null && before == false) {
 						XUnlockDisplay(display);
 						scope(exit) XLockDisplay(display);
 						(*win).visibilityChanged(true);
@@ -16518,8 +16536,9 @@ version(X11) {
 		  break;
 		  case EventType.UnmapNotify:
 				if(auto win = e.xunmap.window in SimpleWindow.nativeMapping) {
+					auto before = (*win)._visible;
 					win._visible = false;
-					if (win.visibilityChanged !is null) {
+					if (win.visibilityChanged !is null && before == true) {
 						XUnlockDisplay(display);
 						scope(exit) XLockDisplay(display);
 						win.visibilityChanged(false);
