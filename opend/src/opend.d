@@ -5,6 +5,9 @@ import std.file;
 
 // FIXME: tell people to install xpack if not already done when then use --target
 
+// FIXME mebbe i could make opend --src=path/to/opend/git/dir args.... pull the build versions out of there, that'd be kinda useful
+// hellit oculd even forward itself to the new opend program. hmmmmm
+
 int main(string[] args) {
 	// maybe override the normal config files
 	// --opend-config-file
@@ -85,6 +88,17 @@ struct Commands {
 		string[] argsToKeep;
 		argsToKeep.reserve(args.length);
 
+		int warnAboutXpack(string which) {
+			import std.path, std.file;
+			if(!std.file.exists(getXpackPath() ~ "opend-latest-" ~ which)) {
+				import std.stdio;
+				stderr.writeln("Error: the support files for this target is not found.");
+				stderr.writeln("Try `opend install " ~ which ~ "` first");
+				return 1;
+			}
+			return 0;
+		}
+
 		int translateTarget(string target) {
 			import std.string;
 
@@ -100,6 +114,8 @@ struct Commands {
 						cpu = "x86_64";
 						os = "windows";
 						detail = "msvc";
+						if(auto r = warnAboutXpack("xpack-win64"))
+							return r;
 					break;
 					case "mac":
 					case "macos":
@@ -151,6 +167,8 @@ struct Commands {
 						detail = "musl";
 					break;
 					case "emscripten":
+						if(auto r = warnAboutXpack("xpack-emscripten"))
+							return r;
 						os = "emscripten";
 						if(cpu is null) cpu = "wasm32";
 					break;
