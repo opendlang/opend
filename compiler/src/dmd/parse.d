@@ -1083,7 +1083,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 continue;
 
             case TOK.leftParenthesis:
-                goto Ldeclaration;
+                if (peekPastParen(&token).value == TOK.assign) // (for better error messages)
+                    goto Ldeclaration;
+                goto default;
 
             default:
                 error("declaration expected, not `%s`", token.toChars());
