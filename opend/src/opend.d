@@ -451,7 +451,7 @@ OutputExecutable getOutputExecutable(string[] args) {
 	}
 
 	if(!nameExplicitlyGiven)
-		name ~= extension;
+		name = first ~ extension;
 
 	import std.path;
 	return OutputExecutable(buildPath(".", name), args[splitter .. $]);
