@@ -1683,6 +1683,7 @@ class Lexer
         Identifier hereid = null;
         uint blankrol = 0;
         uint startline = 0;
+        string leadingWhitespace = null;
         p++;
         stringbuffer.setsize(0);
         while (1)
@@ -1696,6 +1697,8 @@ class Lexer
             Lnextline:
                 endOfLine();
                 startline = 1;
+                leadingWhitespace = leadingWhitespace[0 .. 0];
+                //leadingWhitespace.assumeSafeAppend();
                 if (blankrol)
                 {
                     blankrol = 0;
@@ -1802,12 +1805,54 @@ class Lexer
                     {
                         /* should check that rest of line is blank
                          */
+
+                        if(leadingWhitespace.length) {
+                            auto str = stringbuffer[];
+                            size_t lineStart = 0;
+                            string keep;
+
+                            void processOutdentingLine(const(char)[] line, bool isEnd) {
+                                if(line.length && line[0] != '\n') {
+                                    // it should have the same leading whitespace which we can now strip
+                                    if(line[0 .. leadingWhitespace.length] != leadingWhitespace)
+                                        error("Indented heredoc lines must all start with the same whitespace as the closing tag");
+                                    else
+                                        line = line[leadingWhitespace.length .. $];
+                                }
+                                keep ~= line;
+                                if(!isEnd)
+                                    keep ~= "\n";
+                            }
+
+                            foreach(idx, ch; str) {
+                                // these should never have a \r in them due to the case above
+                                if(ch == '\n') {
+                                    processOutdentingLine(str[lineStart .. idx], false);
+                                    lineStart = idx + 1;
+                                }
+                            }
+                            // the last line must be leading whitespace, by definition
+                            assert(str[lineStart .. $] == leadingWhitespace);
+                            if(keep.length) {
+                                // C# style, if we have outdent, the trailing newline is also sliced
+                                assert(keep[$-1] == '\n');
+                                keep = keep[0 .. $-1];
+                            }
+
+                            stringbuffer.reset();
+                            stringbuffer.writestring(keep);
+                        }
+
                         goto Ldone;
                     }
                     p = psave;
                 }
                 stringbuffer.writeUTF8(c);
-                startline = 0;
+                if(startline && (c == ' ' || c == '\t'))
+                    // allow whitespace at start of line for these purposes
+                    leadingWhitespace ~= cast(char) c;
+                else
+                    startline = 0;
             }
         }
     Ldone:
