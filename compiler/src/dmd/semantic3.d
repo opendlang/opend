@@ -951,7 +951,7 @@ private extern(C++) final class Semantic3Visitor : Visitor
                                         exp.loc,
                                         "return value `%s` of type `%s` does not match return type `%s`"
                                         ~ ", and cannot be implicitly converted",
-                                        exp.toErrMsg(),
+                                        exp.toChars(),
                                         types[0],
                                         types[1],
                                     );
