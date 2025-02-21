@@ -2928,6 +2928,7 @@ Expression getProperty(Type t, Scope* scope_, const ref Loc loc, Identifier iden
                     }
                 }
             }
+            e = ErrorExp.get();
         }
         return e;
     }
