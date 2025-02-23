@@ -4428,6 +4428,27 @@ version (IN_LLVM)
      /// Do the semantic analysis on the external interface to the function.
     override void visit(FuncDeclaration funcdecl)
     {
+        if (funcdecl.fbody) {
+            if (auto cs = funcdecl.fbody.isCompoundStatement) {
+                foreach (s; *cs.statements) {
+                    if (auto sas = s.isStaticAssertStatement) {
+                        if (auto e = sas.sa.exp.isIdentifierExp())
+                        {
+                            const isAssertCtfe = (e.ident == Id.ctfe);
+                            if (isAssertCtfe) {
+                                // printf("AssertExp::isAssertCtfe\n");
+                                // We set skipCodegen flag, and rewrite the assert to true
+                                sas.sa.exp = IntegerExp.createBool(true);
+                                funcdecl.skipCodegen = true;
+                            }
+                            return;
+                        }
+                    }
+                    break; // only first stmt is relevant
+                }
+            }
+        }
+
         funcDeclarationSemantic(funcdecl);
     }
 

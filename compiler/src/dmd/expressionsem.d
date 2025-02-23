@@ -5738,6 +5738,16 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         {
             printf("CallExp::semantic() %s\n", exp.toChars());
         }
+
+        scope(exit) {
+            // WIP: Im not ina  mood to track where this makes sense.
+            if (exp && exp.f) {
+                if ((sc.flags & SCOPE.ctfe) == 0 && exp.f.skipCodegen) {
+                    error(exp.loc, "`%s` may only be used for CTFE", exp.toChars());
+                }
+            }
+        }
+
         if (exp.type)
         {
             result = exp;
