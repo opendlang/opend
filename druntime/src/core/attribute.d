@@ -315,3 +315,8 @@ enum mutableRefInit;
     Use this to mark a constructor as usable for implicit calls.
 +/
 enum implicit;
+
+/++
+    Use this to mark a function availible only at compile time for CTFE.
++/
+enum ctfeonly;
