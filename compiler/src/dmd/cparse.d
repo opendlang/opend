@@ -1748,6 +1748,17 @@ final class CParser(AST) : Parser!AST
             return;
         }
 
+        if (token.value == TOK._module) // module declaration extension
+        {
+            if(md)
+                error("multiple __module declarations are not allowed");
+
+            token.value = TOK.module_; // importC calls it __module but parseModuleDeclaration assumes D's module so we just lie
+            auto a = parseModuleDeclaration();
+            return;
+        }
+
+
         const typedefTabLengthSave = typedefTab.length;
         auto symbolsSave = symbols;
         Specifier specifier;
