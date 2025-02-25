@@ -1,0 +1,26 @@
+{
+    "name": "dcompute",
+    "description": "Native Heterogeneous Computing for D",
+    "copyright": "Copyright © 2017, Nicholas Wilson",
+    "authors": ["Nicholas Wilson"],
+    "license": "BSL-1.0",
+    "dependencies": {
+        "derelict-cl"  : "~>3.2.0",
+        "derelict-cuda": "~>3.1.1",
+        "taggedalgebraic": "~>0.10.7"
+    },
+    "dflags" : ["-mdcompute-targets=cuda-210" ,"-oq"],
+    "configurations": [
+        {
+            "name": "library",
+            "targetType": "library",
+            "excludedSourceFiles": ["./source/tests/*"],
+        },
+        {
+            "name": "unittest",
+            "targetType": "executable",
+            "versions": ["DComputeTesting"],
+
+        },
+    ]
+}
