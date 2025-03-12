@@ -1,0 +1,17 @@
+{
+    "name": "derelict-cl",
+    "description": "A dynamic binding to the OpenCL library.",
+    "homepage": "https://github.com/DerelictOrg/DerelictCL",
+    "license": "Boost",
+    "authors": [
+        "Gerbrand Kamphuis (vuaru)",
+        "Guillaume Piolat (p0nce)"
+    ],
+
+    "targetName": "DerelictCL",
+    "targetPath": "lib",
+
+    "dependencies": {
+        "derelict-util": "~>3.0.0-beta.1"
+    }
+}

@@ -316,6 +316,9 @@ struct Commands {
 
 	/// Installs optional components or updates to opend
 	int install(string[] args) {
+
+		// FIXME: remove any --opend-to-build= stuff before args[0]
+
 		// create the ../xpacks directory
 
 		static import std.file;

@@ -5740,6 +5740,56 @@ version (IN_LLVM)
         //    this() { }
         if (!cldec.ctor && cldec.baseClass && cldec.baseClass.ctor)
         {
+            /+
+            ADR note: if we did ctor inheritance (inherit constructors) i think this
+            is the place to put it. we can generate forwarders here to each of the base
+            class ctor overloads.
+
+            then maybe the rest of the clause in here will be unnecessary. idk tho
+            +/
+
+            // want to loop through all base class ctor overloads and generate copies
+            // in the form of this(same_args) { super(same_args); }
+            version(none){
+                auto fd = cldec.baseClass.ctor.isFuncDeclaration;
+                CtorDeclaration newest;
+                while(fd) {
+                    auto ctor = new CtorDeclaration(cldec.loc, Loc.initial, 0, fd.type.syntaxCopy);
+                    ctor.storage_class |= STC.inference | (fd.storage_class & STC.scope_);
+                    ctor.isGenerated = true;
+
+                    Expression e1 = new SuperExp(cldec.loc);
+                    Expressions* params = new Expressions;
+                    // FIXME: add the expressions here
+                    Expression e = new CallExp(cldec.loc, e1, params);
+                    e = e.expressionSemantic(sc2);
+                    Statement s = new ExpStatement(cldec.loc, e);
+                    ctor.fbody = new CompoundStatement(cldec.loc, s);
+
+                    cldec.members.push(ctor);
+                    ctor.addMember(sc, cldec);
+
+                    // FIXME: this is giving Error: super class constructor call must be in a constructor
+                    ctor.dsymbolSemantic(sc2);
+
+                    if(cldec.ctor is null)
+                        cldec.ctor = ctor;
+
+                    if(newest)
+                        newest.overnext = ctor;
+                    newest = ctor;
+
+                    // loop advance
+                    auto next = fd.overnext;
+                    if(next is null)
+                        fd = null;
+                    else
+                        fd = next.isFuncDeclaration;
+                }
+            }
+
+            // the original dmd code here
+            version(all){
             auto fd = resolveFuncCall(cldec.loc, sc2, cldec.baseClass.ctor, null, cldec.type, ArgumentList(), FuncResolveFlag.quiet);
             if (!fd) // try shared base ctor instead
                 fd = resolveFuncCall(cldec.loc, sc2, cldec.baseClass.ctor, null, cldec.type.sharedOf, ArgumentList(), FuncResolveFlag.quiet);
@@ -5769,6 +5819,7 @@ version (IN_LLVM)
             {
                 .error(cldec.loc, "%s `%s` cannot implicitly generate a default constructor when base class `%s` is missing a default constructor", cldec.kind, cldec.toPrettyChars,
                     cldec.baseClass.toPrettyChars());
+            }
             }
         }
 

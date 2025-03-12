@@ -877,7 +877,19 @@ version (IN_LLVM)
             p.nextToken();
             checkCompiledImport();
             members = p.parseModule();
-            assert(!p.md); // C doesn't have module declarations
+
+            if (p.md)
+            {
+                /* A ModuleDeclaration, md, was provided.
+                * The ModuleDeclaration sets the packages this module appears in, and
+                * the name of this module.
+                */
+                md = p.md;
+                this.ident = md.id;
+                dst = Package.resolve(md.packages, &this.parent, &ppack);
+            }
+
+            // assert(!p.md); // C doesn't have module declarations... but it does now __module
             numlines = p.scanloc.linnum;
         }
         else
