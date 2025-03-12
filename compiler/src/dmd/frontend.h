@@ -5457,6 +5457,7 @@ public:
 class WithStatement final : public Statement
 {
 public:
+    Parameter* param;
     Expression* exp;
     Statement* _body;
     VarDeclaration* wthis;
