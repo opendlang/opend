@@ -1,0 +1,43 @@
+language: d
+
+os:
+  - linux
+  - osx
+
+# Order: oldest DMD, newest LDC, oldest LDC
+# Latest DMD is in the matrix.include to give it the `COVERAGE` env variable
+d:
+  - dmd-2.085.1
+  - ldc-1.19.0
+  - ldc-1.15.0
+  - dmd-nightly
+  - ldc-latest-ci
+
+env:
+  global:
+    - TEST_MESON=true
+
+before_install:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update && sudo apt-get -y install python3-pip python3-setuptools; fi
+  - pip3 install meson ninja
+
+matrix:
+  include:
+     # Last FE GDC is compatible with
+    - d: dmd-2.076.1
+      os: linux
+      script: dub build
+    - d: dmd-2.076.1
+      os: osx
+      script: dub build
+    - d: dmd-2.090.0
+      os: linux
+      env: [COVERAGE=true]
+    - d: dmd-2.090.0
+      os: osx
+      env: [COVERAGE=true]
+  allow_failures:
+    - d: dmd-nightly
+    - d: ldc-latest-ci
+
+script: ./travis.sh

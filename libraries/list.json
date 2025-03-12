@@ -140,6 +140,22 @@
 			"sourceDirectory": "source"
 		},
 		{
+			"repository": "https://github.com/libmir/dcompute",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/DerelictOrg/DerelictCL",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/DerelictOrg/DerelictCUDA",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/s-ludwig/taggedalgebraic",
+			"sourceDirectory": "source"
+		},
+		{
 			"repository": "https://github.com/opendlang/d",
 			"branch": "main",
 			"sourceDirectory": "source"

@@ -3230,6 +3230,7 @@ const(char*) keywordClass(const Identifier ident)
         case "_Thread_local":
         case "_assert":
         case "_import":
+        case "_module":
         //case "__...": handled in default case below
             return "Keyword in C";
 

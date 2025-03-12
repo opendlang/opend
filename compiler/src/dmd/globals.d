@@ -242,7 +242,7 @@ extern (C++) struct Param
                                  // Implementation: https://github.com/dlang/dmd/pull/9817
     FeatureState noSharedAccess; // read/write access to shared memory objects
     bool previewIn;              // `in` means `[ref] scope const`, accepts rvalues
-    bool inclusiveInContracts;   // 'in' contracts of overridden methods must be a superset of parent contract
+    bool inclusiveInContracts = true;   // 'in' contracts of overridden methods must be a superset of parent contract
     bool shortenedMethods = true;       // allow => in normal function declarations
     bool fixImmutableConv = true;       // error on unsound immutable conversion - https://github.com/dlang/dmd/pull/14070
     bool fix16997 = true;        // fix integral promotions for unary + - ~ operators

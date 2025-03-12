@@ -937,7 +937,7 @@ dmd -cov -unittest myprog.d
         Feature("in", "previewIn",
             "`in` on parameters means `scope const [ref]` and accepts rvalues"),
         Feature("inclusiveincontracts", "inclusiveInContracts",
-            "'in' contracts of overridden methods must be a superset of parent contract"),
+            "'in' contracts of overridden methods must be a superset of parent contract - enabled by default", false, false),
         Feature("shortenedMethods", "shortenedMethods",
             "allow use of => for methods and top-level functions in addition to lambdas", false, true),
         Feature("fixImmutableConv", "fixImmutableConv",

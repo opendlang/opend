@@ -21,7 +21,7 @@ jobs:
         include:
 
           - job_name: Linux x86_64 multilib
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             arch: x86_64
             bootstrap_cmake_flags: -DBUILD_LTO_LIBS=ON
             # To improve portability of the generated binaries, link the C++ standard library statically.
@@ -138,13 +138,13 @@ jobs:
         include:
 
           - job_name: Android armv7a
-            host_os: ubuntu-20.04
+            host_os: ubuntu-22.04
             os: android
             arch: armv7a
             android_x86_arch: i686
 
           - job_name: Android aarch64
-            host_os: ubuntu-20.04
+            host_os: ubuntu-22.04
             os: android
             arch: aarch64
             android_x86_arch: x86_64
