@@ -4428,6 +4428,7 @@ version (IN_LLVM)
      /// Do the semantic analysis on the external interface to the function.
     override void visit(FuncDeclaration funcdecl)
     {
+	/+
         bool hasCtfeOnlyAttribute(Dsymbol sym)
         {
             import dmd.attrib : foreachUda, isEnumAttribute;
@@ -4450,6 +4451,7 @@ version (IN_LLVM)
         if (hasCtfeOnlyAttribute(funcdecl)) {
             funcdecl.skipCodegen = true;
         }
+	+/
 
         funcDeclarationSemantic(funcdecl);
     }
