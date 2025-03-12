@@ -5739,6 +5739,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
             printf("CallExp::semantic() %s\n", exp.toChars());
         }
 
+	/+
         scope(exit) {
             // WIP: Im not ina  mood to track where this makes sense.
             if (exp && exp.f) {
@@ -5747,6 +5748,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 }
             }
         }
+	+/
 
         if (exp.type)
         {
