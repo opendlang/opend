@@ -2363,6 +2363,7 @@ struct ASTBase
 
     extern (C++) final class WithStatement : Statement
     {
+        Parameter prm;
         Expression exp;
         Statement _body;
         Loc endloc;
