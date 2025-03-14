@@ -94,7 +94,7 @@ nothrow @nogc:
      *  manualReset  = the state of the event is not reset automatically after resuming waiting clients
      *  initialState = initial state of the signal
      */
-    void initialize(bool manualReset, bool initialState)
+    void initialize(bool manualReset, bool initialState) @system
     {
         version (Windows)
         {
