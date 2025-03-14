@@ -2608,7 +2608,7 @@ bool isKeyword(const(char)[] str) @safe
 
 /****************************************************
  */
-TypeFunction isTypeFunction(Dsymbol s) @safe
+TypeFunction isTypeFunction(Dsymbol s) @trusted
 {
     FuncDeclaration f = s.isFuncDeclaration();
     /* f.type may be NULL for template members.

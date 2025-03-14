@@ -273,7 +273,7 @@ version (IN_LLVM)
     inout(CompoundAsmStatement) endsWithAsm() inout { return null; }
 }
 
-    final pure inout nothrow @nogc @safe:
+    final pure inout nothrow @nogc @trusted:
 
     /********************
      * A cheaper method of doing downcasting of Statements.

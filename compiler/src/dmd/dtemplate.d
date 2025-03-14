@@ -86,7 +86,7 @@ private enum LOG = false;
 
 enum IDX_NOTFOUND = 0x12345678;
 
-pure nothrow @nogc @safe
+pure nothrow @nogc @trusted
 {
 
 /********************************************
