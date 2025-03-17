@@ -777,7 +777,9 @@ endif()
 set(LDC_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDC_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
 set(LDMD_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDMD_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
 
-if(UNIX)
+if(APPLE)
+  # intentionally blank
+elseif(UNIX)
   set(LLVM_LIBRARIES -lzstd ${LLVM_LIBRARIES})
   # FreeBSD needs this added explicitly to find zstd, i hope harmless on other systems
   list(APPEND LLVM_LDFLAGS "-L/usr/local/lib")

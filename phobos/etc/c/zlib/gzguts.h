@@ -26,6 +26,7 @@
 void* malloc(size_t size);
 void free(void*);
 void* calloc(size_t, size_t);
+size_t wcstombs(char*, const wchar_t*, size_t);
 #  include <limits.h>
 #endif
 

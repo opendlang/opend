@@ -5,7 +5,7 @@
  *      $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0).
  *    (See accompanying file LICENSE_1_0.txt)
  * Authors:   Amaury SECHET, FeepingCreature, Vladimir Panteleev
- * Source: $(DRUNTIMESRC etc/linux/memory.d)
+ * Source: $(DRUNTIMESRC etc/linux/memoryerror.d)
  */
 
 module etc.linux.memoryerror;
@@ -45,7 +45,7 @@ else version (MemoryErrorSupported)
 
 version (AnySupported):
 
-import core.sys.posix.signal;
+import core.sys.posix.signal : SA_SIGINFO, sigaction, sigaction_t, siginfo_t, SIGSEGV;
 import ucontext = core.sys.posix.ucontext;
 
 version (MemoryAssertSupported)
