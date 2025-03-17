@@ -26,7 +26,9 @@
 #    include <stddef.h>
 #  endif
 #  include <string.h>
-#  include <stdlib.h>
+//#  include <stdlib.h>
+void* malloc(size_t size);
+void free(void*);
 #endif
 
 #ifndef local

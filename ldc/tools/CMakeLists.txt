@@ -45,7 +45,7 @@ endif()
 # data files for sample-based profile guided optimization (-fprofile-sample-use).
 # https://llvm.org/docs/CommandGuide/llvm-profgen.html
 # The source in ldc-profgen/ldc-profgen-xx.x is an unmodified copy of llvm's llvm-profgen source dir.
-if(LDC_LLVM_VER GREATER_EQUAL 1400)
+if(LDC_LLVM_VER EQUAL 1400)
     macro(add_llvm_tool llvm_name)
         string(REPLACE "llvm-" "ldc-" ldc_name ${llvm_name})
         message(STATUS "Configuring ${ldc_name} build target")

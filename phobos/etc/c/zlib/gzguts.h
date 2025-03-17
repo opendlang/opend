@@ -22,7 +22,10 @@
 #include "zlib.h"
 #ifdef STDC
 #  include <string.h>
-#  include <stdlib.h>
+//#  include <stdlib.h>
+void* malloc(size_t size);
+void free(void*);
+void* calloc(size_t, size_t);
 #  include <limits.h>
 #endif
 

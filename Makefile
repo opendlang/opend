@@ -98,11 +98,11 @@ html: $(BUILD_EXE)
 	$(BUILD_EXE) $@
 
 phobos:
-	cd phobos && make
+	$(QUIET)$(MAKE) -C phobos
 
 ldc:
 	mkdir -p ldc-build
-	cd ldc-build && cmake ../ldc && make
+	DMD=$(HOST_DMD) cd ldc-build && cmake ../ldc && $(MAKE)
 
 # Creates Exuberant Ctags tags file
 tags: Makefile $(ECTAGS_FILES)

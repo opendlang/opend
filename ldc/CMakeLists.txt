@@ -777,9 +777,22 @@ endif()
 set(LDC_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDC_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
 set(LDMD_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDMD_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
 
+if(UNIX)
+  set(LLVM_LIBRARIES -lzstd ${LLVM_LIBRARIES})
+  # FreeBSD needs this added explicitly to find zstd, i hope harmless on other systems
+  list(APPEND LLVM_LDFLAGS "-L/usr/local/lib")
+endif()
+
+
 # Figure out how to link the main LDC executable, for which we need to take the
 # LLVM flags into account.
 set(LDC_LINKERFLAG_LIST ${SANITIZE_LDFLAGS} ${LLVM_LIBRARIES} ${LLVM_LDFLAGS})
+
+if(UNIX)
+endif()
+
+
+
 if(MSVC)
     # Issue 1297 – set LDC's stack to 16 MiB for Windows builds (default: 1 MiB).
     list(APPEND LDC_LINKERFLAG_LIST "/STACK:16777216")
