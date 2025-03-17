@@ -31,7 +31,7 @@ else
 
     // Use extern (D) so that these functions don't collide with libexecinfo.
 
-    extern (D) int backtrace(void** buffer, int size)
+    extern (D) int backtrace(void** buffer, int size) @system
     {
         import core.thread : thread_stackBottom;
 
@@ -57,7 +57,7 @@ else
     }
 
 
-    extern (D) char** backtrace_symbols(const(void*)* buffer, int size)
+    extern (D) char** backtrace_symbols(const(void*)* buffer, int size) @system
     {
         static void* realloc(void* p, size_t len) nothrow
         {
@@ -100,7 +100,7 @@ else
     }
 
 
-    extern (D) void backtrace_symbols_fd(const(void*)* buffer, int size, int fd)
+    extern (D) void backtrace_symbols_fd(const(void*)* buffer, int size, int fd) @system
     {
         import core.sys.posix.unistd : write;
         import core.stdc.stdlib : alloca;
