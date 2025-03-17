@@ -779,6 +779,8 @@ set(LDMD_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDMD_EXE_NAME}${CMAKE_EXECUTABLE_S
 
 if(APPLE)
   # intentionally blank
+elseif(ANDROID)
+  # intentionally blank
 elseif(UNIX)
   set(LLVM_LIBRARIES -lzstd ${LLVM_LIBRARIES})
   # FreeBSD needs this added explicitly to find zstd, i hope harmless on other systems
