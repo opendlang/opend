@@ -85,6 +85,9 @@ runs:
         perl -0777 -pi -e "s|\\ndefault:\\n.+?\\n\\};|$sections|s" etc/ldc2.conf
         cat etc/ldc2.conf
 
+        # also fix the path for dmd
+        echo -e '[Environment64]\nDFLAGS=-I%@P%/../import -L-L%@P%/../lib-x86_64 -fPIC' > bin/dmd.conf
+
     - name: Run x86_64/arm64 macOS/iOS cross-compilation smoke tests
       shell: bash
       run: |
