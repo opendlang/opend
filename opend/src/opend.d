@@ -29,7 +29,10 @@ int main(string[] args) {
 		} else switch(allOtherArgs[1]) {
 			foreach(memberName; __traits(allMembers, Commands))
 				case memberName:
-					return __traits(getMember, Commands, memberName)(buildSpecificArgs ~ allOtherArgs[2 .. $]);
+					string[] argsToSend = allOtherArgs[2 .. $];
+					if(memberName == "build" || memberName == "test" || memberName == "publish" || memberName == "testOnly" || memberName == "check")
+						argsToSend = buildSpecificArgs ~ allOtherArgs[2 .. $];
+					return __traits(getMember, Commands, memberName)(argsToSend);
 			case "-h", "--help":
 				import std.stdio, std.string;
 				foreach(memberName; __traits(allMembers, Commands))
@@ -271,6 +274,7 @@ struct Commands {
 	// publish-source which puts the dependencies together?
 	// locate-module which spits out the path to a particular module
 	// fetch-dependencies
+	// needs to keep the whole directory of source but figure out where it is an d put it in the correct place.
 
 	// if i do a server thing i need to be able to migrate it between attached displays
 

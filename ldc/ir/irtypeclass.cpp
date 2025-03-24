@@ -72,6 +72,14 @@ IrTypeClass *IrTypeClass::get(ClassDeclaration *cd) {
 
   AggrTypeBuilder builder;
 
+  // Objective-C just has an ISA pointer, so just
+  // throw that in there.
+  if (cd->classKind == ClassKind::objc) {
+    builder.addType(getVoidPtrType(), target.ptrsize);
+    isaStruct(t->type)->setBody(builder.defaultTypes(), builder.isPacked());
+    return t;
+  }
+
   // add vtbl
   builder.addType(llvm::PointerType::get(t->vtbl_type, 0), target.ptrsize);
 
