@@ -26,13 +26,14 @@ int main(string[] args) {
 			return 1; // should never happen...
 		} if(allOtherArgs.length == 1) {
 			return Commands.run(null);
-		} else switch(allOtherArgs[1]) {
+		} else switch(auto a = allOtherArgs[1]) {
 			foreach(memberName; __traits(allMembers, Commands))
-				case memberName:
+				case memberName: {
 					string[] argsToSend = allOtherArgs[2 .. $];
-					if(memberName == "build" || memberName == "test" || memberName == "publish" || memberName == "testOnly" || memberName == "check")
+					if(a == "build" || a == "test" || a == "publish" || a == "testOnly" || a == "check")
 						argsToSend = buildSpecificArgs ~ allOtherArgs[2 .. $];
 					return __traits(getMember, Commands, memberName)(argsToSend);
+				}
 			case "-h", "--help":
 				import std.stdio, std.string;
 				foreach(memberName; __traits(allMembers, Commands))
