@@ -17,6 +17,8 @@
 #include "gen/llvmhelpers.h"
 #include "llvm/IR/DerivedTypes.h"
 
+using namespace dmd;
+
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -40,7 +42,11 @@ AggrTypeBuilder::AggrTypeBuilder(unsigned offset) : m_offset(offset) {
 void AggrTypeBuilder::addType(llvm::Type *type, unsigned size) {
   const unsigned fieldAlignment = getABITypeAlign(type);
   assert(fieldAlignment);
-  assert((m_offset & (fieldAlignment - 1)) == 0 && "Field is misaligned");
+  // If the field offset does not have natural alignment, mark the aggregate as
+  // packed for IR.
+  if ((m_offset & (fieldAlignment - 1)) != 0) {
+    m_packed = true;
+  }
   m_defaultTypes.push_back(type);
   m_offset += size;
   m_fieldIndex++;
@@ -58,11 +64,13 @@ void AggrTypeBuilder::addAggregate(
   if (n == 0)
     return;
 
-  // extern(Objective-C) classes have members laid out at runtime, so we
-  // don't want to try to do anything here for those; their stuff is set up elsewhere
-  if (ad->classKind == ClassKind::objc) {
-    this->addType(getVoidPtrType(), gDataLayout->getPointerSize());
-    return;
+  // Objective-C instance variables are laid out at runtime.
+  // as such, we should not generate the aggregate body.
+  if (auto klass = ad->isClassDeclaration()) {
+    if (klass->classKind == ClassKind::objc) {
+      this->addType(getOpaquePtrType(), getPointerSize());
+      return;
+    }
   }
 
   // Unions may lead to overlapping fields, and we need to flatten them for LLVM
@@ -153,8 +161,9 @@ void AggrTypeBuilder::addAggregate(
       const uint64_t f_begin = field->offset;
       const uint64_t f_end = f_begin + fieldSize;
 
+      // use an i8 array for bit field groups
       const auto llType =
-          isBitField ? LLIntegerType::get(gIR->context(), fieldSize * 8)
+          isBitField ? llvm::ArrayType::get(getI8Type(), fieldSize)
                      : DtoMemType(field->type);
 
       // check for overlap with existing fields (on a byte level, not bits)
@@ -196,9 +205,9 @@ void AggrTypeBuilder::addAggregate(
 
     if (vd->offset < m_offset) {
       error(vd->loc,
-            "%s `%s` overlaps previous field. This is an ICE, please file an "
+            "%s `%s` @ %u overlaps previous field @ %u. This is an ICE, please file an "
             "LDC issue.",
-            vd->kind(), vd->toPrettyChars());
+            vd->kind(), vd->toPrettyChars(), vd->offset, m_offset);
       fatal();
     }
 
@@ -212,20 +221,17 @@ void AggrTypeBuilder::addAggregate(
     // add default type
     m_defaultTypes.push_back(llType);
 
-    unsigned fieldAlignment, fieldSize;
     if (!llType->isSized()) {
-      // forward reference in a cycle or similar, we need to trust the D type
-      fieldAlignment = DtoAlignment(vd->type);
-      fieldSize = af.size;
-    } else {
-      fieldAlignment = getABITypeAlign(llType);
-      if (vd->isBitFieldDeclaration()) {
-        fieldSize = af.size; // an IR integer of possibly non-power-of-2 size
-      } else {
-        fieldSize = getTypeAllocSize(llType);
-        assert(fieldSize <= af.size);
-      }
+      error(vd->loc,
+            "unexpected IR type forward declaration for aggregate member of "
+            "type `%s`. This is an ICE, please file an LDC issue.",
+            vd->type->toPrettyChars());
+      fatal();
     }
+
+    const unsigned fieldAlignment = getABITypeAlign(llType);
+    const unsigned fieldSize = getTypeAllocSize(llType);
+    assert(fieldSize <= af.size);
 
     // advance offset to right past this field
     if (!m_packed) {
@@ -282,10 +288,11 @@ IrTypeAggr::IrTypeAggr(AggregateDeclaration *ad)
              LLStructType::create(gIR->context(), ad->toPrettyChars())),
       aggr(ad) {}
 
-unsigned IrTypeAggr::getMemberLocation(VarDeclaration *var, bool& isFieldIdx) const {
+unsigned IrTypeAggr::getMemberLocation(VarDeclaration *var, bool& isFieldIdx) {
   // Note: The interface is a bit more general than what we actually return.
   // Specifically, the frontend offset information we use for overlapping
   // fields is always based at the object start.
+  const auto &varGEPIndices = getVarGEPIndices();
   auto it = varGEPIndices.find(var);
   if (it != varGEPIndices.end()) {
     isFieldIdx = true;

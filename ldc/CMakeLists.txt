@@ -778,7 +778,7 @@ set(LDC_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDC_EXE_NAME}${CMAKE_EXECUTABLE_SUF
 set(LDMD_EXE_FULL ${PROJECT_BINARY_DIR}/bin/${LDMD_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
 
 if(APPLE)
-  # intentionally blank
+  list(APPEND LLVM_LDFLAGS "-L/usr/local/lib")
 elseif(ANDROID)
   # intentionally blank
 elseif(UNIX)

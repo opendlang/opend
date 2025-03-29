@@ -20,6 +20,11 @@
 #include "gen/structs.h"
 #include "gen/tollvm.h"
 
+extern bool isHFVA(Type* t, int32_t maxNumElements = 4, Type** rewriteType = nullptr);
+
+inline uinteger_t size(Type* t) { return t->size(); }
+inline Type* pointerTo(Type* t) { return t->pointerTo(); }
+
 struct LLTypeMemoryLayout {
   // Structs and static arrays are folded recursively to scalars or anonymous
   // structs.
@@ -148,7 +153,6 @@ struct BaseBitcastABIRewrite : ABIRewrite {
       return DtoLoad(asType, paddedDump, name);
     }
 
-    address = DtoBitCast(address, getPtrToType(asType));
     return DtoLoad(asType, address, name);
   }
 
@@ -248,10 +252,10 @@ struct IndirectByvalRewrite : ABIRewrite {
   }
 
   LLValue *getLVal(Type *dty, LLValue *v) override {
-    return DtoBitCast(v, DtoPtrToType(dty));
+    return v;
   }
 
-  LLType *type(Type *t) override { return DtoPtrToType(t); }
+  LLType *type(Type *t) override { return getOpaquePtrType(); }
 
   void applyTo(IrFuncTyArg &arg, LLType *finalLType = nullptr) override {
     ABIRewrite::applyTo(arg, finalLType);

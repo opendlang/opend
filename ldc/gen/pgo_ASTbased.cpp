@@ -40,6 +40,12 @@ llvm::cl::opt<bool, false, opts::FlagParser<bool>> enablePGOIndirectCalls(
     llvm::cl::init(true));
 }
 
+#if LDC_LLVM_VER >= 1800
+namespace llvm::support {
+  const auto little = llvm::endianness::little;
+}
+#endif
+
 /// \brief Stable hasher for PGO region counters.
 ///
 /// PGOHash produces a stable hash of a given function's control flow.
@@ -903,10 +909,8 @@ void CodeGenPGO::emitCounterIncrement(const RootObject *S) const {
   assert(counter_it != (*RegionCounterMap).end() &&
          "Statement not found in PGO counter map!");
   unsigned counter = counter_it->second;
-  auto *I8PtrTy = llvm::Type::getInt8PtrTy(gIR->context());
-  gIR->ir->CreateCall(GET_INTRINSIC_DECL(instrprof_increment),
-                      {llvm::ConstantExpr::getBitCast(FuncNameVar, I8PtrTy),
-                       gIR->ir->getInt64(FunctionHash),
+  gIR->ir->CreateCall(GET_INTRINSIC_DECL(instrprof_increment, {}),
+                      {FuncNameVar, gIR->ir->getInt64(FunctionHash),
                        gIR->ir->getInt32(NumRegionCounters),
                        gIR->ir->getInt32(counter)});
 }
@@ -1111,12 +1115,10 @@ void CodeGenPGO::valueProfile(uint32_t valueKind, llvm::Instruction *valueSite,
     if (ptrCastNeeded)
       value = gIR->ir->CreatePtrToInt(value, gIR->ir->getInt64Ty());
 
-    auto *i8PtrTy = llvm::Type::getInt8PtrTy(gIR->context());
-    llvm::Value *Args[5] = {
-        llvm::ConstantExpr::getBitCast(FuncNameVar, i8PtrTy),
-        gIR->ir->getInt64(FunctionHash), value, gIR->ir->getInt32(valueKind),
-        gIR->ir->getInt32(NumValueSites[valueKind])};
-    gIR->ir->CreateCall(GET_INTRINSIC_DECL(instrprof_value_profile), Args);
+    llvm::Value *Args[5] = {FuncNameVar, gIR->ir->getInt64(FunctionHash), value,
+                            gIR->ir->getInt32(valueKind),
+                            gIR->ir->getInt32(NumValueSites[valueKind])};
+    gIR->ir->CreateCall(GET_INTRINSIC_DECL(instrprof_value_profile, {}), Args);
 
     gIR->ir->restoreIP(savedInsertPoint);
 

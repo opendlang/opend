@@ -23,6 +23,8 @@
 #include "gen/recursivevisitor.h"
 #include "gen/uda.h"
 
+using namespace dmd;
+
 namespace {
 
 /// An ASTVisitor that checks whether the number of statements is larger than a

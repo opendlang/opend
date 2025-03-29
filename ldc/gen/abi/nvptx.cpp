@@ -14,6 +14,8 @@
 #include "gen/tollvm.h"
 #include "gen/dcompute/abi-rewrites.h"
 
+using namespace dmd;
+
 struct NVPTXTargetABI : TargetABI {
   DComputePointerRewrite pointerRewite;
   llvm::CallingConv::ID callingConv(LINK l) override {
@@ -25,19 +27,16 @@ struct NVPTXTargetABI : TargetABI {
                                 : llvm::CallingConv::PTX_Device;
   }
   bool passByVal(TypeFunction *, Type *t) override {
-    t = t->toBasetype();
-    return ((t->ty == TY::Tsarray || t->ty == TY::Tstruct) && t->size() > 64);
-  }
-  void rewriteFunctionType(IrFuncTy &fty) override {
-    for (auto arg : fty.args) {
-      if (!arg->byref)
-        rewriteArgument(fty, *arg);
-    }
+    return DtoIsInMemoryOnly(t) && isPOD(t) && size(t) > 64;
   }
   bool returnInArg(TypeFunction *tf, bool) override {
-    return !tf->isref() && DtoIsInMemoryOnly(tf->next);
+    return DtoIsInMemoryOnly(tf->next);
   }
   void rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg) override {
+    TargetABI::rewriteArgument(fty, arg);
+    if (arg.rewrite)
+      return;
+
     Type *ty = arg.type->toBasetype();
     llvm::Optional<DcomputePointer> ptr;
     if (ty->ty == TY::Tstruct &&

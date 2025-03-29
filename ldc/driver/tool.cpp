@@ -76,7 +76,33 @@ std::string getProgram(const char *fallbackName,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string getGcc(const char *fallback) { return getProgram(fallback, &gcc, "CC"); }
+std::string getGcc(std::vector<std::string> &additional_args,
+                   const char *fallback) {
+#ifdef _WIN32
+  // spaces in $CC are to be expected on Windows
+  // (e.g., `C:\Program Files\LLVM\bin\clang-cl.exe`)
+  return getProgram(fallback, &gcc, "CC");
+#else
+  // Posix: in case $CC contains spaces split it into a command and arguments
+  std::string cc = env::get("CC");
+  if (cc.empty())
+    return getProgram(fallback, &gcc);
+
+  // $CC is set so fallback doesn't matter anymore.
+  if (cc.find(' ') == cc.npos)
+    return getProgram(cc.c_str(), &gcc);
+
+  llvm::StringRef sr(cc);
+  llvm::SmallVector<llvm::StringRef, 8> args;
+  sr.split(args, ' ', /*MaxSplit=*/-1, /*keepEmpty=*/false);
+
+  // args[0] == CC command, args[1..] = CLI options
+  additional_args.reserve(additional_args.size() + args.size() - 1);
+  for (size_t i = 1; i < args.size(); i ++)
+    additional_args.emplace_back(args[i].str());
+  return getProgram(args[0].str().c_str(), &gcc);
+#endif
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -260,28 +286,50 @@ int executeToolAndWait(const Loc &loc, const std::string &tool_,
 namespace windows {
 
 namespace {
+
+// cached 'singleton', lazily initialized (as that can be very expensive)
+const VSOptions &getVSOptions() {
+  static VSOptions vsOptions;
+  if (!vsOptions.VSInstallDir)
+    vsOptions.initialize();
+  return vsOptions;
+}
+
 bool setupMsvcEnvironmentImpl(
     bool forPreprocessingOnly,
     std::vector<std::pair<std::wstring, wchar_t *>> *rollback) {
-  const bool x64 = global.params.targetTriple->isArch64Bit();
+  const auto &triple = *global.params.targetTriple;
 
   if (env::has(L"VSINSTALLDIR") && !env::has(L"LDC_VSDIR_FORCE")) {
-    // Assume a fully set up environment (e.g., VS native tools command prompt).
-    // Skip the MSVC setup unless the environment is set up for a different
-    // target architecture.
-    const auto tgtArch = env::get("VSCMD_ARG_TGT_ARCH"); // VS 2017+
-    if (tgtArch.empty() || tgtArch == (x64 ? "x64" : "x86"))
-      return true;
+    const auto tripleArch = triple.getArch();
+    const char *expectedArch = nullptr;
+
+    if (tripleArch == llvm::Triple::ArchType::x86_64)
+      expectedArch = "x64";
+    else if (tripleArch == llvm::Triple::ArchType::x86)
+      expectedArch = "x86";
+    else if (tripleArch == llvm::Triple::ArchType::aarch64)
+      expectedArch = "arm64";
+    else if (tripleArch == llvm::Triple::ArchType::arm ||
+             tripleArch == llvm::Triple::ArchType::thumb)
+      expectedArch = "arm";
+
+    if (expectedArch) {
+      // Assume a fully set up environment (e.g., VS native tools command prompt).
+      // Skip the MSVC setup unless the environment is set up for a different
+      // target architecture.
+      const auto tgtArch = env::get("VSCMD_ARG_TGT_ARCH"); // VS 2017+
+      if (tgtArch.empty() || tgtArch == expectedArch)
+        return true;
+    }
   }
 
+  const bool x64 = triple.isArch64Bit();
   const auto begin = std::chrono::steady_clock::now();
 
-  static VSOptions vsOptions; // cache, as this can be expensive
-  if (!vsOptions.VSInstallDir) {
-    vsOptions.initialize();
-    if (!vsOptions.VSInstallDir)
-      return false;
-  }
+  auto &vsOptions = getVSOptions();
+  if (!vsOptions.VSInstallDir)
+    return false;
 
   // cache the environment variable prefixes too
   static llvm::SmallVector<const char *, 2> binPaths;
@@ -402,6 +450,15 @@ MsvcEnvironmentScope::~MsvcEnvironmentScope() {
     SetEnvironmentVariableW(pair.first.c_str(), pair.second);
     free(pair.second);
   }
+}
+
+std::string
+MsvcEnvironmentScope::tryResolveToolPath(const char *fileName) const {
+  const bool x64 = global.params.targetTriple->isArch64Bit();
+  const char *secondaryBindir = nullptr;
+  if (auto bindir = getVSOptions().getVCBinDir(x64, secondaryBindir))
+    return (llvm::Twine(bindir) + "\\" + fileName).str();
+  return fileName;
 }
 
 } // namespace windows

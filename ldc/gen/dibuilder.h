@@ -140,12 +140,7 @@ public:
   EmitLocalVariable(llvm::Value *ll, VarDeclaration *vd, Type *type = nullptr,
                     bool isThisPtr = false, bool forceAsLocal = false,
                     bool isRefRVal = false,
-#if LDC_LLVM_VER >= 1400
-                    llvm::ArrayRef<uint64_t> addr = llvm::ArrayRef<uint64_t>()
-#else
-                    llvm::ArrayRef<int64_t> addr = llvm::ArrayRef<int64_t>()
-#endif
-                    );
+                    llvm::ArrayRef<uint64_t> addr = llvm::ArrayRef<uint64_t>());
 
   /// \brief Emits all things necessary for making debug info for a global
   /// variable vd.
@@ -189,7 +184,7 @@ private:
   DIType CreateArrayType(TypeArray *type);
   DIType CreateSArrayType(TypeSArray *type);
   DIType CreateAArrayType(TypeAArray *type);
-  DISubroutineType CreateFunctionType(Type *type);
+  DISubroutineType CreateFunctionType(Type *type, FuncDeclaration *fd = nullptr);
   DISubroutineType CreateEmptyFunctionType();
   DIType CreateDelegateType(TypeDelegate *type);
   DIType CreateUnspecifiedType(Dsymbol *sym);

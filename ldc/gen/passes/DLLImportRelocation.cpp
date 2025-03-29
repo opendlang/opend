@@ -200,7 +200,7 @@ private:
         t = st->getElementType(i);
       else if (ArrayType *at = dyn_cast<ArrayType>(t))
         t = at->getElementType();
-      else if (PointerType *pt = dyn_cast<PointerType>(t))
+      else if (dyn_cast<PointerType>(t))
         llvm_unreachable("Shouldn't be trying to GEP a pointer in initializer");
     }
 
@@ -208,15 +208,11 @@ private:
     if (auto gep = isGEP(skipOverCast(originalInitializer))) {
       Constant *newOperand =
           createConstPointerCast(importedVar, gep->getOperand(0)->getType());
-#if LDC_LLVM_VER < 1400
-      value = gep->getWithOperandReplaced(0, newOperand);
-#else
       SmallVector<Constant *, 8> newOperands;
       newOperands.push_back(newOperand);
       for (unsigned i = 1, e = gep->getNumOperands(); i != e; ++i)
         newOperands.push_back(gep->getOperand(i));
       value = gep->getWithOperands(newOperands);
-#endif
     }
     value = createConstPointerCast(value, t);
 

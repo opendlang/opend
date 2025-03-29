@@ -65,11 +65,7 @@
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/StringSaver.h"
-#if LDC_LLVM_VER >= 1400
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #if LDC_MLIR_ENABLED
@@ -91,6 +87,7 @@ void gendocfile(Module *m);
 // In dmd/mars.d
 void generateJson(Modules *modules);
 
+using namespace dmd;
 using namespace opts;
 
 static StringsAdapter impPathsStore("I", global.params.imppath);
@@ -188,6 +185,10 @@ void tryParse(const llvm::SmallVectorImpl<const char *> &args, size_t i,
 }
 
 bool tryParseLowmem(const llvm::SmallVectorImpl<const char *> &args) {
+#if LDC_LLVM_VER >= 1800
+  #define startswith starts_with
+#endif
+
   bool lowmem = false;
   for (size_t i = 1; i < args.size(); ++i) {
     if (args::isRunArg(args[i]))
@@ -205,6 +206,10 @@ bool tryParseLowmem(const llvm::SmallVectorImpl<const char *> &args) {
     }
   }
   return lowmem;
+
+#if LDC_LLVM_VER >= 1800
+  #undef startswith
+#endif
 }
 
 const char *
@@ -289,6 +294,7 @@ void parseCommandLine(Strings &sourceFiles) {
 
   // Filter out druntime options in the cmdline, e.g., to configure the GC.
   std::vector<const char *> filteredArgs;
+
   filteredArgs.reserve(allArguments.size());
   for (size_t i = 0; i < allArguments.size(); ++i) {
     const char *arg = allArguments[i];
@@ -385,14 +391,12 @@ void parseCommandLine(Strings &sourceFiles) {
   }
 
 #if _WIN32
-  const auto toWinPaths = [](Strings *paths) {
-    if (!paths)
-      return;
-    for (auto &path : *paths)
+  const auto toWinPaths = [](Strings &paths) {
+    for (auto &path : paths)
       path = opts::dupPathString(path).ptr;
   };
-  toWinPaths(global.params.imppath);
-  toWinPaths(global.params.fileImppath);
+  toWinPaths(*global.params.imppath);
+  toWinPaths(*global.params.fileImppath);
 #endif
 
   for (const auto &field : jsonFields) {
@@ -555,29 +559,11 @@ void parseCommandLine(Strings &sourceFiles) {
   global.params.dihdr.fullOutput = opts::hdrKeepAllBodies;
   global.params.disableRedZone = opts::disableRedZone();
 
-  // Passmanager selection options depend on LLVM version
-#if LDC_LLVM_VER < 1400
-  // LLVM < 14 only supports the legacy passmanager
-  if (!opts::isUsingLegacyPassManager()) {
-    error(Loc(), "LLVM version 13 or below only supports --passmanager=legacy");
-  }
-#endif
-#if LDC_LLVM_VER >= 1500
-  // LLVM >= 15 only supports the new passmanager
-  if (opts::isUsingLegacyPassManager()) {
-    error(Loc(), "LLVM version 15 or above only supports --passmanager=new");
-  }
-#endif
-
+  // enforce opaque IR pointers
 #if LDC_LLVM_VER >= 1700
-  if (!opts::enableOpaqueIRPointers)
-    error(Loc(),
-          "LLVM version 17 or above only supports --opaque-pointers=true");
-#elif LDC_LLVM_VER >= 1500
-  getGlobalContext().setOpaquePointers(opts::enableOpaqueIRPointers);
-#elif LDC_LLVM_VER >= 1400
-  if (opts::enableOpaqueIRPointers)
-    getGlobalContext().enableOpaquePointers();
+  // supports opaque IR pointers only
+#else
+  getGlobalContext().setOpaquePointers(true);
 #endif
 }
 
@@ -696,8 +682,10 @@ void registerPredefinedTargetVersions() {
     VersionCondition::addPredefinedGlobalIdent("PPC64");
     registerPredefinedFloatABI("PPC_SoftFloat", "PPC_HardFloat");
     if (triple.getOS() == llvm::Triple::Linux) {
-      VersionCondition::addPredefinedGlobalIdent(
-          triple.getArch() == llvm::Triple::ppc64 ? "ELFv1" : "ELFv2");
+      const llvm::SmallVector<llvm::StringRef> features{};
+      const std::string abi = getABI(triple, features);
+      VersionCondition::addPredefinedGlobalIdent(abi == "elfv1" ? "ELFv1"
+                                                                : "ELFv2");
     }
     break;
   case llvm::Triple::arm:
@@ -779,6 +767,9 @@ void registerPredefinedTargetVersions() {
     VersionCondition::addPredefinedGlobalIdent("LoongArch64");
     registerPredefinedFloatABI("LoongArch_SoftFloat", "LoongArch_HardFloat");
     break;
+  case llvm::Triple::xtensa:
+    VersionCondition::addPredefinedGlobalIdent("Xtensa");
+    break;
 #endif // LDC_LLVM_VER >= 1600
   default:
     warning(Loc(), "unknown target CPU architecture: %s",
@@ -845,16 +836,20 @@ void registerPredefinedTargetVersions() {
     if (triple.getEnvironment() == llvm::Triple::Android) {
       VersionCondition::addPredefinedGlobalIdent("Android");
       VersionCondition::addPredefinedGlobalIdent("CRuntime_Bionic");
+      VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
+      VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     } else if (triple.isMusl()) {
       VersionCondition::addPredefinedGlobalIdent("CRuntime_Musl");
-      VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc");
+      VersionCondition::addPredefinedGlobalIdent("CppRuntime_GNU");
+      VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc"); // legacy
       // use libunwind for backtraces
       VersionCondition::addPredefinedGlobalIdent("DRuntime_Use_Libunwind");
     } else if (global.params.isUClibcEnvironment) {
       VersionCondition::addPredefinedGlobalIdent("CRuntime_UClibc");
     } else {
       VersionCondition::addPredefinedGlobalIdent("CRuntime_Glibc");
-      VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc");
+      VersionCondition::addPredefinedGlobalIdent("CppRuntime_GNU");
+      VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc"); // legacy
     }
     break;
   case llvm::Triple::Haiku:
@@ -867,7 +862,8 @@ void registerPredefinedTargetVersions() {
     VersionCondition::addPredefinedGlobalIdent(
         "darwin"); // For backwards compatibility.
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::FreeBSD:
     VersionCondition::addPredefinedGlobalIdent("FreeBSD");
@@ -878,7 +874,8 @@ void registerPredefinedTargetVersions() {
       warning(Loc(), "FreeBSD major version not specified in target triple");
     }
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::Solaris:
     VersionCondition::addPredefinedGlobalIdent("Solaris");
@@ -888,7 +885,8 @@ void registerPredefinedTargetVersions() {
   case llvm::Triple::DragonFly:
     VersionCondition::addPredefinedGlobalIdent("DragonFlyBSD");
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_GNU");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc"); // legacy
     break;
   case llvm::Triple::NetBSD:
     VersionCondition::addPredefinedGlobalIdent("NetBSD");
@@ -897,7 +895,8 @@ void registerPredefinedTargetVersions() {
   case llvm::Triple::OpenBSD:
     VersionCondition::addPredefinedGlobalIdent("OpenBSD");
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_GNU");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Gcc"); // legacy
     break;
   case llvm::Triple::AIX:
     VersionCondition::addPredefinedGlobalIdent("AIX");
@@ -906,17 +905,20 @@ void registerPredefinedTargetVersions() {
   case llvm::Triple::IOS:
     VersionCondition::addPredefinedGlobalIdent("iOS");
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::TvOS:
     VersionCondition::addPredefinedGlobalIdent("TVOS");
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::WatchOS:
     VersionCondition::addPredefinedGlobalIdent("WatchOS");
     VersionCondition::addPredefinedGlobalIdent("Posix");
-    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
+    VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::WASI:
     VersionCondition::addPredefinedGlobalIdent("WASI");
@@ -1043,16 +1045,6 @@ void registerPredefinedVersions() {
     VersionCondition::addPredefinedGlobalIdent("LDC_ThreadSanitizer");
   }
 
-  // Set a version identifier for whether opaque pointers are enabled or not. (needed e.g. for intrinsic mangling)
-#if LDC_LLVM_VER >= 1700
-  // Since LLVM 17, IR pointers are always opaque.
-  VersionCondition::addPredefinedGlobalIdent("LDC_LLVM_OpaquePointers");
-#elif LDC_LLVM_VER >= 1400
-  if (!getGlobalContext().supportsTypedPointers()) {
-    VersionCondition::addPredefinedGlobalIdent("LDC_LLVM_OpaquePointers");
-  }
-#endif
-
 // Expose LLVM version to runtime
 #define STR(x) #x
 #define XSTR(x) STR(x)
@@ -1129,8 +1121,6 @@ int main(int argc, const char **originalArgv)
 int cppmain() {
   exe_path::initialize(allArguments[0]);
 
-  global.params.help.revert = false;
-
   global._init();
   global.ldc_version = {strlen(ldc::ldc_version), ldc::ldc_version};
   global.llvm_version = {strlen(ldc::llvm_version), ldc::llvm_version};
@@ -1156,9 +1146,6 @@ int cppmain() {
   if (global.errors) {
     fatal();
   }
-
-  global.compileEnv.previewIn = global.params.previewIn;
-  global.compileEnv.ddocOutput = global.params.ddoc.doOutput;
 
   if (opts::fTimeTrace) {
     initializeTimeTrace(opts::fTimeTraceGranularity, 0, opts::allArguments[0]);

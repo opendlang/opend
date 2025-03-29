@@ -25,8 +25,6 @@ struct IRState;
 struct Loc;
 class Type;
 
-llvm::StructType *DtoArrayType(Type *arrayTy);
-llvm::StructType *DtoArrayType(LLType *elemTy);
 llvm::ArrayType *DtoStaticArrayType(Type *sarrayTy);
 
 /// Creates a (global) constant with the element data for the given arary
@@ -35,8 +33,7 @@ llvm::ArrayType *DtoStaticArrayType(Type *sarrayTy);
 LLConstant *DtoConstArrayInitializer(ArrayInitializer *si, Type *targetType,
                                      const bool isCfile);
 
-LLConstant *DtoConstSlice(LLConstant *dim, LLConstant *ptr,
-                          Type *type = nullptr);
+LLConstant *DtoConstSlice(LLConstant *dim, LLConstant *ptr);
 
 /// Returns the element at position idx of the literal (assumed to be in range).
 Expression *indexArrayLiteral(ArrayLiteralExp *ale, unsigned idx);
@@ -62,8 +59,6 @@ void DtoSetArrayToNull(DValue *v);
 
 DSliceValue *DtoNewDynArray(const Loc &loc, Type *arrayType, DValue *dim,
                             bool defaultInit = true);
-DSliceValue *DtoNewMulDimDynArray(const Loc &loc, Type *arrayType,
-                                  DValue **dims, size_t ndims);
 
 DSliceValue *DtoCatArrays(const Loc &loc, Type *type, Expression *e1,
                           Expression *e2);

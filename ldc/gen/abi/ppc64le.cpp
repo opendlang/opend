@@ -10,7 +10,7 @@
 // The ABI implementation used for 64 bit little-endian PowerPC targets.
 //
 // The PowerOpen 64bit ELF v2 ABI can be found here:
-// https://members.openpowerfoundation.org/document/dl/576
+// https://files.openpower.foundation/s/cfA2oFPXbbZwEBK/download/64biteflv2abi-v1.5.pdf
 //===----------------------------------------------------------------------===//
 
 #include "gen/abi/abi.h"
@@ -20,6 +20,8 @@
 #include "gen/llvmhelpers.h"
 #include "gen/tollvm.h"
 
+using namespace dmd;
+
 struct PPC64LETargetABI : TargetABI {
   HFVAToArray hfvaToArray;
   CompositeToArray64 compositeToArray64;
@@ -27,40 +29,18 @@ struct PPC64LETargetABI : TargetABI {
 
   explicit PPC64LETargetABI() : hfvaToArray(8) {}
 
-  bool returnInArg(TypeFunction *tf, bool) override {
-    if (tf->isref()) {
-      return false;
-    }
-
-    Type *rt = tf->next->toBasetype();
-
-    if (!isPOD(rt))
-      return true;
-
-    return passByVal(tf, rt);
-  }
-
   bool passByVal(TypeFunction *, Type *t) override {
     t = t->toBasetype();
-    return t->ty == TY::Tsarray || (t->ty == TY::Tstruct && t->size() > 16 &&
-                                    !isHFVA(t, hfvaToArray.maxElements));
-  }
-
-  void rewriteFunctionType(IrFuncTy &fty) override {
-    // return value
-    if (!fty.ret->byref) {
-      rewriteArgument(fty, *fty.ret);
-    }
-
-    // explicit parameters
-    for (auto arg : fty.args) {
-      if (!arg->byref) {
-        rewriteArgument(fty, *arg);
-      }
-    }
+    return isPOD(t) &&
+           (t->ty == TY::Tsarray || (t->ty == TY::Tstruct && size(t) > 16 &&
+                                     !isHFVA(t, hfvaToArray.maxElements)));
   }
 
   void rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg) override {
+    TargetABI::rewriteArgument(fty, arg);
+    if (arg.rewrite)
+      return;
+
     Type *ty = arg.type->toBasetype();
     if (ty->ty == TY::Tstruct || ty->ty == TY::Tsarray) {
       if (ty->ty == TY::Tstruct &&
@@ -71,7 +51,7 @@ struct PPC64LETargetABI : TargetABI {
       } else {
         compositeToArray64.applyTo(arg);
       }
-    } else if (ty->isintegral()) {
+    } else if (ty->isintegral() && !ty->isTypeVector()) {
       arg.attrs.addAttribute(ty->isunsigned() ? LLAttribute::ZExt
                                               : LLAttribute::SExt);
     }

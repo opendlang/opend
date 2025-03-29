@@ -26,10 +26,8 @@
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetParser.h"
-#if LDC_LLVM_VER >= 1400
 #include "llvm/Support/AArch64TargetParser.h"
 #include "llvm/Support/ARMTargetParser.h"
-#endif
 #else
 #include "llvm/TargetParser/AArch64TargetParser.h"
 #include "llvm/TargetParser/ARMTargetParser.h"
@@ -41,16 +39,16 @@
 #include "llvm/IR/Module.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/Support/CommandLine.h"
-#if LDC_LLVM_VER >= 1400
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 
 #include "gen/optimizer.h"
+
+#if LDC_LLVM_VER >= 1800
+#define startswith starts_with
+#endif
 
 #ifdef LDC_LLVM_SUPPORTS_MACHO_DWARF_LINE_AS_REGULAR_SECTION
 // LDC-LLVM >= 6.0.1:
@@ -441,7 +439,7 @@ createTargetMachine(const std::string targetTriple, const std::string arch,
                     FloatABI::Type &floatABI,
                     llvm::Optional<llvm::Reloc::Model> relocModel,
                     llvm::Optional<llvm::CodeModel::Model> codeModel,
-                    const llvm::CodeGenOpt::Level codeGenOptLevel,
+                    const llvm::CodeGenOptLevel codeGenOptLevel,
                     const bool noLinkerStripDead) {
   // Determine target triple. If the user didn't explicitly specify one, use
   // the one set at LLVM configure time.
@@ -450,10 +448,10 @@ createTargetMachine(const std::string targetTriple, const std::string arch,
     triple = llvm::Triple(
         llvm::Triple::normalize(llvm::sys::getDefaultTargetTriple()));
 
+    // Apple: translate darwin to macos, apparently like clang
     if (triple.getOS() == llvm::Triple::Darwin) {
-      // We only support OSX, so darwin should really be macosx.
       llvm::SmallString<16> osname;
-      osname += "macosx";
+      osname += "macos";
       // We have to specify OS version in the triple to avoid linker warnings,
       // see https://github.com/ldc-developers/ldc/issues/4501.
       // If environment variable MACOSX_DEPLOYMENT_TARGET is not set, then use
@@ -463,14 +461,9 @@ createTargetMachine(const std::string targetTriple, const std::string arch,
       if (!envVersion.empty()) {
         osname += envVersion;
       } else {
-#if LDC_LLVM_VER >= 1400
         llvm::VersionTuple OSVersion;
         triple.getMacOSXVersion(OSVersion);
         osname += OSVersion.getAsString();
-#else
-        // Hardcode the version, because `getMacOSXVersion` is not available.
-        osname += "10.7";
-#endif
       }
 
       triple.setOSName(osname);
@@ -635,12 +628,14 @@ createTargetMachine(const std::string targetTriple, const std::string arch,
     targetOptions.DataSections = true;
   }
 
-  // On Android, we depend on a custom TLS emulation scheme implemented in our
-  // LLVM fork. LLVM 7+ enables regular emutls by default; prevent that.
+  // On Android, enforce native ELF TLS (supported since API level 29 = Android
+  // v10), as required by druntime. (Some older LLVM versions might default to
+  // EmuTLS).
   if (triple.getEnvironment() == llvm::Triple::Android) {
     targetOptions.EmulatedTLS = false;
 #if LDC_LLVM_VER < 1700
-    // Removed in this commit: https://github.com/llvm/llvm-project/commit/0d333bf0e3aa37e2e6ae211e3aa80631c3e01b85
+    // Removed in this commit:
+    // https://github.com/llvm/llvm-project/commit/0d333bf0e3aa37e2e6ae211e3aa80631c3e01b85
     targetOptions.ExplicitEmulatedTLS = true;
 #endif
   }
@@ -656,7 +651,7 @@ createTargetMachine(const std::string targetTriple, const std::string arch,
 
   return target->createTargetMachine(triple.str(), cpu, finalFeaturesString,
                                      targetOptions, relocModel, codeModel,
-                                     codeGenOptLevel);
+                                     static_cast<llvm::CodeGenOptLevel>(codeGenOptLevel));
 }
 
 ComputeBackend::Type getComputeTargetType(llvm::Module* m) {

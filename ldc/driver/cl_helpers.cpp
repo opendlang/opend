@@ -67,6 +67,7 @@ void StringsAdapter::push_back(const char *cstr) {
   if (!*arrp) {
     *arrp = createStrings();
   }
+
   (*arrp)->push(mem.xstrdup(cstr));
 }
 

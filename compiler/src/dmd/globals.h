@@ -545,3 +545,5 @@ enum class FileType : uint8_t
 };
 
 typedef uinteger_t StorageClass;
+
+namespace dmd {}

@@ -18,6 +18,8 @@
 #include "gen/abi/generic.h"
 #include "llvm/Target/TargetMachine.h"
 
+using namespace dmd;
+
 struct ArmTargetABI : TargetABI {
   HFVAToArray hfvaToArray;
   CompositeToArray32 compositeToArray32;
@@ -28,8 +30,6 @@ struct ArmTargetABI : TargetABI {
     // AAPCS 5.4 wants composites > 4-bytes returned by arg except for
     // Homogeneous Aggregates of up-to 4 float types (6.1.2.1) - an HFA.
     // TODO: see if Tsarray should be candidate for HFA.
-    if (tf->isref())
-      return false;
     Type *rt = tf->next->toBasetype();
 
     if (!isPOD(rt))
@@ -46,8 +46,7 @@ struct ArmTargetABI : TargetABI {
     // clang uses byval for types > 64-bytes, then llvm backend
     // converts back to non-byval.  Without this special handling the
     // optimzer generates bad code (e.g. std.random unittest crash).
-    t = t->toBasetype();
-    return ((t->ty == TY::Tsarray || t->ty == TY::Tstruct) && t->size() > 64);
+    return DtoIsInMemoryOnly(t) && isPOD(t) && t->size() > 64;
 
     // Note: byval can have a codegen problem with -O1 and higher.
     // What happens is that load instructions are being incorrectly
@@ -67,31 +66,19 @@ struct ArmTargetABI : TargetABI {
     // problem is better understood.
   }
 
-  void rewriteFunctionType(IrFuncTy &fty) override {
-    Type *retTy = fty.ret->type->toBasetype();
-    if (!fty.ret->byref && retTy->ty == TY::Tstruct) {
-      // Rewrite HFAs only because union HFAs are turned into IR types that are
-      // non-HFA and messes up register selection
-      if (isHFVA(retTy, hfvaToArray.maxElements, &fty.ret->ltype)) {
-        hfvaToArray.applyTo(*fty.ret, fty.ret->ltype);
-      } else {
-        integerRewrite.applyTo(*fty.ret);
-      }
-    }
-
-    for (auto arg : fty.args) {
-      if (!arg->byref)
-        rewriteArgument(fty, *arg);
-    }
-  }
-
   void rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg) override {
+    TargetABI::rewriteArgument(fty, arg);
+    if (arg.rewrite)
+      return;
+
     // structs and arrays need rewrite as i32 arrays.  This keeps data layout
     // unchanged when passed in registers r0-r3 and is necessary to match C ABI
     // for struct passing.  Without out this rewrite, each field or array
     // element is passed in own register.  For example: char[4] now all fits in
     // r0, where before it consumed r0-r3.
     Type *ty = arg.type->toBasetype();
+
+    const bool isReturnValue = &arg == fty.ret;
 
     // TODO: want to also rewrite Tsarray as i32 arrays, but sometimes
     // llvm selects an aligned ldrd instruction even though the ptr is
@@ -102,6 +89,8 @@ struct ArmTargetABI : TargetABI {
       // non-HFA and messes up register selection
       if (isHFVA(ty, hfvaToArray.maxElements, &arg.ltype)) {
         hfvaToArray.applyTo(arg, arg.ltype);
+      } else if (isReturnValue) {
+        integerRewrite.applyTo(arg);
       } else if (DtoAlignment(ty) <= 4) {
         compositeToArray32.applyTo(arg);
       } else {
@@ -111,19 +100,14 @@ struct ArmTargetABI : TargetABI {
   }
 
   Type *vaListType() override {
+    if (global.params.targetTriple->isOSDarwin())
+      return TargetABI::vaListType(); // char*
+
     // We need to pass the actual va_list type for correct mangling. Simply
     // using TypeIdentifier here is a bit wonky but works, as long as the name
     // is actually available in the scope (this is what DMD does, so if a better
     // solution is found there, this should be adapted).
     return TypeIdentifier::create(Loc(), Identifier::idPool("__va_list"));
-  }
-
-  const char *objcMsgSendFunc(Type *ret, IrFuncTy &fty, bool directcall) override {
-    // see objc/message.h for objc_msgSend selection rules
-    if (fty.arg_sret) {
-      return directcall ? "objc_msgSendSuper_stret" : "objc_msgSend_stret";
-    }
-    return directcall ? "objc_msgSendSuper" : "objc_msgSend";
   }
 };
 

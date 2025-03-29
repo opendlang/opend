@@ -23,8 +23,8 @@
 #include "ir/iraggr.h"
 #include "ir/irtypeclass.h"
 
-// in semantic3.d
-void semanticTypeInfoMembers(StructDeclaration *sd);
+using namespace dmd;
+extern void semanticTypeInfoMembers(StructDeclaration* sd);
 
 namespace {
 LLStructType* getTypeInfoStructMemType() {
@@ -136,7 +136,7 @@ LLConstant *IrStruct::getTypeInfoInit() {
   } else {
     llvm::Constant *initPtr;
     if (ts->isZeroInit(Loc())) {
-      initPtr = getNullValue(getVoidPtrType());
+      initPtr = getNullPtr();
     } else {
       initPtr = getInitSymbol();
     }
@@ -156,7 +156,7 @@ LLConstant *IrStruct::getTypeInfoInit() {
   b.push_funcptr(isOpaque ? nullptr : search_toString(sd));
 
   // StructFlags m_flags
-  b.push_uint(!isOpaque && ts->hasPointers() ? 1 : 0);
+  b.push_uint(!isOpaque && hasPointers(ts) ? 1 : 0);
 
   // function xdtor/xdtorti
   b.push_funcptr(isOpaque ? nullptr : sd->tidtor);
@@ -188,7 +188,7 @@ LLConstant *IrStruct::getTypeInfoInit() {
   if (!isOpaque && sd->getRTInfo) {
     b.push(toConstElem(sd->getRTInfo, gIR));
   } else {
-    b.push_size_as_vp(!isOpaque && ts->hasPointers() ? 1 : 0);
+    b.push_size_as_vp(!isOpaque && hasPointers(ts) ? 1 : 0);
   }
 
   constTypeInfo = b.get_constant(getTypeInfoStructMemType());

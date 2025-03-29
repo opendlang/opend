@@ -13,6 +13,8 @@
 
 #include "gen/abi/generic.h"
 
+using namespace dmd;
+
 namespace {
 Type *getSingleWrappedScalarType(Type *t) {
   t = t->toBasetype();
@@ -46,7 +48,7 @@ struct WasmTargetABI : TargetABI {
       return false;
 
     // max scalar type size is 16 (`real`); return early if larger
-    if (t->size() > 16 || !isPOD(t))
+    if (size(t) > 16 || !isPOD(t))
       return false;
 
     Type *singleWrappedScalarType = getSingleWrappedScalarType(t);
@@ -55,20 +57,9 @@ struct WasmTargetABI : TargetABI {
            DtoAlignment(t) <= DtoAlignment(singleWrappedScalarType);
   }
 
-  bool returnInArg(TypeFunction *tf, bool) override {
-    if (tf->isref()) {
-      return false;
-    }
-
-    Type *rt = tf->next->toBasetype();
-    return passByVal(tf, rt);
-  }
-
   bool passByVal(TypeFunction *, Type *t) override {
-    return DtoIsInMemoryOnly(t) && !isDirectlyPassedAggregate(t);
+    return DtoIsInMemoryOnly(t) && isPOD(t) && !isDirectlyPassedAggregate(t);
   }
-
-  void rewriteFunctionType(IrFuncTy &) override {}
 };
 
 // The public getter for abi.cpp.

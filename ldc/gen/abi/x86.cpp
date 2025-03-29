@@ -20,16 +20,16 @@
 #include "ir/irfunction.h"
 #include "ir/irfuncty.h"
 
+using namespace dmd;
+
 struct X86TargetABI : TargetABI {
-  const bool isDarwin;
   const bool isMSVC;
   bool returnStructsInRegs;
   IntegerRewrite integerRewrite;
   IndirectByvalRewrite indirectByvalRewrite;
 
   X86TargetABI()
-      : isDarwin(global.params.targetTriple->isOSDarwin()),
-        isMSVC(global.params.targetTriple->isWindowsMSVCEnvironment()) {
+      : isMSVC(global.params.targetTriple->isWindowsMSVCEnvironment()) {
     using llvm::Triple;
     auto os = global.params.targetTriple->getOS();
     returnStructsInRegs =
@@ -101,9 +101,6 @@ struct X86TargetABI : TargetABI {
   }
 
   bool returnInArg(TypeFunction *tf, bool needsThis) override {
-    if (tf->isref())
-      return false;
-
     Type *rt = getExtraLoweredReturnType(tf);
     const bool externD = isExternD(tf);
 
@@ -208,7 +205,7 @@ struct X86TargetABI : TargetABI {
           first.attrs.addAttribute(LLAttribute::InReg);
         } else {
           Type *firstTy = first.type->toBasetype();
-          auto sz = firstTy->size();
+          auto sz = size(firstTy);
           if (!firstTy->isfloating() && (sz == 1 || sz == 2 || sz == 4)) {
             // rewrite aggregates as integers to make inreg work
             if (firstTy->ty == TY::Tstruct || firstTy->ty == TY::Tsarray) {
@@ -228,7 +225,7 @@ struct X86TargetABI : TargetABI {
     // Clang does not pass empty structs, while it seems that GCC does,
     // at least on Linux x86. We don't know whether the C compiler will
     // be Clang or GCC, so just assume Clang on Darwin and G++ on Linux.
-    if (externD || !isDarwin)
+    if (externD || !isDarwin())
       return;
 
     size_t i = 0;
@@ -255,43 +252,24 @@ struct X86TargetABI : TargetABI {
     workaroundIssue1356(args);
   }
 
+  void rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg) override {
+    // all handled in rewriteFunctionType()
+  }
+
   // FIXME: LDC issue #1356
   // MSVC targets don't support alignment attributes for LL byval args
   void workaroundIssue1356(std::vector<IrFuncTyArg *> &args) const {
     if (isMSVC) {
       for (auto arg : args) {
         if (arg->isByVal()) {
-#if LDC_LLVM_VER < 1300
-          arg->attrs.removeAttribute(LLAttribute::Alignment);
-#else
           // Keep alignment for LLVM 13+, to prevent invalid `movaps` etc.,
           // but limit to 4 (required according to runnable/ldc_cabi1.d).
           auto align4 = llvm::Align(4);
-          if (arg->attrs.getAlignment().
-#if LDC_LLVM_VER >= 1500
-              value_or
-#else
-              getValueOr
-#endif
-              (align4) > align4)
+          if (arg->attrs.getAlignment().value_or(align4) > align4)
             arg->attrs.addAlignmentAttr(align4);
-#endif
         }
       }
     }
-  }
-
-  const char *objcMsgSendFunc(Type *ret, IrFuncTy &fty, bool directcall) override {
-    // see objc/message.h for objc_msgSend selection rules
-    assert(isDarwin);
-    if (fty.arg_sret) {
-      return directcall ? "objc_msgSendSuper_stret" : "objc_msgSend_stret";
-    }
-    // float, double, long double return
-    if (ret && ret->isfloating() && !ret->iscomplex()) {
-      return "objc_msgSend_fpret";
-    }
-    return directcall ? "objc_msgSendSuper" : "objc_msgSend";
   }
 };
 

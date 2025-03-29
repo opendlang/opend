@@ -25,14 +25,13 @@
 #include "ir/irfuncty.h"
 #include <algorithm>
 
-// in dmd/argtypes_aarch64.d:
-bool isHFVA(Type *t, int maxNumElements, Type **rewriteType);
+using namespace dmd;
 
 //////////////////////////////////////////////////////////////////////////////
 
 llvm::Value *ABIRewrite::getRVal(Type *dty, LLValue *v) {
   llvm::Type *t = DtoType(dty);
-  return DtoLoad(t, DtoBitCast(getLVal(dty, v), t->getPointerTo()));
+  return DtoLoad(t, getLVal(dty, v));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -116,32 +115,17 @@ bool TargetABI::isAggregate(Type *t) {
          /*ty == TY::Tarray ||*/ ty == TY::Tdelegate || t->iscomplex();
 }
 
-namespace {
-bool hasCtor(StructDeclaration *s) {
-  if (s->ctor)
-    return true;
-  for (VarDeclaration *field : s->fields) {
-    Type *tf = field->type->baseElemOf();
-    if (auto tstruct = tf->isTypeStruct()) {
-      if (hasCtor(tstruct->sym))
-        return true;
-    }
-  }
-  return false;
-}
-}
-
 bool TargetABI::isPOD(Type *t, bool excludeStructsWithCtor) {
   t = t->baseElemOf();
   if (t->ty != TY::Tstruct)
     return true;
   StructDeclaration *sd = static_cast<TypeStruct *>(t)->sym;
-  return sd->isPOD() && !(excludeStructsWithCtor && hasCtor(sd));
+  return sd->isPOD() && !(excludeStructsWithCtor && sd->ctor);
 }
 
 bool TargetABI::canRewriteAsInt(Type *t, bool include64bit) {
-  auto size = t->toBasetype()->size();
-  return size == 1 || size == 2 || size == 4 || (include64bit && size == 8);
+  auto sz = t->toBasetype()->size();
+  return sz == 1 || sz == 2 || sz == 4 || (include64bit && sz == 8);
 }
 
 bool TargetABI::isExternD(TypeFunction *tf) {
@@ -172,12 +156,34 @@ llvm::CallingConv::ID TargetABI::callingConv(FuncDeclaration *fdecl) {
 
 //////////////////////////////////////////////////////////////////////////////
 
+bool TargetABI::returnInArg(TypeFunction *tf, bool needsThis) {
+  // default: use sret for non-PODs or if a same-typed argument would be passed
+  // byval
+  Type *rt = tf->next->toBasetype();
+  return !isPOD(rt) || passByVal(tf, rt);
+}
+
 bool TargetABI::preferPassByRef(Type *t) {
   // simple base heuristic: use a ref for all types > 2 machine words
   return t->size() > 2 * target.ptrsize;
 }
 
+bool TargetABI::passByVal(TypeFunction *tf, Type *t) {
+  // default: all POD structs and static arrays
+  return DtoIsInMemoryOnly(t) && isPOD(t);
+}
+
 //////////////////////////////////////////////////////////////////////////////
+
+void TargetABI::rewriteFunctionType(IrFuncTy &fty) {
+  if (!skipReturnValueRewrite(fty))
+    rewriteArgument(fty, *fty.ret);
+
+  for (auto arg : fty.args) {
+    if (!arg->byref)
+      rewriteArgument(fty, *arg);
+  }
+}
 
 void TargetABI::rewriteVarargs(IrFuncTy &fty,
                                std::vector<IrFuncTyArg *> &args) {
@@ -188,11 +194,20 @@ void TargetABI::rewriteVarargs(IrFuncTy &fty,
   }
 }
 
+void TargetABI::rewriteArgument(IrFuncTy &fty,
+                               IrFuncTyArg &arg) {
+  // default: pass non-PODs indirectly by-value
+  if (!isPOD(arg.type)) {
+    static IndirectByvalRewrite indirectByvalRewrite;
+    indirectByvalRewrite.applyTo(arg);
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 LLValue *TargetABI::prepareVaStart(DLValue *ap) {
-  // pass a i8* pointer to ap to LLVM's va_start intrinsic
-  return DtoBitCast(DtoLVal(ap), getVoidPtrType());
+  // pass an opaque pointer to ap to LLVM's va_start intrinsic
+  return DtoLVal(ap);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -209,8 +224,8 @@ void TargetABI::vaCopy(DLValue *dest, DValue *src) {
 //////////////////////////////////////////////////////////////////////////////
 
 LLValue *TargetABI::prepareVaArg(DLValue *ap) {
-  // pass a i8* pointer to ap to LLVM's va_arg intrinsic
-  return DtoBitCast(DtoLVal(ap), getVoidPtrType());
+  // pass an opaque pointer to ap to LLVM's va_arg intrinsic
+  return DtoLVal(ap);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -225,32 +240,6 @@ Type *TargetABI::vaListType() {
 const char *TargetABI::objcMsgSendFunc(Type *ret, IrFuncTy &fty, bool directcall) {
   llvm_unreachable("Unknown Objective-C ABI");
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-// Some reasonable defaults for when we don't know what ABI to use.
-struct UnknownTargetABI : TargetABI {
-  bool returnInArg(TypeFunction *tf, bool) override {
-    if (tf->isref()) {
-      return false;
-    }
-
-    // Return structs and static arrays on the stack. The latter is needed
-    // because otherwise LLVM tries to actually return the array in a number
-    // of physical registers, which leads, depending on the target, to
-    // either horrendous codegen or backend crashes.
-    Type *rt = tf->next->toBasetype();
-    return passByVal(tf, rt);
-  }
-
-  bool passByVal(TypeFunction *, Type *t) override {
-    return DtoIsInMemoryOnly(t);
-  }
-
-  void rewriteFunctionType(IrFuncTy &) override {
-    // why?
-  }
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -292,8 +281,10 @@ TargetABI *TargetABI::getTarget() {
   case llvm::Triple::wasm64:
     return getWasmTargetABI();
   default:
-    Logger::cout() << "WARNING: Unknown ABI, guessing...\n";
-    return new UnknownTargetABI;
+    warning(Loc(),
+            "unknown target ABI, falling back to generic implementation. C/C++ "
+            "interop will almost certainly NOT work.");
+    return new TargetABI;
   }
 }
 
@@ -312,38 +303,13 @@ struct IntrinsicABI : TargetABI {
     if (ty->ty != TY::Tstruct) {
       return;
     }
+    assert(isPOD(arg.type));
     // TODO: Check that no unions are passed in or returned.
 
     LLType *abiTy = DtoUnpaddedStructType(arg.type);
 
     if (abiTy && abiTy != arg.ltype) {
       remove_padding.applyTo(arg, abiTy);
-    }
-  }
-
-  void rewriteFunctionType(IrFuncTy &fty) override {
-    if (!fty.arg_sret) {
-      Type *rt = fty.ret->type->toBasetype();
-      if (rt->ty == TY::Tstruct) {
-        Logger::println("Intrinsic ABI: Transforming return type");
-        rewriteArgument(fty, *fty.ret);
-      }
-    }
-
-    Logger::println("Intrinsic ABI: Transforming arguments");
-    LOG_SCOPE;
-
-    for (auto arg : fty.args) {
-      IF_LOG Logger::cout() << "Arg: " << arg->type->toChars() << '\n';
-
-      // Arguments that are in memory are of no interest to us.
-      if (arg->byref) {
-        continue;
-      }
-
-      rewriteArgument(fty, *arg);
-
-      IF_LOG Logger::cout() << "New arg type: " << *arg->ltype << '\n';
     }
   }
 };

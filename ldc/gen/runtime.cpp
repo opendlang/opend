@@ -40,6 +40,8 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include <algorithm>
 
+using namespace dmd;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 static llvm::cl::opt<bool> nogc(
@@ -84,12 +86,10 @@ static void checkForImplicitGCCall(const Loc &loc, const char *name) {
         "_d_delmemory",
         "_d_newarrayT",
         "_d_newarrayiT",
-        "_d_newarraymTX",
-        "_d_newarraymiTX",
         "_d_newarrayU",
         "_d_newclass",
         "_d_allocclass",
-        // TODO: _d_newitemT instantiations
+        // TODO: _d_newitemT and _d_newarraymTX instantiations
     };
 
     if (binary_search(&GCNAMES[0],
@@ -273,11 +273,7 @@ struct LazyFunctionDeclarer {
       // FIXME: Move to better place (abi-x86-64.cpp?)
       // NOTE: There are several occurances if this line.
       if (global.params.targetTriple->getArch() == llvm::Triple::x86_64) {
-#if LDC_LLVM_VER >= 1500
         fn->setUWTableKind(llvm::UWTableKind::Default);
-#else
-        fn->addFnAttr(LLAttribute::UWTable);
-#endif
       }
 
       fn->setCallingConv(gABI->callingConv(dty, false));
@@ -359,6 +355,8 @@ llvm::Function *getRuntimeFunction(const Loc &loc, llvm::Module &target,
 //                            const char *funcname);
 // Musl:    void __assert_fail(const char *assertion, const char *filename, int line_num,
 //                             const char *funcname);
+// Glibc:   void __assert_fail(const char *assertion, const char *filename, int line_num,
+//                             const char *funcname);
 // uClibc:  void __assert(const char *assertion, const char *filename, int linenumber,
 //                        const char *function);
 // newlib:  void __assert_func(const char *file, int line, const char *func,
@@ -373,7 +371,7 @@ static const char *getCAssertFunctionName() {
     return "_assert";
   } else if (triple.isOSSolaris()) {
     return "__assert_c99";
-  } else if (triple.isMusl()) {
+  } else if (triple.isMusl() || triple.isGNUEnvironment()) {
     return "__assert_fail";
   } else if (global.params.isNewlibEnvironment) {
     return "__assert_func";
@@ -387,7 +385,7 @@ static std::vector<PotentiallyLazyType> getCAssertFunctionParamTypes() {
   const auto uint = Type::tuns32;
 
   if (triple.isOSDarwin() || triple.isOSSolaris() || triple.isMusl() ||
-      global.params.isUClibcEnvironment) {
+      global.params.isUClibcEnvironment || triple.isGNUEnvironment()) {
     return {voidPtr, voidPtr, uint, voidPtr};
   }
   if (triple.getEnvironment() == llvm::Triple::Android) {
@@ -600,11 +598,6 @@ static void buildRuntimeModule() {
   createFwdDecl(LINK::c, voidArrayTy,
                 {"_d_newarrayT", "_d_newarrayiT", "_d_newarrayU"},
                 {typeInfoTy, sizeTy}, {STCconst, 0});
-
-  // void[] _d_newarraymTX (const TypeInfo ti, size_t[] dims)
-  // void[] _d_newarraymiTX(const TypeInfo ti, size_t[] dims)
-  createFwdDecl(LINK::c, voidArrayTy, {"_d_newarraymTX", "_d_newarraymiTX"},
-                {typeInfoTy, sizeTy->arrayOf()}, {STCconst, 0});
 
   // void[] _d_arrayappendcd(ref byte[] x, dchar c)
   // void[] _d_arrayappendwd(ref byte[] x, dchar c)
@@ -831,6 +824,10 @@ static void buildRuntimeModule() {
                   {stringTy, sizeTy->arrayOf(), uintTy->arrayOf(), ubyteTy});
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+
   if (target.objc.supported) {
     assert(global.params.targetTriple->isOSDarwin());
 
@@ -846,30 +843,58 @@ static void buildRuntimeModule() {
                   {objectPtrTy, selectorPtrTy}, {},
                   AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
 
+    // id objc_msgSendSuper(obj_super_t *super, SEL op, ...)
+    // NOTE: obj_super_t is defined as struct { id, Class }
     createFwdDecl(LINK::c, objectPtrTy, {"objc_msgSendSuper"},
                   {objectPtrTy, selectorPtrTy}, {},
                   AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
+
+    // Class object_getClass(id obj)
+    createFwdDecl(LINK::c, objectPtrTy, {"object_getClass"},
+                  {objectPtrTy}, {},
+                  AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
+
+    // Class objc_loadClassRef(Class function(Class* stub))
+    // SEE: https://github.com/swiftlang/swift/blob/main/docs/ObjCInterop.md
+    createFwdDecl(LINK::c, objectPtrTy, {"objc_loadClassRef"},
+                  {objectPtrTy}, {},
+                  AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
+
+    // Needed for safe casting
+
+    // bool objc_opt_isKindOfClass(id obj, Class otherClass)
+    // This features a fast path over using the msgSend version.
+    // https://github.com/apple-oss-distributions/objc4/blob/main/runtime/NSObject.mm#L2123
+    createFwdDecl(LINK::c, boolTy, {"objc_opt_isKindOfClass"},
+                  {objectPtrTy, objectPtrTy}, {},
+                  AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
+
+    // bool class_conformsToProtocol(Class cls, Protocol *protocol)
+    createFwdDecl(LINK::c, boolTy, {"class_conformsToProtocol"},
+                  {objectPtrTy, objectPtrTy}, {},
+                  AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
+
 
     switch (global.params.targetTriple->getArch()) {
     case llvm::Triple::x86_64:
       // creal objc_msgSend_fp2ret(id self, SEL op, ...)
       createFwdDecl(LINK::c, Type::tcomplex80, {"objc_msgSend_fp2ret"},
                     {objectPtrTy, selectorPtrTy});
-    // fall-thru
-    case llvm::Triple::x86:
+
       // x86_64 real return only,  x86 float, double, real return
       // real objc_msgSend_fpret(id self, SEL op, ...)
       createFwdDecl(LINK::c, realTy, {"objc_msgSend_fpret"},
                     {objectPtrTy, selectorPtrTy});
-    // fall-thru
-    case llvm::Triple::arm:
-    case llvm::Triple::thumb:
+
       // used when return value is aggregate via a hidden sret arg
       // void objc_msgSend_stret(T *sret_arg, id self, SEL op, ...)
       createFwdDecl(LINK::c, voidTy, {"objc_msgSend_stret"},
-                    {objectPtrTy, selectorPtrTy});
+                    {objectPtrTy, objectPtrTy, selectorPtrTy});
+
+      // See: https://github.com/apple-oss-distributions/objc4/blob/main/runtime/Messengers.subproj/objc-msg-x86_64.s#L1059
+      // void objc_msgSend_stret(T *sret_arg, objc_super_t *super, SEL op, ...)
       createFwdDecl(LINK::c, voidTy, {"objc_msgSendSuper_stret"},
-                    {objectPtrTy, selectorPtrTy});
+                    {objectPtrTy, objectPtrTy, selectorPtrTy});
       break;
     default:
       break;
@@ -900,8 +925,8 @@ static void emitInstrumentationFn(const char *name) {
 
   // Grab the address of the calling function
   auto *caller =
-      gIR->ir->CreateCall(GET_INTRINSIC_DECL(returnaddress), DtoConstInt(0));
-  auto callee = DtoBitCast(gIR->topfunc(), getVoidPtrType());
+      gIR->ir->CreateCall(GET_INTRINSIC_DECL(returnaddress, {}), DtoConstInt(0));
+  auto callee = gIR->topfunc();
 
   gIR->ir->CreateCall(fn, {callee, caller});
 }

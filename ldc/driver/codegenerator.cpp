@@ -24,21 +24,16 @@
 #include "gen/logger.h"
 #include "gen/modules.h"
 #include "gen/runtime.h"
+#include "gen/tollvm.h"
 #include "ir/irdsymbol.h"
-#if LDC_LLVM_VER >= 1400
 #include "llvm/IR/DiagnosticInfo.h"
-#endif
 #include "llvm/IR/LLVMRemarkStreamer.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/YAMLTraits.h"
 #if LDC_MLIR_ENABLED
-#if LDC_LLVM_VER >= 1200
 #include "mlir/IR/BuiltinOps.h"
-#else
-#include "mlir/IR/Module.h"
-#endif
 #include "mlir/IR/MLIRContext.h"
 #endif
 
@@ -114,14 +109,14 @@ void emitLLVMUsedArray(IRState &irs) {
     return;
   }
 
-  auto *i8PtrType = llvm::Type::getInt8PtrTy(irs.context());
+  auto ptrType = LLPointerType::get(irs.context(), 0);
 
   // Convert all elements to i8* (the expected type for llvm.used)
   for (auto &elem : irs.usedArray) {
-    elem = llvm::ConstantExpr::getBitCast(elem, i8PtrType);
+    elem = llvm::ConstantExpr::getBitCast(elem, ptrType);
   }
 
-  auto *arrayType = llvm::ArrayType::get(i8PtrType, irs.usedArray.size());
+  auto *arrayType = llvm::ArrayType::get(ptrType, irs.usedArray.size());
   auto *llvmUsed = new llvm::GlobalVariable(
       irs.module, arrayType, false, llvm::GlobalValue::AppendingLinkage,
       llvm::ConstantArray::get(arrayType, irs.usedArray), "llvm.used");
@@ -148,19 +143,6 @@ bool inlineAsmDiagnostic(IRState *irs, const llvm::SMDiagnostic &d,
   return true;
 }
 
-#if LDC_LLVM_VER < 1300
-void inlineAsmDiagnosticHandler(const llvm::SMDiagnostic &d, void *context,
-                                unsigned locCookie) {
-  if (d.getKind() == llvm::SourceMgr::DK_Error) {
-    ++global.errors;
-  } else if (global.params.warnings == DIAGNOSTICerror &&
-             d.getKind() == llvm::SourceMgr::DK_Warning) {
-    ++global.warnings;
-  }
-
-  inlineAsmDiagnostic(static_cast<IRState *>(context), d, locCookie);
-}
-#else
 struct InlineAsmDiagnosticHandler : public llvm::DiagnosticHandler {
   IRState *irs;
   InlineAsmDiagnosticHandler(IRState *irs) : irs(irs) {}
@@ -184,7 +166,6 @@ struct InlineAsmDiagnosticHandler : public llvm::DiagnosticHandler {
     return inlineAsmDiagnostic(irs, DISM.getSMDiag(), DISM.getLocCookie());
   }
 };
-#endif
 
 } // anonymous namespace
 
@@ -279,12 +260,8 @@ void CodeGenerator::writeAndFreeLLModule(const char *filename) {
   llvm::Metadata *IdentNode[] = {llvm::MDString::get(ir_->context(), Version)};
   IdentMetadata->addOperand(llvm::MDNode::get(ir_->context(), IdentNode));
 
-#if LDC_LLVM_VER < 1300
-  context_.setInlineAsmDiagnosticHandler(inlineAsmDiagnosticHandler, ir_);
-#else
   context_.setDiagnosticHandler(
           std::make_unique<InlineAsmDiagnosticHandler>(ir_));
-#endif
 
   std::unique_ptr<llvm::ToolOutputFile> diagnosticsOutputFile =
       createAndSetDiagnosticsOutputFile(*ir_, context_, filename);

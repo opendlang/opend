@@ -47,6 +47,11 @@
 
 using CodeGenFileType = llvm::CodeGenFileType;
 
+#if LDC_LLVM_VER >= 1800
+constexpr llvm::CodeGenFileType CGFT_AssemblyFile = CodeGenFileType::AssemblyFile;
+constexpr llvm::CodeGenFileType CGFT_ObjectFile = CodeGenFileType::ObjectFile;
+#endif
+
 #if LDC_LLVM_VER < 1700
 static llvm::cl::opt<bool>
     NoIntegratedAssembler("no-integrated-as", llvm::cl::ZeroOrMore,
@@ -127,8 +132,11 @@ void codegenModule(llvm::TargetMachine &Target, llvm::Module &m,
           nullptr,  // DWO output file
           // Always generate assembly for ptx as it is an assembly format
           // The PTX backend fails if we pass anything else.
-          (cb == ComputeBackend::NVPTX) ? CGFT_AssemblyFile : fileType,
-          codeGenOptLevel())) {
+          (cb == ComputeBackend::NVPTX) ? CGFT_AssemblyFile : fileType
+#if LDC_LLVM_VER < 1700
+          , codeGenOptLevel()
+#endif
+      )) {
     llvm_unreachable("no support for asm output");
   }
 
@@ -147,6 +155,9 @@ void codegenModule(llvm::TargetMachine &Target, llvm::Module &m,
 
 static void assemble(const std::string &asmpath, const std::string &objpath) {
   std::vector<std::string> args;
+  std::string gcc;
+  gcc = getGcc(args);
+
   args.push_back("-O3");
   args.push_back("-c");
   args.push_back("-xassembler");
@@ -157,7 +168,7 @@ static void assemble(const std::string &asmpath, const std::string &objpath) {
   appendTargetArgsForGcc(args);
 
   // Run the compiler to assembly the program.
-  int R = executeToolAndWait(Loc(), getGcc(), args, global.params.v.verbose);
+  int R = executeToolAndWait(Loc(), gcc, args, global.params.v.verbose);
   if (R) {
     error(Loc(), "Error while invoking external assembler.");
     fatal();
@@ -353,7 +364,7 @@ void writeModule(llvm::Module *m, const char *filename) {
   // run LLVM optimization passes
   {
     ::TimeTraceScope timeScope("Optimize", filename);
-    ldc_optimize_module(m);
+    ldc_optimize_module(m, gTargetMachine);
   }
 
   if (global.params.dllimport != DLLImport::none) {

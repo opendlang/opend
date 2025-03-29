@@ -75,6 +75,8 @@ AsmParserCommon *asmparser = nullptr;
 #include "asm-x86.h" // x86_64 assembly parser
 #undef ASM_X86_64
 
+using namespace dmd;
+
 /**
  * Replaces <<func>> with the name of the currently codegen'd function.
  *
@@ -114,8 +116,11 @@ Statement *asmSemantic(AsmStatement *s, Scope *sc) {
   // this is DMD-style asm
   sc->func->hasReturnExp |= 32;
 
+  const auto caseSensitive = s->caseSensitive;
+
   auto ias = createInlineAsmStatement(s->loc, s->tokens);
   s = ias;
+  s->caseSensitive = caseSensitive;
 
   bool err = false;
   llvm::Triple const &t = *global.params.targetTriple;

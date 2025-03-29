@@ -58,6 +58,8 @@
 #include <cassert>
 #include <cstdio>
 
+using namespace dmd;
+
 TypeInfoDeclaration *getOrCreateTypeInfoDeclaration(const Loc &loc, Type *forType) {
   IF_LOG Logger::println("getOrCreateTypeInfoDeclaration(): %s",
                          forType->toChars());

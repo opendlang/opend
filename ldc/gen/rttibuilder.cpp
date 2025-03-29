@@ -22,8 +22,7 @@
 #include "ir/iraggr.h"
 #include "ir/irfunction.h"
 
-// in dmd/opover.d:
-AggregateDeclaration *isAggregate(Type *t);
+using namespace dmd;
 
 RTTIBuilder::RTTIBuilder(Type *baseType) {
   const auto ad = isAggregate(baseType);
@@ -60,7 +59,7 @@ void RTTIBuilder::push(llvm::Constant *C) {
 
 void RTTIBuilder::push_null(Type *T) { push(getNullValue(DtoType(T))); }
 
-void RTTIBuilder::push_null_vp() { push(getNullValue(getVoidPtrType())); }
+void RTTIBuilder::push_null_vp() { push(getNullPtr()); }
 
 void RTTIBuilder::push_typeinfo(Type *t) { push(DtoTypeInfoOf(Loc(), t)); }
 
@@ -72,7 +71,7 @@ void RTTIBuilder::push_null_void_array() {
 }
 
 void RTTIBuilder::push_void_array(uint64_t dim, llvm::Constant *ptr) {
-  push(DtoConstSlice(DtoConstSize_t(dim), DtoBitCast(ptr, getVoidPtrType())));
+  push(DtoConstSlice(DtoConstSize_t(dim), ptr));
 }
 
 void RTTIBuilder::push_void_array(llvm::Constant *CI, Type *valtype,
@@ -114,7 +113,7 @@ void RTTIBuilder::push_array(llvm::Constant *CI, uint64_t dim, Type *valtype,
   setLinkage(lwc, G);
   G->setAlignment(llvm::MaybeAlign(DtoAlignment(valtype)));
 
-  push_array(dim, DtoBitCast(G, DtoType(valtype->pointerTo())));
+  push_array(dim, G);
 }
 
 void RTTIBuilder::push_array(uint64_t dim, llvm::Constant *ptr) {
@@ -126,18 +125,13 @@ void RTTIBuilder::push_uint(unsigned u) { push(DtoConstUint(u)); }
 void RTTIBuilder::push_size(uint64_t s) { push(DtoConstSize_t(s)); }
 
 void RTTIBuilder::push_size_as_vp(uint64_t s) {
-  push(llvm::ConstantExpr::getIntToPtr(DtoConstSize_t(s), getVoidPtrType()));
+  push(llvm::ConstantExpr::getIntToPtr(DtoConstSize_t(s), getOpaquePtrType()));
 }
 
-void RTTIBuilder::push_funcptr(FuncDeclaration *fd, Type *castto) {
+void RTTIBuilder::push_funcptr(FuncDeclaration *fd) {
   if (fd) {
     LLConstant *F = DtoCallee(fd);
-    if (castto) {
-      F = DtoBitCast(F, DtoType(castto));
-    }
     push(F);
-  } else if (castto) {
-    push_null(castto);
   } else {
     push_null_vp();
   }

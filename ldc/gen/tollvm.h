@@ -34,8 +34,6 @@
 LLType *DtoType(Type *t);
 // Uses DtoType(), but promotes i1 and void to i8.
 LLType *DtoMemType(Type *t);
-// Returns a pointer to the type returned by DtoMemType(t).
-LLPointerType *DtoPtrToType(Type *t);
 
 LLType *voidToI8(LLType *t);
 LLType *i1ToI8(LLType *t);
@@ -48,11 +46,6 @@ LLType *stripAddrSpaces(LLType *v);
 // Returns true if the type is a value type which LDC keeps exclusively in
 // memory, referencing all values via LL pointers (structs and static arrays).
 bool DtoIsInMemoryOnly(Type *type);
-
-// Returns true if the callee uses sret (struct return).
-// In that case, the caller needs to allocate the return value and pass its
-// address as additional parameter to the callee, which will set it up.
-bool DtoIsReturnInArg(CallExp *ce);
 
 // Adds an appropriate attribute if the type should be zero or sign extended.
 void DtoAddExtendAttr(Type *type, llvm::AttrBuilder &attrs);
@@ -104,6 +97,7 @@ LLConstantInt *DtoConstUlong(uint64_t i);
 LLConstantInt *DtoConstLong(int64_t i);
 LLConstantInt *DtoConstUint(unsigned i);
 LLConstantInt *DtoConstInt(int i);
+LLConstantInt *DtoConstUshort(uint16_t i);
 LLConstantInt *DtoConstUbyte(unsigned char i);
 LLConstant *DtoConstFP(Type *t, real_t value);
 
@@ -147,17 +141,32 @@ LLConstantInt *isaConstantInt(LLValue *v);
 llvm::Argument *isaArgument(LLValue *v);
 LLGlobalVariable *isaGlobalVar(LLValue *v);
 
+// llvm::GlobalVariable wrappers for quickly making
+// new global variables and references to them.
+LLGlobalVariable *makeGlobal(LLStringRef name, LLType* type = nullptr, LLStringRef section = "", bool extern_ = false, bool externInit = false);
+LLGlobalVariable *makeGlobalWithBytes(LLStringRef name, LLConstantList packedContents, LLStructType* type = nullptr, bool extern_ = false, bool externInit = false);
+LLGlobalVariable *makeGlobalRef(LLGlobalVariable *to, LLStringRef name = "", LLStringRef section = "", bool extern_ = false, bool externInit = false);
+LLGlobalVariable *makeGlobalStr(LLStringRef text, LLStringRef name = "", LLStringRef section = "", bool extern_ = false, bool externInit = false);
+LLGlobalVariable *getOrCreate(LLStringRef name, LLType* type, LLStringRef section, bool extInitializer=false);
+LLGlobalVariable *getOrCreateWeak(LLStringRef name, LLType* type, LLStringRef section, bool extInitializer=false);
+
 // llvm::T::get(...) wrappers
 LLType *getI8Type();
-LLPointerType *getPtrToType(LLType *t);
-LLPointerType *getVoidPtrType();
-llvm::ConstantPointerNull *getNullPtr(LLType *t);
+LLType *getI16Type();
+LLType *getI32Type();
+LLType *getI64Type();
+LLType *getSizeTType();
+LLPointerType *getOpaquePtrType(unsigned addressSpace = 0);
+llvm::ConstantPointerNull *getNullPtr();
 LLConstant *getNullValue(LLType *t);
+LLConstant *wrapNull(LLConstant *v);
 
 // type sizes
 size_t getTypeBitSize(LLType *t);
 size_t getTypeStoreSize(LLType *t);
 size_t getTypeAllocSize(LLType *t);
+size_t getPointerSize();
+size_t getPointerSizeInBits();
 
 // type alignments
 unsigned int getABITypeAlign(LLType *t);

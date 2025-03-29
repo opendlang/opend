@@ -35,8 +35,13 @@ using llvm::APFloat;
 using llvm::APInt;
 using llvm::IRBuilder;
 
-#define GET_INTRINSIC_DECL(_X)                                                 \
+#if LDC_LLVM_VER >= 1900
+#define GET_INTRINSIC_DECL(_X, _TY)                                              \
+  (llvm::Intrinsic::getDeclaration(&gIR->module, llvm::Intrinsic::_X, _TY))
+#else
+#define GET_INTRINSIC_DECL(_X, _TY)                                              \
   (llvm::Intrinsic::getDeclaration(&gIR->module, llvm::Intrinsic::_X))
+#endif
 
 // shortcuts for the common llvm types
 
@@ -60,3 +65,6 @@ using llvm::IRBuilder;
 #define LLConstantFP llvm::ConstantFP
 
 #define LLSmallVector llvm::SmallVector
+
+#define LLConstantList std::vector<LLConstant *>
+#define LLStringRef llvm::StringRef

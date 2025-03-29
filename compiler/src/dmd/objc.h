@@ -44,6 +44,8 @@ struct ObjcClassDeclaration
     DArray<FuncDeclaration*> methodList;
 
     bool isRootClass() const;
+
+    d_bool isSwiftStub;
 };
 
 struct ObjcFuncDeclaration

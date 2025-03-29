@@ -173,7 +173,6 @@ public:
     name = name_;
     arrp = &arr;
     assert(name);
-    assert(arrp);
   }
 
   void push_back(const char *cstr);

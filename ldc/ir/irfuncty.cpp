@@ -17,13 +17,12 @@
 #include "gen/logger.h"
 #include "gen/tollvm.h"
 
+using namespace dmd;
+
 IrFuncTyArg::IrFuncTyArg(Type *t, bool bref)
     : type(t),
       ltype(t != Type::tvoid && bref ? DtoType(t->pointerTo()) : DtoType(t)),
-#if LDC_LLVM_VER >= 1400
-      attrs(getGlobalContext()),
-#endif
-      byref(bref) {
+      attrs(getGlobalContext()), byref(bref) {
   mem.addRange(&type, sizeof(type));
 }
 

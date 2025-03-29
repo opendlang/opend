@@ -105,11 +105,13 @@ LLValue *DSliceValue::getPtr() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-DFuncValue::DFuncValue(Type *t, FuncDeclaration *fd, LLValue *v, LLValue *vt)
-    : DRValue(t, v), func(fd), vthis(vt) {}
+DFuncValue::DFuncValue(Type *t, FuncDeclaration *fd, LLValue *v, LLValue *vt,
+                       LLValue *vtable)
+    : DRValue(t, v), func(fd), vthis(vt), vtable(vtable) {}
 
-DFuncValue::DFuncValue(FuncDeclaration *fd, LLValue *v, LLValue *vt)
-    : DFuncValue(fd->type, fd, v, vt) {}
+DFuncValue::DFuncValue(FuncDeclaration *fd, LLValue *v, LLValue *vt,
+                       LLValue *vtable)
+    : DFuncValue(fd->type, fd, v, vt, vtable) {}
 
 bool DFuncValue::definedInFuncEntryBB() {
   return isDefinedInFuncEntryBB(val) &&
@@ -119,10 +121,7 @@ bool DFuncValue::definedInFuncEntryBB() {
 ////////////////////////////////////////////////////////////////////////////////
 
 DLValue::DLValue(Type *t, LLValue *v) : DValue(t, v) {
-  // v may be an addrspace qualified pointer so strip it before doing a pointer
-  // equality check.
-  assert(t->toBasetype()->ty == TY::Ttuple ||
-         stripAddrSpaces(v->getType()) == DtoPtrToType(t));
+  assert(t->toBasetype()->ty == TY::Ttuple || v->getType()->isPointerTy());
 }
 
 DRValue *DLValue::getRVal() {
@@ -157,20 +156,15 @@ DRValue *DLValue::getRVal() {
 ////////////////////////////////////////////////////////////////////////////////
 
 DSpecialRefValue::DSpecialRefValue(Type *t, LLValue *v) : DLValue(v, t) {
-#if LDC_LLVM_VER >= 1700 // LLVM >= 17 uses opaque pointers, type check boils
-                         // down to pointer check only.
   assert(v->getType()->isPointerTy());
-#else
-  assert(v->getType() == DtoPtrToType(t)->getPointerTo());
-#endif
 }
 
 DRValue *DSpecialRefValue::getRVal() {
-  return DLValue(type, DtoLoad(DtoPtrToType(type), val)).getRVal();
+  return DLValue(type, DtoLoad(getOpaquePtrType(), val)).getRVal();
 }
 
 DLValue *DSpecialRefValue::getLVal() {
-  return new DLValue(type, DtoLoad(DtoPtrToType(type), val));
+  return new DLValue(type, DtoLoad(getOpaquePtrType(), val));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -184,8 +178,9 @@ DBitFieldLValue::DBitFieldLValue(Type *t, LLValue *ptr, BitFieldDeclaration *bf)
 
 DRValue *DBitFieldLValue::getRVal() {
   const auto sizeInBits = intType->getBitWidth();
-  const auto ptr = DtoBitCast(val, getPtrToType(intType));
+  const auto ptr = val;
   LLValue *v = gIR->ir->CreateAlignedLoad(intType, ptr, llvm::MaybeAlign(1));
+  // TODO: byte-swap v for big-endian targets?
 
   if (bf->type->isunsigned()) {
     if (auto n = bf->bitOffset)
@@ -209,12 +204,13 @@ DRValue *DBitFieldLValue::getRVal() {
 void DBitFieldLValue::store(LLValue *value) {
   assert(value->getType()->isIntegerTy());
 
-  const auto ptr = DtoBitCast(val, getPtrToType(intType));
+  const auto ptr = val;
 
   const auto mask =
       llvm::APInt::getLowBitsSet(intType->getBitWidth(), bf->fieldWidth);
   const auto oldVal =
       gIR->ir->CreateAlignedLoad(intType, ptr, llvm::MaybeAlign(1));
+  // TODO: byte-swap oldVal for big-endian targets?
   const auto maskedOldVal =
       gIR->ir->CreateAnd(oldVal, ~(mask << bf->bitOffset));
 
@@ -224,6 +220,7 @@ void DBitFieldLValue::store(LLValue *value) {
     bfVal = gIR->ir->CreateShl(bfVal, n);
 
   const auto newVal = gIR->ir->CreateOr(maskedOldVal, bfVal);
+  // TODO: byte-swap newVal for big-endian targets?
   gIR->ir->CreateAlignedStore(newVal, ptr, llvm::MaybeAlign(1));
 }
 
@@ -235,7 +232,7 @@ DRValue *DDcomputeLValue::getRVal() {
     llvm_unreachable("getRVal() for memory-only type");
     return nullptr;
   }
-  
+
   LLValue *rval = DtoLoad(lltype, val);
   
   const auto ty = type->toBasetype()->ty;

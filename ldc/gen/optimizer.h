@@ -20,15 +20,22 @@
 #include "llvm/Support/CommandLine.h"
 
 namespace llvm {
+#if LDC_LLVM_VER < 1800
+using CodeGenOptLevel = llvm::CodeGenOpt::Level;
+#endif
+}
+
+namespace llvm {
 class raw_ostream;
 }
 
 namespace llvm {
 class Module;
 class TargetLibraryInfoImpl;
+class TargetMachine;
 }
 
-bool ldc_optimize_module(llvm::Module *m);
+bool ldc_optimize_module(llvm::Module *m, llvm::TargetMachine *tm);
 
 // Returns whether the normal, full inlining pass will be run.
 bool willInline();
@@ -39,7 +46,7 @@ unsigned optLevel();
 
 bool isOptimizationEnabled();
 
-llvm::CodeGenOpt::Level codeGenOptLevel();
+llvm::CodeGenOptLevel codeGenOptLevel();
 
 void verifyModule(llvm::Module *m);
 

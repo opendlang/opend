@@ -25,6 +25,7 @@
 #include "dmd/mangle.h"
 #include "gen/llvmhelpers.h" // printLabelName
 #include <cctype>
+#include "llvm/ADT/StringRef.h"
 
 #ifndef ASM_X86_64
 namespace AsmParserx8632 {
@@ -2337,6 +2338,8 @@ struct AsmProcessor {
 
   void addOperand(const char *fmt, AsmArgType type, Expression *e,
                   AsmCode *asmcode, AsmArgMode mode = Mode_Input) {
+    using namespace dmd;
+
     if (sc->func->isNaked()) {
       switch (type) {
       case Arg_Integer:
@@ -2579,6 +2582,8 @@ struct AsmProcessor {
 
   // also set impl clobbers
   bool formatInstruction(int nOperands, AsmCode *asmcode) {
+    using namespace dmd;
+
     const char *fmt;
     const char *mnemonic;
     std::string type_suffix;
@@ -2857,6 +2862,9 @@ struct AsmProcessor {
       }
       operand = &operands[i];
 
+      // This is used only in the case of `operand->cls` being `Opr_Mem`.
+      bool hasConstDisplacement = false;
+
       switch (operand->cls) {
       case Opr_Immediate:
         // for implementing offset:
@@ -2954,9 +2962,13 @@ struct AsmProcessor {
                         "branching instruction");
           }
         }
-        if ((operand->segmentPrefix != Reg_Invalid &&
-             operand->symbolDisplacement.length == 0) ||
-            operand->constDisplacement) {
+
+        // We make note of this for later on, as if a const-displacement is in play we
+        // may need to change the asm template to avoid it expanding to an invalid syntax.
+        hasConstDisplacement = (operand->segmentPrefix != Reg_Invalid &&
+                               operand->symbolDisplacement.length == 0) ||
+                               operand->constDisplacement;
+        if (hasConstDisplacement) {
           insnTemplate << operand->constDisplacement;
           if (operand->symbolDisplacement.length) {
             insnTemplate << '+';
@@ -3052,6 +3064,29 @@ struct AsmProcessor {
               //              addOperand2("${", ":c}", Arg_Pointer, e,
               //              asmcode);
             } else {
+              // We don't know ahead of time what kind of memory operand will be generated for
+              // our template: it could be a symbolic reference, or a Scale-Index-Base with or without
+              // an offset. So, if we have a const-displacement of 4, it could look like one of:
+              // `4+someGlobalVariable`, or `4+8(%ebp)`, or `4+(%ebp)`.
+              // Notice how that last possibility is an invalid syntax, it should be `4(%ebp)`.
+              // But, if we removed the `+`, then the other possibilities would become invalid or wrong.
+              // We don't know which form will be generated, but we can force the third possibility to
+              // be like the second possibility.
+              //
+              // For x86 assembly templates, memory operands can be marked with the `H` modifier, which
+              // unconditionally adds an offset of 8 to the memory operand.
+              // If we subtract 8 from our const-displacement, then we can use the `H` modifier to ensure
+              // that we always end up with a valid syntax for a memory operand with an offset.
+              // So, we do just that when we have const-displacement in play.
+              // (Only for non-naked asm, as this isn't an issue for naked asm.)
+              //
+              // See also: https://lists.llvm.org/pipermail/llvm-dev/2017-August/116244.html
+              const auto forceLeadingDisplacement = hasConstDisplacement && !sc->func->isNaked();
+              if (forceLeadingDisplacement) {
+                // Subtract 8 from our const-displacement, and prepare to add the 8 from the `H` modifier.
+                insnTemplate << "-8+";
+              }
+
               if (use_star) {
                 insnTemplate << '*';
                 use_star = false;
@@ -3064,7 +3099,14 @@ struct AsmProcessor {
                 e->type = tt;
               }
 
-              addOperand(fmt, Arg_Memory, e, asmcode, mode);
+              if (forceLeadingDisplacement) {
+                // We have a const-displacement in play, so we add the `H` modifier, as described earlier.
+                insnTemplate << "${" << "<<" << (mode == Mode_Input ? "in" : "out")
+                             << asmcode->args.size() << ">>" << ":H}";
+                asmcode->args.push_back(AsmArg(Arg_Memory, e, mode));
+              } else {
+                addOperand(fmt, Arg_Memory, e, asmcode, mode);
+              }
             }
           }
         }
@@ -3198,7 +3240,7 @@ struct AsmProcessor {
               (ty == TY::Tfloat80 || ty == TY::Timaginary80) &&
                       !global.params.targetTriple->isWindowsMSVCEnvironment()
                   ? Extended_Ptr
-                  : static_cast<PtrType>(v->type->size(Loc()));
+                  : static_cast<PtrType>(v->type->size());
         }
 
         if (!operand->symbolDisplacement.length) {
@@ -3231,6 +3273,8 @@ struct AsmProcessor {
   }
 
   Expression *intOp(TOK op, Expression *e1, Expression *e2) {
+    using namespace dmd;
+
     if (isIntExp(e1) && (!e2 || isIntExp(e2))) {
       Expression *e = createExpressionForIntOp(stmt->loc, op, e1, e2);
       e = expressionSemantic(e, sc);
@@ -3629,6 +3673,8 @@ struct AsmProcessor {
   }
 
   Expression *parsePrimaryExp() {
+    using namespace dmd;
+
     Expression *e;
     Identifier *ident = nullptr;
 
@@ -3695,7 +3741,13 @@ struct AsmProcessor {
       // check for reg first then dotexp is an error?
       if (e->op == EXP::identifier) {
         for (int i = 0; i < N_Regs; i++) {
-          if (ident == regInfo[i].ident) {
+          const auto reg = regInfo[i].ident;
+          const auto matchesRegister =
+              stmt->caseSensitive
+                  ? ident == reg
+                  : reg && llvm::StringRef(ident->toChars())
+                               .equals_insensitive(reg->toChars());
+          if (matchesRegister) {
             if (static_cast<Reg>(i) == Reg_ST &&
                 token->value == TOK::leftParenthesis) {
               nextToken();
@@ -3759,7 +3811,8 @@ struct AsmProcessor {
 
       // Special case for floating point constant declarations.
       if (e->op == EXP::float64) {
-        Dsymbol *sym = sc->search(stmt->loc, ident, nullptr);
+        Dsymbol *scopesym;
+        Dsymbol *sym = sc->search(stmt->loc, ident, &scopesym);
         if (sym) {
           VarDeclaration *v = sym->isVarDeclaration();
           if (v) {
@@ -3788,6 +3841,8 @@ struct AsmProcessor {
   }
 
   void doAlign() {
+    using namespace dmd;
+
     // .align bits vs. bytes...
     // apparently a.out platforms use bits instead of bytes...
 
@@ -3866,10 +3921,14 @@ struct AsmProcessor {
             token->value == TOK::float80Literal) {
           if (op == Op_df) {
             const float value = static_cast<float>(token->floatvalue);
-            insnTemplate << reinterpret_cast<const uint32_t &>(value);
+            uint32_t reinterpreted; // explicitly use memcpy because of strict-aliasing
+            std::memcpy(&reinterpreted, &value, sizeof value);
+            insnTemplate << reinterpreted;
           } else if (op == Op_dd) {
             const double value = static_cast<double>(token->floatvalue);
-            insnTemplate << reinterpret_cast<const uint64_t &>(value);
+            uint64_t reinterpreted; // explicitly use memcpy because of strict-aliasing
+            std::memcpy(&reinterpreted, &value, sizeof value);
+            insnTemplate << reinterpreted;
           } else if (op == Op_de) {
             llvm::APFloat value(0.0);
             CTFloat::toAPFloat(token->floatvalue, value);

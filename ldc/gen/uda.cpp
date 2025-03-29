@@ -17,6 +17,8 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringSwitch.h"
 
+using namespace dmd;
+
 namespace {
 
 /// Checks whether `moduleDecl` is in the ldc package and it's identifier is
@@ -204,11 +206,7 @@ void applyAttrAllocSize(StructLiteralExp *sle, IrFunction *irFunc) {
   const auto llvmSizeIdx = sizeArgIdx + offset;
   const auto llvmNumIdx = numArgIdx + offset;
 
-#if LDC_LLVM_VER >= 1400
   llvm::AttrBuilder builder(getGlobalContext());
-#else
-  llvm::AttrBuilder builder;
-#endif
   if (numArgIdx >= 0) {
     builder.addAllocSizeAttr(llvmSizeIdx, llvmNumIdx);
   } else {
@@ -221,11 +219,7 @@ void applyAttrAllocSize(StructLiteralExp *sle, IrFunction *irFunc) {
 
   llvm::Function *func = irFunc->getLLVMFunc();
 
-#if LDC_LLVM_VER >= 1400
   func->addFnAttrs(builder);
-#else
-  func->addAttributes(LLAttributeList::FunctionIndex, builder);
-#endif
 }
 
 // @llvmAttr("key", "value")
@@ -313,6 +307,10 @@ void applyAttrTarget(StructLiteralExp *sle, llvm::Function *func,
   // The current implementation here does not do any checking of the specified
   // string and simply passes all to llvm.
 
+#if LDC_LLVM_VER >= 1800
+  #define startswith starts_with
+#endif
+
   checkStructElems(sle, {Type::tstring});
   llvm::StringRef targetspec = getFirstElemString(sle);
 
@@ -322,6 +320,9 @@ void applyAttrTarget(StructLiteralExp *sle, llvm::Function *func,
   llvm::StringRef CPU;
   std::vector<std::string> features;
 
+  // Preserve the order of the features as they appear in the source
+  // code. `hasFnAttribute` returns all the features accumulated
+  // so far and they should remain at the beginning of the result.
   if (func->hasFnAttribute("target-features")) {
     auto attr = func->getFnAttribute("target-features");
     features.push_back(std::string(attr.getValueAsString()));
@@ -365,14 +366,14 @@ void applyAttrTarget(StructLiteralExp *sle, llvm::Function *func,
   }
 
   if (!features.empty()) {
-    // Sorting the features puts negative features ("-") after positive features
-    // ("+"). This provides the desired behavior of negative features overriding
-    // positive features regardless of their order in the source code.
-    sort(features.begin(), features.end());
     func->addFnAttr("target-features",
                     llvm::join(features.begin(), features.end(), ","));
     irFunc->targetFeaturesOverridden = true;
   }
+
+#if LDC_LLVM_VER >= 1800
+  #undef startswith
+#endif
 }
 
 void applyAttrAssumeUsed(IRState &irs, StructLiteralExp *sle,
@@ -408,9 +409,7 @@ bool parseCallingConvention(llvm::StringRef name,
           .Case("preserve_most", llvm::CallingConv::PreserveMost)
           .Case("preserve_all", llvm::CallingConv::PreserveAll)
           .Case("swiftcall", llvm::CallingConv::Swift)
-#if LDC_LLVM_VER >= 1300
           .Case("swiftasynccall", llvm::CallingConv::SwiftTail)
-#endif
 
           // Names recognized in LLVM IR (see LLVM's
           // LLParser::parseOptionalCallingConv):
@@ -439,15 +438,17 @@ bool parseCallingConvention(llvm::StringRef name,
           .Case("intel_ocl_bicc", llvm::CallingConv::Intel_OCL_BI)
           .Case("x86_64_sysvcc", llvm::CallingConv::X86_64_SysV)
           .Case("win64cc", llvm::CallingConv::Win64)
+#if LDC_LLVM_VER >= 1800
+          .Case("webkit_jscc", llvm::CallingConv::WASM_EmscriptenInvoke)
+#else
           .Case("webkit_jscc", llvm::CallingConv::WebKit_JS)
+#endif
           .Case("anyregcc", llvm::CallingConv::AnyReg)
           .Case("preserve_mostcc", llvm::CallingConv::PreserveMost)
           .Case("preserve_allcc", llvm::CallingConv::PreserveAll)
           .Case("ghccc", llvm::CallingConv::GHC)
           .Case("swiftcc", llvm::CallingConv::Swift)
-#if LDC_LLVM_VER >= 1300
           .Case("swifttailcc", llvm::CallingConv::SwiftTail)
-#endif
           .Case("x86_intrcc", llvm::CallingConv::X86_INTR)
 #if LDC_LLVM_VER >= 1700
           .Case("hhvmcc", llvm::CallingConv::DUMMY_HHVM)
@@ -458,9 +459,7 @@ bool parseCallingConvention(llvm::StringRef name,
 #endif
           .Case("cxx_fast_tlscc", llvm::CallingConv::CXX_FAST_TLS)
           .Case("amdgpu_vs", llvm::CallingConv::AMDGPU_VS)
-#if LDC_LLVM_VER >= 1200
           .Case("amdgpu_gfx", llvm::CallingConv::AMDGPU_Gfx)
-#endif
           .Case("amdgpu_ls", llvm::CallingConv::AMDGPU_LS)
           .Case("amdgpu_hs", llvm::CallingConv::AMDGPU_HS)
           .Case("amdgpu_es", llvm::CallingConv::AMDGPU_ES)
@@ -539,17 +538,9 @@ void applyFuncDeclUDAs(FuncDeclaration *decl, IrFunction *irFunc) {
       if (ident == Id::udaAllocSize) {
         applyAttrAllocSize(sle, irFunc);
       } else if (ident == Id::udaLLVMAttr) {
-#if LDC_LLVM_VER >= 1400
         llvm::AttrBuilder attrs(getGlobalContext());
-#else
-        llvm::AttrBuilder attrs;
-#endif
         applyAttrLLVMAttr(sle, attrs);
-#if LDC_LLVM_VER >= 1400
         func->addFnAttrs(attrs);
-#else
-        func->addAttributes(LLAttributeList::FunctionIndex, attrs);
-#endif
       } else if (ident == Id::udaHidden) {
         if (!decl->isExport()) // export visibility is stronger
           func->setVisibility(LLGlobalValue::HiddenVisibility);

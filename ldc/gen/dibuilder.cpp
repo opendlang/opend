@@ -39,6 +39,8 @@
 #include "llvm/Support/Path.h"
 #include <functional>
 
+using namespace dmd;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cl = llvm::cl;
@@ -620,13 +622,16 @@ DIType DIBuilder::CreateCompositeType(Type *t) {
   const auto elemsArray = DBuilder.getOrCreateArray(elems);
 
   DIType ret;
+  const auto runtimeLang = 0;
   if (t->ty == TY::Tclass) {
     ret = DBuilder.createClassType(
         scope, name, file, lineNum, sizeInBits, alignmentInBits,
         classOffsetInBits, DIFlags::FlagZero, derivedFrom, elemsArray,
+#if LDC_LLVM_VER >= 1800
+        runtimeLang,
+#endif
         vtableHolder, templateParams, uniqueIdentifier);
   } else {
-    const auto runtimeLang = 0;
     ret = DBuilder.createStructType(scope, name, file, lineNum, sizeInBits,
                                     alignmentInBits, DIFlags::FlagZero,
                                     derivedFrom, elemsArray, runtimeLang,
@@ -715,16 +720,52 @@ DIType DIBuilder::CreateAArrayType(TypeAArray *type) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-DISubroutineType DIBuilder::CreateFunctionType(Type *type) {
+DISubroutineType DIBuilder::CreateFunctionType(Type *type,
+                                               FuncDeclaration *fd) {
   TypeFunction *t = type->isTypeFunction();
   assert(t);
 
-  Type *retType = t->next;
+  llvm::SmallVector<LLMetadata *, 8> params;
+  auto pushParam = [&](Type *type, bool isRef) {
+    auto ditype = CreateTypeDescription(type);
+    if (isRef) {
+      if (!ditype) { // void or noreturn
+        ditype = CreateTypeDescription(Type::tuns8);
+      }
+      ditype = DBuilder.createReferenceType(llvm::dwarf::DW_TAG_reference_type,
+                                            ditype, target.ptrsize * 8);
+    }
+    params.emplace_back(ditype);
+  };
 
-  // Create "dummy" subroutine type for the return type
-  LLMetadata *params = {CreateTypeDescription(retType)};
+  // the first 'param' is the return value
+  pushParam(t->next, t->isref());
+
+  // then the implicit 'this'/context pointer
+  if (fd) {
+    DIType pointeeType = nullptr;
+    if (auto parentAggregate = fd->isThis()) {
+      pointeeType = CreateCompositeType(parentAggregate->type);
+    } else if (fd->isNested()) {
+      pointeeType = CreateTypeDescription(Type::tuns8); // cannot use void
+    }
+
+    if (pointeeType) {
+      DIType ditype = DBuilder.createReferenceType(
+          llvm::dwarf::DW_TAG_pointer_type, pointeeType, target.ptrsize * 8);
+      ditype = DBuilder.createObjectPointerType(ditype);
+      params.emplace_back(ditype);
+    }
+  }
+
+  // and finally the formal parameters
+  const auto len = t->parameterList.length();
+  for (size_t i = 0; i < len; i++) {
+    const auto param = t->parameterList[i];
+    pushParam(param->type, param->isReference());
+  }
+
   auto paramsArray = DBuilder.getOrCreateTypeArray(params);
-
   return DBuilder.createSubroutineType(paramsArray, DIFlags::FlagZero, 0);
 }
 
@@ -966,7 +1007,7 @@ DISubprogram DIBuilder::EmitSubProgram(FuncDeclaration *fd) {
         flags, dispFlags);
 
     // Now create subroutine type.
-    diFnType = CreateFunctionType(fd->type);
+    diFnType = CreateFunctionType(fd->type, fd);
   }
 
   // FIXME: duplicates?
@@ -1005,7 +1046,7 @@ DISubprogram DIBuilder::EmitThunk(llvm::Function *Thunk, FuncDeclaration *fd) {
          "Compilation unit missing or corrupted in DIBuilder::EmitThunk");
 
   // Create subroutine type (thunk has same type as wrapped function)
-  DISubroutineType DIFnType = CreateFunctionType(fd->type);
+  DISubroutineType DIFnType = CreateFunctionType(fd->type, fd);
 
   const auto scope = GetSymbolScope(fd);
   const auto name = (llvm::Twine(fd->toChars()) + ".__thunk").str();
@@ -1132,21 +1173,19 @@ void DIBuilder::EmitValue(llvm::Value *val, VarDeclaration *vd) {
   if (!mustEmitFullDebugInfo() || !debugVariable)
     return;
 
-  llvm::Instruction *instr = DBuilder.insertDbgValueIntrinsic(
+  auto instr = DBuilder.insertDbgValueIntrinsic(
       val, debugVariable, DBuilder.createExpression(),
       IR->ir->getCurrentDebugLocation(), IR->scopebb());
-  instr->setDebugLoc(IR->ir->getCurrentDebugLocation());
+#if LDC_LLVM_VER >= 1900
+  llvm::cast<llvm::DbgRecord *>
+#endif
+  (instr)->setDebugLoc(IR->ir->getCurrentDebugLocation());
 }
 
 void DIBuilder::EmitLocalVariable(llvm::Value *ll, VarDeclaration *vd,
                                   Type *type, bool isThisPtr, bool forceAsLocal,
                                   bool isRefRVal,
-#if LDC_LLVM_VER >= 1400
-                                  llvm::ArrayRef<uint64_t> addr
-#else
-                                  llvm::ArrayRef<int64_t> addr
-#endif
-                                  ) {
+                                  llvm::ArrayRef<uint64_t> addr) {
   if (!mustEmitFullDebugInfo())
     return;
 

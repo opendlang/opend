@@ -37,13 +37,15 @@
 #define MIlocalClasses 0x800
 #define MInew 0x80000000 // it's the "new" layout
 
+using namespace dmd;
+
 namespace {
 /// Creates a function in the current llvm::Module that dispatches to the given
 /// functions one after each other and then increments the gate variables, if
 /// any.
 llvm::Function *buildForwarderFunction(
-    const std::string &name, const std::list<FuncDeclaration *> &funcs,
-    const std::list<VarDeclaration *> &gates = std::list<VarDeclaration *>()) {
+    const std::string &name, const std::vector<llvm::Function *> &funcs,
+    const std::list<VarDeclaration *> &gates = {}) {
   // If there is no gates, we might get away without creating a function at all.
   if (gates.empty()) {
     if (funcs.empty()) {
@@ -51,7 +53,7 @@ llvm::Function *buildForwarderFunction(
     }
 
     if (funcs.size() == 1) {
-      return DtoCallee(funcs.front());
+      return funcs.front();
     }
   }
 
@@ -77,10 +79,9 @@ llvm::Function *buildForwarderFunction(
   }
 
   // ... calling the given functions, and...
-  for (auto func : funcs) {
-    const auto f = DtoCallee(func);
+  for (auto f : funcs) {
     const auto call = builder.CreateCall(f, {});
-    call->setCallingConv(gABI->callingConv(func));
+    call->setCallingConv(f->getCallingConv());
   }
 
   // ... incrementing the gate variables.
@@ -97,7 +98,19 @@ llvm::Function *buildForwarderFunction(
   return fn;
 }
 
-namespace {
+std::vector<llvm::Function *> toLLVMFuncs(const std::list<FuncDeclaration *> &funcs) {
+  std::vector<llvm::Function *> ret;
+  for (auto func : funcs)
+    ret.push_back(DtoCallee(func));
+  return ret;
+}
+
+llvm::Function *buildForwarderFunction(
+    const std::string &name, const std::list<FuncDeclaration *> &funcs,
+    const std::list<VarDeclaration *> &gates = {}) {
+  return buildForwarderFunction(name, toLLVMFuncs(funcs), gates);
+}
+
 std::string getMangledName(Module *m, const char *suffix) {
   OutBuffer buf;
   buf.writestring("_D");
@@ -105,7 +118,6 @@ std::string getMangledName(Module *m, const char *suffix) {
   if (suffix)
     buf.writestring(suffix);
   return buf.peekChars();
-}
 }
 
 llvm::Function *buildModuleCtor(Module *m) {
@@ -135,32 +147,39 @@ llvm::Function *buildModuleSharedDtor(Module *m) {
   return buildForwarderFunction(name, getIrModule(m)->sharedDtors);
 }
 
+llvm::Function *buildOrderIndependentModuleCtor(Module *m) {
+  std::string name = getMangledName(m, "7__ictorZ");
+  IrModule &irm = *getIrModule(m);
+
+  auto funcs = toLLVMFuncs(irm.standaloneSharedCtors);
+  if (irm.coverageCtor)
+    funcs.insert(funcs.begin(), irm.coverageCtor); // initialize coverage first
+
+  return buildForwarderFunction(name, funcs);
+}
+
 /// Builds the (constant) data content for the importedModules[] array.
 llvm::Constant *buildImportedModules(Module *m, size_t &count) {
-  const auto moduleInfoPtrTy = DtoPtrToType(getModuleInfoType());
-
   std::vector<LLConstant *> importInits;
   for (auto mod : m->aimports) {
     if (!mod->needModuleInfo() || mod == m) {
       continue;
     }
 
-    importInits.push_back(
-        DtoBitCast(getIrModule(mod)->moduleInfoSymbol(), moduleInfoPtrTy));
+    importInits.push_back(getIrModule(mod)->moduleInfoSymbol());
   }
   count = importInits.size();
 
   if (importInits.empty())
     return nullptr;
 
-  const auto type = llvm::ArrayType::get(moduleInfoPtrTy, importInits.size());
+  const auto type =
+      llvm::ArrayType::get(getOpaquePtrType(), importInits.size());
   return LLConstantArray::get(type, importInits);
 }
 
 /// Builds the (constant) data content for the localClasses[] array.
 llvm::Constant *buildLocalClasses(Module *m, size_t &count) {
-  const auto classinfoTy = DtoType(getClassInfoType());
-
   ClassDeclarations aclasses;
   getLocalClasses(m, aclasses);
 
@@ -182,15 +201,15 @@ llvm::Constant *buildLocalClasses(Module *m, size_t &count) {
     }
 
     IF_LOG Logger::println("class: %s", cd->toPrettyChars());
-    classInfoRefs.push_back(
-        DtoBitCast(getIrAggr(cd)->getClassInfoSymbol(), classinfoTy));
+    classInfoRefs.push_back(getIrAggr(cd)->getClassInfoSymbol());
   }
   count = classInfoRefs.size();
 
   if (classInfoRefs.empty())
     return nullptr;
 
-  const auto type = llvm::ArrayType::get(classinfoTy, classInfoRefs.size());
+  const auto type =
+      llvm::ArrayType::get(getOpaquePtrType(), classInfoRefs.size());
   return LLConstantArray::get(type, classInfoRefs);
 }
 }
@@ -238,7 +257,7 @@ llvm::GlobalVariable *genModuleInfo(Module *m) {
     flags |= MIxgetMembers;
 #endif
 
-  const auto fictor = getIrModule(m)->coverageCtor;
+  const auto fictor = buildOrderIndependentModuleCtor(m);
   if (fictor)
     flags |= MIictor;
 

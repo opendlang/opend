@@ -11,6 +11,7 @@
 
 #include "dmd/aggregate.h"
 #include "dmd/declaration.h"
+#include "dmd/errors.h"
 #include "dmd/expression.h"
 #include "dmd/identifier.h"
 #include "dmd/init.h"
@@ -27,6 +28,9 @@
 #include "ir/irtypeclass.h"
 #include "ir/irtypestruct.h"
 #include <algorithm>
+#include <unordered_map>
+
+using namespace dmd;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -58,7 +62,11 @@ bool IrAggr::useDLLImport() const {
 
 //////////////////////////////////////////////////////////////////////////////
 
-LLConstant *IrAggr::getInitSymbol(bool define) {
+LLGlobalVariable *IrAggr::getInitSymbol(bool define) {
+#if LDC_LLVM_VER >= 1800
+  #define startswith starts_with
+#endif
+
   if (!init) {
     const auto irMangle = getIRMangledInitSymbolName(aggrdecl);
 
@@ -71,25 +79,22 @@ LLConstant *IrAggr::getInitSymbol(bool define) {
     // Only declare the symbol if it isn't yet, otherwise the init symbol of
     // built-in TypeInfos may clash with an existing base-typed forward
     // declaration when compiling the rt.util.typeinfo unittests.
-    auto initGlobal = gIR->module.getGlobalVariable(irMangle);
-    if (initGlobal) {
-      assert(!initGlobal->hasInitializer() &&
+    init = gIR->module.getGlobalVariable(irMangle);
+    if (init) {
+      assert(!init->hasInitializer() &&
              "existing init symbol not expected to be defined");
-      assert((isBuiltinTypeInfo ||
-              initGlobal->getValueType() == getLLStructType()) &&
+      assert((isBuiltinTypeInfo || init->getValueType() == getLLStructType()) &&
              "type of existing init symbol declaration doesn't match");
     } else {
       // Init symbols of built-in TypeInfos need to be kept mutable as the type
       // is not declared as immutable on the D side, and e.g. synchronized() can
       // be used on the implicit monitor.
       const bool isConstant = !isBuiltinTypeInfo;
-      initGlobal = declareGlobal(aggrdecl->loc, gIR->module, getLLStructType(),
-                                 irMangle, isConstant, false, useDLLImport());
+      init = declareGlobal(aggrdecl->loc, gIR->module, getLLStructType(),
+                           irMangle, isConstant, false, useDLLImport());
     }
 
-    initGlobal->setAlignment(llvm::MaybeAlign(DtoAlignment(type)));
-
-    init = initGlobal;
+    init->setAlignment(llvm::MaybeAlign(DtoAlignment(type)));
 
     if (!define)
       define = defineOnDeclare(aggrdecl, /*isFunction=*/false);
@@ -97,14 +102,16 @@ LLConstant *IrAggr::getInitSymbol(bool define) {
 
   if (define) {
     auto initConstant = getDefaultInit();
-    auto initGlobal = llvm::dyn_cast<LLGlobalVariable>(init);
-    if (initGlobal // NOT a bitcast pointer to helper global
-        && !initGlobal->hasInitializer()) {
-      init = gIR->setGlobalVarInitializer(initGlobal, initConstant, aggrdecl);
+    if (!init->hasInitializer()) {
+      init = gIR->setGlobalVarInitializer(init, initConstant, aggrdecl);
     }
   }
 
   return init;
+
+#if LDC_LLVM_VER >= 1800
+  #undef startswith
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -166,7 +173,7 @@ static llvm::Constant *FillSArrayDims(Type *arrTypeD, llvm::Constant *init) {
   // the size without doing an expensive recursive D <-> LLVM type comparison.
   // The better way to solve this would be to just fix the initializer
   // codegen in any place where a scalar initializer might still be generated.
-  if (gDataLayout->getTypeStoreSize(init->getType()) >= arrTypeD->size()) {
+  if (gDataLayout->getTypeAllocSize(init->getType()) >= arrTypeD->size()) {
     return init;
   }
 
@@ -198,7 +205,7 @@ IrAggr::createInitializerConstant(const VarInitMap &explicitInitializers) {
 
     // add monitor (except for C++ classes)
     if (!cd->isCPPclass()) {
-      constants.push_back(getNullValue(getVoidPtrType()));
+      constants.push_back(getNullPtr());
       offset += target.ptrsize;
     }
   }
@@ -211,8 +218,12 @@ IrAggr::createInitializerConstant(const VarInitMap &explicitInitializers) {
 
   // tail padding?
   const size_t structsize = aggrdecl->size(Loc());
-  if (offset < structsize)
+  if (offset < structsize) {
     add_zeros(constants, offset, structsize);
+  } else if (offset > structsize) {
+    error(Loc(), "ICE: IR aggregate constant size exceeds the frontend size");
+    fatal();
+  }
 
   // get LL field types
   llvm::SmallVector<llvm::Type *, 16> types;
@@ -251,6 +262,8 @@ void IrAggr::addFieldInitializers(
     llvm::SmallVectorImpl<llvm::Constant *> &constants,
     const VarInitMap &explicitInitializers, AggregateDeclaration *decl,
     unsigned &offset, unsigned &interfaceVtblIndex, bool &isPacked) {
+
+  using llvm::APInt;
 
   if (ClassDeclaration *cd = decl->isClassDeclaration()) {
     if (cd->baseClass) {
@@ -297,6 +310,9 @@ void IrAggr::addFieldInitializers(
                : getDefaultInitializer(field);
   };
 
+  // IR field index => APInt for bitfield group
+  std::unordered_map<unsigned, APInt> bitFieldGroupConstants;
+
   const auto addToBitFieldGroup = [&](BitFieldDeclaration *bf,
                                       unsigned fieldIndex, unsigned bitOffset) {
     LLConstant *init = getFieldInit(bf);
@@ -305,20 +321,24 @@ void IrAggr::addFieldInitializers(
       return;
     }
 
-    LLConstant *&constant = constants[baseLLFieldIndex + fieldIndex];
+    if (bitFieldGroupConstants.find(fieldIndex) ==
+        bitFieldGroupConstants.end()) {
+      const auto fieldType =
+          llvm::cast<LLArrayType>(b.defaultTypes()[fieldIndex]); // an i8 array
+      const auto bitFieldSize = fieldType->getNumElements();
+      bitFieldGroupConstants.emplace(fieldIndex, APInt(bitFieldSize * 8, 0));
+    }
 
-    using llvm::APInt;
-    const auto fieldType = b.defaultTypes()[fieldIndex];
-    const auto intSizeInBits = fieldType->getIntegerBitWidth();
-    const APInt oldVal =
-        constant ? constant->getUniqueInteger() : APInt(intSizeInBits, 0);
+    APInt &constant = bitFieldGroupConstants[fieldIndex];
+    const auto intSizeInBits = constant.getBitWidth();
+
+    const APInt oldVal = constant;
     const APInt bfVal = init->getUniqueInteger().zextOrTrunc(intSizeInBits);
     const APInt mask = APInt::getLowBitsSet(intSizeInBits, bf->fieldWidth)
                        << bitOffset;
     assert(!oldVal.intersects(mask) && "has masked bits set already");
-    const APInt newVal = oldVal | ((bfVal << bitOffset) & mask);
 
-    constant = LLConstant::getIntegerValue(fieldType, newVal);
+    constant = oldVal | ((bfVal << bitOffset) & mask);
   };
 
   // add explicit and non-overlapping implicit initializers
@@ -328,7 +348,7 @@ void IrAggr::addFieldInitializers(
     const auto fieldIndex = pair.second;
 
     if (auto bf = field->isBitFieldDeclaration()) {
-      // multiple bit fields can map to a single IR field (of integer type)
+      // multiple bit fields can map to a single IR field for the whole group
       addToBitFieldGroup(bf, fieldIndex, bf->bitOffset);
     } else {
       LLConstant *&constant = constants[baseLLFieldIndex + fieldIndex];
@@ -349,6 +369,25 @@ void IrAggr::addFieldInitializers(
     assert(bf->offset > primary->offset);
     addToBitFieldGroup(bf, fieldIndexIt->second,
                        (bf->offset - primary->offset) * 8 + bf->bitOffset);
+  }
+
+  for (const auto &pair : bitFieldGroupConstants) {
+    const unsigned fieldIndex = pair.first;
+    const APInt intValue = pair.second;
+
+    LLConstant *&constant = constants[baseLLFieldIndex + fieldIndex];
+    assert(!constant && "already have a constant for a bitfield group?");
+
+    // convert APInt to i8 array
+    const auto i8Type = getI8Type();
+    const auto numBytes = intValue.getBitWidth() / 8;
+    llvm::SmallVector<LLConstant *, 8> bytes;
+    for (unsigned i = 0; i < numBytes; ++i) {
+      APInt byteVal = intValue.extractBits(8, i * 8);
+      bytes.push_back(LLConstant::getIntegerValue(i8Type, byteVal));
+    }
+
+    constant = llvm::ConstantArray::get(LLArrayType::get(i8Type, numBytes), bytes);
   }
 
   // TODO: sanity check that all explicit initializers have been dealt with?

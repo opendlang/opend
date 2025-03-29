@@ -22,6 +22,8 @@
 #include "gen/llvmhelpers.h"
 #include "llvm/Support/CommandLine.h"
 
+using namespace dmd;
+
 namespace {
 bool parseStringExp(Expression *e, const char *&res) {
   e = e->optimize_cpp(WANTvalue);
@@ -349,15 +351,13 @@ void DtoCheckPragma(PragmaDeclaration *decl, Dsymbol *s,
 
   switch (llvm_internal) {
   case LLVMintrinsic: {
-    const char *mangle = strdup(arg1str);
     int count = applyFunctionPragma(s, [=](FuncDeclaration *fd) {
       fd->llvmInternal = llvm_internal;
-      fd->intrinsicName = mangle;
-      fd->mangleOverride = {strlen(mangle), mangle};
+      fd->mangleOverride = {strlen(arg1str), arg1str};
     });
     count += applyTemplatePragma(s, [=](TemplateDeclaration *td) {
       td->llvmInternal = llvm_internal;
-      td->intrinsicName = mangle;
+      td->intrinsicName = arg1str;
     });
     if (count != 1) {
       error(s->loc,
@@ -417,7 +417,7 @@ void DtoCheckPragma(PragmaDeclaration *decl, Dsymbol *s,
   case LLVMatomic_rmw: {
     const int count = applyTemplatePragma(s, [=](TemplateDeclaration *td) {
       td->llvmInternal = llvm_internal;
-      td->intrinsicName = strdup(arg1str);
+      td->intrinsicName = arg1str;
     });
     if (count != 1) {
       error(s->loc,
@@ -513,6 +513,11 @@ void DtoCheckPragma(PragmaDeclaration *decl, Dsymbol *s,
   case LLVMinline_ir: {
     DtoCheckInlineIRPragma(ident, s);
     const int count = applyTemplatePragma(s, [=](TemplateDeclaration *td) {
+      if (!td->onemember) {
+        error(s->loc, "the `%s` pragma template must have exactly one member",
+              ident->toChars());
+        fatal();
+      }
       td->llvmInternal = llvm_internal;
     });
     if (count != 1) {
@@ -568,8 +573,16 @@ void DtoCheckPragma(PragmaDeclaration *decl, Dsymbol *s,
 }
 
 bool DtoIsIntrinsic(FuncDeclaration *fd) {
+  return fd->llvmInternal == LLVMintrinsic || DtoIsMagicIntrinsic(fd);
+}
+
+bool DtoIsMagicIntrinsic(FuncDeclaration *fd) {
+  // note: keep in sync with DtoLowerMagicIntrinsic()
   switch (fd->llvmInternal) {
-  case LLVMintrinsic:
+  case LLVMva_start: // doesn't map to an instruction, but handled as magic intrinsic by LDC
+  case LLVMva_copy: // ditto
+  case LLVMva_arg:
+  case LLVMva_end: // ditto
   case LLVMalloca:
   case LLVMfence:
   case LLVMatomic_store:
@@ -585,13 +598,8 @@ bool DtoIsIntrinsic(FuncDeclaration *fd) {
     return true;
 
   default:
-    return DtoIsVaIntrinsic(fd);
+    return false;
   }
-}
-
-bool DtoIsVaIntrinsic(FuncDeclaration *fd) {
-  return (fd->llvmInternal == LLVMva_start || fd->llvmInternal == LLVMva_copy ||
-          fd->llvmInternal == LLVMva_end);
 }
 
 // pragma(LDC_profile_instr, [true | false])

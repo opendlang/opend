@@ -87,12 +87,9 @@ DValue *DtoNewClass(const Loc &loc, TypeClass *tc, NewExp *newexp) {
     const bool useEHAlloc = global.params.ehnogc && newexp->thrownew;
     llvm::Function *fn = getRuntimeFunction(
         loc, gIR->module, useEHAlloc ? "_d_newThrowable" : "_d_allocclass");
-    LLConstant *ci =
-        DtoBitCast(irClass->getClassInfoSymbol(), DtoType(getClassInfoType()));
+    LLConstant *ci = irClass->getClassInfoSymbol();
     mem = gIR->CreateCallOrInvoke(
-        fn, ci, useEHAlloc ? ".newthrowable_alloc" : ".newclass_gc_alloc");
-    mem = DtoBitCast(mem, DtoType(tc),
-                     useEHAlloc ? ".newthrowable" : ".newclass_gc");
+        fn, ci, useEHAlloc ? ".newthrowable" : ".newclass_gc");
     doInit = !useEHAlloc;
   }
 
@@ -108,7 +105,7 @@ DValue *DtoNewClass(const Loc &loc, TypeClass *tc, NewExp *newexp) {
     LLValue *src = DtoRVal(newexp->thisexp);
     LLValue *dst = DtoGEP(irClass->getLLStructType(), mem, 0, idx);
     IF_LOG Logger::cout() << "dst: " << *dst << "\nsrc: " << *src << '\n';
-    DtoStore(src, DtoBitCast(dst, getPtrToType(src->getType())));
+    DtoStore(src, dst);
   }
   // set the context for nested classes
   else if (tc->sym->isNested() && tc->sym->vthis) {
@@ -169,7 +166,6 @@ void DtoInitClass(TypeClass *tc, LLValue *dst) {
 
   // init symbols might not have valid types
   LLValue *initsym = irClass->getInitSymbol();
-  initsym = DtoBitCast(initsym, DtoType(tc));
   LLValue *srcarr = DtoGEP(st, initsym, 0, firstDataIdx);
 
   DtoMemCpy(dstarr, srcarr, DtoConstSize_t(dataBytes));
@@ -182,8 +178,7 @@ void DtoFinalizeClass(const Loc &loc, LLValue *inst) {
   llvm::Function *fn =
       getRuntimeFunction(loc, gIR->module, "_d_callfinalizer");
 
-  gIR->CreateCallOrInvoke(
-      fn, DtoBitCast(inst, fn->getFunctionType()->getParamType(0)), "");
+  gIR->CreateCallOrInvoke(fn, inst, "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -244,9 +239,7 @@ DValue *DtoCastClass(const Loc &loc, DValue *val, Type *_to) {
   // class -> pointer
   if (to->ty == TY::Tpointer) {
     IF_LOG Logger::println("to pointer");
-    LLType *tolltype = DtoType(_to);
-    LLValue *rval = DtoBitCast(DtoRVal(val), tolltype);
-    return new DImValue(_to, rval);
+    return new DImValue(_to, DtoRVal(val));
   }
   // class -> bool
   if (to->ty == TY::Tbool) {
@@ -288,7 +281,6 @@ DValue *DtoCastClass(const Loc &loc, DValue *val, Type *_to) {
   // else if from is interface:          _d_interface_cast(to)
   // else if from is class:              _d_dynamic_cast(to)
 
-  LLType *toType = DtoType(_to);
   int offset = 0;
   if (tc->sym->isBaseOf(fc->sym, &offset)) {
     Logger::println("static down cast");
@@ -300,33 +292,28 @@ DValue *DtoCastClass(const Loc &loc, DValue *val, Type *_to) {
     LLValue *v = orig;
     if (offset != 0) {
       assert(offset > 0);
-      v = DtoBitCast(v, getVoidPtrType());
-      v = DtoGEP1(LLType::getInt8Ty(gIR->context()), v, DtoConstUint(offset));
+      v = DtoGEP1(getI8Type(), v, DtoConstUint(offset));
     }
     IF_LOG {
       Logger::cout() << "V = " << *v << std::endl;
-      Logger::cout() << "T = " << *toType << std::endl;
     }
-    v = DtoBitCast(v, toType);
 
     // Check whether the original value was null, and return null if so.
     // Sure we could have jumped over the code above in this case, but
     // it's just a GEP and (maybe) a pointer-to-pointer BitCast, so it
     // should be pretty cheap and perfectly safe even if the original was
     // null.
-    LLValue *isNull = gIR->ir->CreateICmpEQ(
-        orig, LLConstant::getNullValue(orig->getType()), ".nullcheck");
-    v = gIR->ir->CreateSelect(isNull, LLConstant::getNullValue(toType), v,
-                              ".interface");
+    const auto nullPtr = getNullPtr();
+    LLValue *isNull = gIR->ir->CreateICmpEQ(orig, nullPtr, ".nullcheck");
+    v = gIR->ir->CreateSelect(isNull, nullPtr, v, ".interface");
     // return r-value
     return new DImValue(_to, v);
   }
 
   if (fc->sym->classKind == ClassKind::cpp) {
     Logger::println("C++ class/interface cast");
-    LLValue *v = tc->sym->classKind == ClassKind::cpp
-                     ? DtoBitCast(DtoRVal(val), toType)
-                     : LLConstant::getNullValue(toType);
+    LLValue *v =
+        tc->sym->classKind == ClassKind::cpp ? DtoRVal(val) : getNullPtr();
     return new DImValue(_to, v);
   }
 
@@ -338,6 +325,15 @@ DValue *DtoCastClass(const Loc &loc, DValue *val, Type *_to) {
   // from class
   Logger::println("dynamic up cast");
   return DtoDynamicCastObject(loc, val, _to);
+}
+
+bool DtoIsObjcLinkage(Type *_to) {
+  if (auto to = _to->isTypeClass()) {
+    DtoResolveClass(to->sym);
+    return to->sym->classKind == ClassKind::objc;
+  }
+  
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -352,18 +348,41 @@ static void resolveObjectAndClassInfoClasses() {
 }
 
 DValue *DtoDynamicCastObject(const Loc &loc, DValue *val, Type *_to) {
+
+  resolveObjectAndClassInfoClasses();
+
+  // Dynamic casting in Objective-C works differently from D.
+  // We call objc_opt_isKindOfClass to get a bool defining
+  // whether the cast is valid, if it is then we go ahead.
+  if (DtoIsObjcLinkage(_to)) {
+    llvm::Function *kindOfClassFunc =
+      getRuntimeFunction(loc, gIR->module, "objc_opt_isKindOfClass");
+
+    // Get the object.
+    LLValue *obj = DtoRVal(val);
+
+    // Get class_t handle
+    LLValue *objTy = getNullPtr();
+    if (auto thandle = _to->isClassHandle()) {
+      objTy = gIR->objc.deref(thandle, getOpaquePtrType());
+    }
+
+    // objc_opt_isKindOfClass will check if id is null
+    // by itself, so we don't need to add an extra check.
+    // objc_opt_isKindOfClass(id) ? id : null
+    LLValue *objCastable = gIR->CreateCallOrInvoke(kindOfClassFunc, obj, objTy);
+    LLValue *ret = gIR->ir->CreateSelect(objCastable, obj, getNullPtr());
+    return new DImValue(_to, ret);
+  }
+
   // call:
   // Object _d_dynamic_cast(Object o, ClassInfo c)
-
   llvm::Function *func =
       getRuntimeFunction(loc, gIR->module, "_d_dynamic_cast");
   LLFunctionType *funcTy = func->getFunctionType();
 
-  resolveObjectAndClassInfoClasses();
-
   // Object o
   LLValue *obj = DtoRVal(val);
-  obj = DtoBitCast(obj, funcTy->getParamType(0));
   assert(funcTy->getParamType(0) == obj->getType());
 
   // ClassInfo c
@@ -371,17 +390,10 @@ DValue *DtoDynamicCastObject(const Loc &loc, DValue *val, Type *_to) {
   DtoResolveClass(to->sym);
 
   LLValue *cinfo = getIrAggr(to->sym)->getClassInfoSymbol();
-  // unfortunately this is needed as the implementation of object differs
-  // somehow from the declaration
-  // this could happen in user code as well :/
-  cinfo = DtoBitCast(cinfo, funcTy->getParamType(1));
   assert(funcTy->getParamType(1) == cinfo->getType());
 
   // call it
   LLValue *ret = gIR->CreateCallOrInvoke(func, obj, cinfo);
-
-  // cast return value
-  ret = DtoBitCast(ret, DtoType(_to));
 
   return new DImValue(_to, ret);
 }
@@ -389,40 +401,64 @@ DValue *DtoDynamicCastObject(const Loc &loc, DValue *val, Type *_to) {
 ////////////////////////////////////////////////////////////////////////////////
 
 DValue *DtoDynamicCastInterface(const Loc &loc, DValue *val, Type *_to) {
-  // call:
-  // Object _d_interface_cast(void* p, ClassInfo c)
-
-  llvm::Function *func =
-      getRuntimeFunction(loc, gIR->module, "_d_interface_cast");
-  LLFunctionType *funcTy = func->getFunctionType();
 
   resolveObjectAndClassInfoClasses();
 
+  // Dynamic casting in Objective-C works differently from D.
+  // In this case we want to call the Objective-C runtime to first
+  // get a Class object from the `id`.
+  // Then check if class_conformsToProtocol returns true,
+  // if it does, then we can cast and return the casted value, 
+  // otherwise return null.
+  if (DtoIsObjcLinkage(_to)) {
+    llvm::Function *getClassFunc =
+      getRuntimeFunction(loc, gIR->module, "object_getClass");
+
+    llvm::Function *kindOfProtocolFunc =
+      getRuntimeFunction(loc, gIR->module, "class_conformsToProtocol");
+
+    // id -> Class 
+    LLValue *obj = DtoRVal(val);
+    LLValue *objClass = gIR->CreateCallOrInvoke(getClassFunc, obj);
+    
+    // Get prototype_t handle
+    LLValue *protoTy = getNullPtr();
+    if (auto ifhndl = _to->isClassHandle()->isInterfaceDeclaration()) {
+      protoTy = gIR->objc.deref(ifhndl, getOpaquePtrType());
+    }
+
+    // Class && kindOfProtocolFunc(Class) ? id : null
+    LLValue *ret = gIR->ir->CreateSelect(
+      gIR->CreateCallOrInvoke(kindOfProtocolFunc, objClass, protoTy),
+      obj, 
+      getNullPtr()
+    );
+    return new DImValue(_to, ret);
+  }
+
+  // call:
+  // Object _d_interface_cast(void* p, ClassInfo c)
+  llvm::Function *func =
+      getRuntimeFunction(loc, gIR->module, "_d_interface_cast");
+
   // void* p
   LLValue *ptr = DtoRVal(val);
-  ptr = DtoBitCast(ptr, funcTy->getParamType(0));
 
   // ClassInfo c
   TypeClass *to = static_cast<TypeClass *>(_to->toBasetype());
   DtoResolveClass(to->sym);
   LLValue *cinfo = getIrAggr(to->sym)->getClassInfoSymbol();
-  // unfortunately this is needed as the implementation of object differs
-  // somehow from the declaration
-  // this could happen in user code as well :/
-  cinfo = DtoBitCast(cinfo, funcTy->getParamType(1));
 
   // call it
   LLValue *ret = gIR->CreateCallOrInvoke(func, ptr, cinfo);
-
-  // cast return value
-  ret = DtoBitCast(ret, DtoType(_to));
 
   return new DImValue(_to, ret);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-LLValue *DtoVirtualFunctionPointer(DValue *inst, FuncDeclaration *fdecl) {
+std::pair<llvm::Value *, llvm::Value *>
+DtoVirtualFunctionPointer(DValue *inst, FuncDeclaration *fdecl) {
   // sanity checks
   assert(fdecl->isVirtual());
   assert(!fdecl->isFinalFunc());
@@ -440,27 +476,29 @@ LLValue *DtoVirtualFunctionPointer(DValue *inst, FuncDeclaration *fdecl) {
   const auto irtc = getIrType(tc->sym->type, true)->isClass();
   const auto vtblType = irtc->getVtblType();
 
-  LLValue *funcval = vthis;
+  LLValue *vtable = vthis;
   // get the vtbl for objects
-  funcval = DtoGEP(irtc->getMemoryLLType(), funcval, 0u, 0);
+  vtable = DtoGEP(irtc->getMemoryLLType(), vthis, 0u, 0);
   // load vtbl ptr
-  funcval = DtoLoad(vtblType->getPointerTo(), funcval);
+  vtable = DtoLoad(vtblType->getPointerTo(), vtable);
   // index vtbl
   const std::string name = fdecl->toChars();
   const auto vtblname = name + "@vtbl";
-  funcval = DtoGEP(vtblType, funcval, 0, fdecl->vtblIndex, vtblname.c_str());
-  // load opaque pointer
+  LLValue *funcval =
+      DtoGEP(vtblType, vtable, 0, fdecl->vtblIndex, vtblname.c_str());
+  // load opaque pointer.
   funcval = DtoAlignedLoad(vtblType->getElementType(), funcval);
+  // Because vtables are immutable, LLVM's !invariant.load
+  // can be applied (helps with devirtualization).
+  llvm::cast<llvm::LoadInst>(funcval)->setMetadata(
+      "invariant.load", llvm::MDNode::get(gIR->context(), {}));
 
   IF_LOG Logger::cout() << "funcval: " << *funcval << '\n';
-
-  // cast to funcptr type
-  funcval = DtoBitCast(funcval, getPtrToType(DtoFunctionType(fdecl)));
 
   // postpone naming until after casting to get the name in call instructions
   funcval->setName(name);
 
   IF_LOG Logger::cout() << "funcval casted: " << *funcval << '\n';
 
-  return funcval;
+  return std::make_pair(funcval, vtable);
 }

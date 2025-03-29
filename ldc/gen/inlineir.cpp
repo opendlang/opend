@@ -17,6 +17,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
 
+using namespace dmd;
+
 namespace {
 
 /// Sets LLVMContext::setDiscardValueNames(false) upon construction and restores
@@ -37,13 +39,8 @@ struct TempDisableDiscardValueNames {
 /// Note: don't add function _parameter_ attributes
 void copyFnAttributes(llvm::Function *wannabe, llvm::Function *idol) {
   auto attrSet = idol->getAttributes();
-#if LDC_LLVM_VER >= 1400
   auto fnAttrSet = attrSet.getFnAttrs();
   wannabe->addFnAttrs(llvm::AttrBuilder(getGlobalContext(), fnAttrSet));
-#else
-  auto fnAttrSet = attrSet.getFnAttributes();
-  wannabe->addAttributes(LLAttributeList::FunctionIndex, fnAttrSet);
-#endif
 }
 
 llvm::StringRef exprToString(StringExp *strexp) {
@@ -241,7 +238,7 @@ DValue *DtoInlineIRExpr(const Loc &loc, FuncDeclaration *fdecl,
     Type *type = fdecl->type->nextOf();
 
     if (sretPointer) {
-      DtoStore(rv, DtoBitCast(sretPointer, getPtrToType(rv->getType())));
+      DtoStore(rv, sretPointer);
       return new DLValue(type, sretPointer);
     }
 

@@ -205,6 +205,8 @@ extern (C++) struct ObjcClassDeclaration
             !metaclass &&
             !classDeclaration.baseClass;
     }
+
+    bool isSwiftStub;
 }
 
 /**

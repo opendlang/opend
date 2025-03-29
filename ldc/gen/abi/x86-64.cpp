@@ -46,6 +46,8 @@
 #include <string>
 #include <utility>
 
+using namespace dmd;
+
 namespace {
 struct RegCount {
   char int_regs, sse_regs;
@@ -128,15 +130,11 @@ struct ImplicitByvalRewrite : ABIRewrite {
 
   LLValue *getLVal(Type *dty, LLValue *v) override { return v; }
 
-  LLType *type(Type *t) override { return DtoPtrToType(t); }
+  LLType *type(Type *t) override { return getOpaquePtrType(); }
 
   void applyTo(IrFuncTyArg &arg, LLType *finalLType = nullptr) override {
     ABIRewrite::applyTo(arg, finalLType);
-#if LDC_LLVM_VER >= 1200
     arg.attrs.addByValAttr(DtoType(arg.type));
-#else
-    arg.attrs.addAttribute(LLAttribute::ByVal);
-#endif
     if (auto alignment = DtoAlignment(arg.type))
       arg.attrs.addAlignmentAttr(alignment);
   }
@@ -187,19 +185,18 @@ private:
     return rt->toBasetype()->ty == TY::Tcomplex80;
   }
 
-  RegCount &getRegCount(IrFuncTy &fty) {
-    return reinterpret_cast<RegCount &>(fty.tag);
+  RegCount getRegCount(IrFuncTy &fty) {
+    RegCount regCount;
+    std::memcpy(&regCount, &fty.tag, sizeof regCount);
+    return regCount;
+  }
+
+  void setRegCount(IrFuncTy &fty, RegCount regCount) {
+    std::memcpy(&fty.tag, &regCount, sizeof regCount);
   }
 };
 
-// The public getter for abi.cpp
-TargetABI *getX86_64TargetABI() { return new X86_64TargetABI; }
-
 bool X86_64TargetABI::returnInArg(TypeFunction *tf, bool) {
-  if (tf->isref()) {
-    return false;
-  }
-
   Type *rt = tf->next->toBasetype();
 
   // x87 creal is returned on the x87 stack
@@ -212,7 +209,7 @@ bool X86_64TargetABI::returnInArg(TypeFunction *tf, bool) {
 // Prefer a ref if the POD cannot be passed in registers, i.e., if the LLVM
 // ByVal attribute would be applied, *and* the size is > 16.
 bool X86_64TargetABI::preferPassByRef(Type *t) {
-  return t->size() > 16 && passInMemory(t->toBasetype());
+  return size(t) > 16 && passInMemory(t->toBasetype());
 }
 
 bool X86_64TargetABI::passByVal(TypeFunction *tf, Type *t) {
@@ -259,8 +256,7 @@ void X86_64TargetABI::rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg,
 }
 
 void X86_64TargetABI::rewriteFunctionType(IrFuncTy &fty) {
-  RegCount &regCount = getRegCount(fty);
-  regCount = RegCount(); // initialize
+  RegCount regCount;
 
   // RETURN VALUE
   if (!skipReturnValueRewrite(fty)) {
@@ -302,8 +298,10 @@ void X86_64TargetABI::rewriteFunctionType(IrFuncTy &fty) {
     }
   }
 
-  // regCount (fty.tag) is now in the state after all implicit & formal args,
-  // ready to serve as initial state for each vararg call site, see below
+  // regCount is now in the state after all implicit & formal args,
+  // ready to serve as initial state for each vararg call site, see below.
+  // Save it in fty.tag.
+  setRegCount(fty, regCount);
 }
 
 void X86_64TargetABI::rewriteVarargs(IrFuncTy &fty,
@@ -331,13 +329,13 @@ void X86_64TargetABI::rewriteVarargs(IrFuncTy &fty,
 
 LLType *X86_64TargetABI::getValistType() {
   LLType *uintType = LLType::getInt32Ty(gIR->context());
-  LLType *voidPointerType = getVoidPtrType();
+  LLType *pointerType = getOpaquePtrType();
 
-  std::vector<LLType *> parts;      // struct __va_list_tag {
-  parts.push_back(uintType);        //   uint gp_offset;
-  parts.push_back(uintType);        //   uint fp_offset;
-  parts.push_back(voidPointerType); //   void* overflow_arg_area;
-  parts.push_back(voidPointerType); //   void* reg_save_area; }
+  std::vector<LLType *> parts;  // struct __va_list_tag {
+  parts.push_back(uintType);    //   uint gp_offset;
+  parts.push_back(uintType);    //   uint fp_offset;
+  parts.push_back(pointerType); //   void* overflow_arg_area;
+  parts.push_back(pointerType); //   void* reg_save_area; }
 
   return LLStructType::get(gIR->context(), parts);
 }
@@ -347,27 +345,25 @@ LLValue *X86_64TargetABI::prepareVaStart(DLValue *ap) {
   // invoking va_start, we first need to allocate the actual __va_list_tag struct
   // and set `ap` to its address.
   LLValue *valistmem = DtoRawAlloca(getValistType(), 0, "__va_list_mem");
-  DtoStore(valistmem,
-           DtoBitCast(DtoLVal(ap), getPtrToType(valistmem->getType())));
-  // Pass a i8* pointer to the actual struct to LLVM's va_start intrinsic.
-  return DtoBitCast(valistmem, getVoidPtrType());
+  DtoStore(valistmem, DtoLVal(ap));
+  // Pass an opaque pointer to the actual struct to LLVM's va_start intrinsic.
+  return valistmem;
 }
 
 void X86_64TargetABI::vaCopy(DLValue *dest, DValue *src) {
   // Analog to va_start, we first need to allocate a new __va_list_tag struct on
   // the stack and set `dest` to its address.
   LLValue *valistmem = DtoRawAlloca(getValistType(), 0, "__va_list_mem");
-  DtoStore(valistmem,
-           DtoBitCast(DtoLVal(dest), getPtrToType(valistmem->getType())));
+  DtoStore(valistmem, DtoLVal(dest));
   // Then fill the new struct with a bitcopy of the source struct.
   // `src` is a __va_list_tag* pointer to the source struct.
   DtoMemCpy(getValistType(), valistmem, DtoRVal(src));
 }
 
 LLValue *X86_64TargetABI::prepareVaArg(DLValue *ap) {
-  // Pass a i8* pointer to the actual __va_list_tag struct to LLVM's va_arg
+  // Pass an opaque pointer to the actual __va_list_tag struct to LLVM's va_arg
   // intrinsic.
-  return DtoBitCast(DtoRVal(ap), getVoidPtrType());
+  return DtoRVal(ap);
 }
 
 Type *X86_64TargetABI::vaListType() {
@@ -375,30 +371,23 @@ Type *X86_64TargetABI::vaListType() {
   // using TypeIdentifier here is a bit wonky but works, as long as the name
   // is actually available in the scope (this is what DMD does, so if a better
   // solution is found there, this should be adapted).
-  return TypeIdentifier::create(Loc(), Identifier::idPool("__va_list_tag"))
-      ->pointerTo();
+  return pointerTo(
+      TypeIdentifier::create(Loc(), Identifier::idPool("__va_list_tag")));
 }
 
-const char *X86_64TargetABI::objcMsgSendFunc(Type *ret,
-                                             IrFuncTy &fty, bool directcall) {
+const char *X86_64TargetABI::objcMsgSendFunc(Type *ret, IrFuncTy &fty, bool directcall) {
+  assert(isDarwin());
+    
   // see objc/message.h for objc_msgSend selection rules
-
   if (fty.arg_sret) {
     return directcall ? "objc_msgSendSuper_stret" : "objc_msgSend_stret";
   }
-
-  if (directcall)
-   return "objc_msgSendSuper";
-
-  if (ret) {
-    // complex long double return
-    if (ret->ty == TY::Tcomplex80) {
-      return "objc_msgSend_fp2ret";
-    }
-    // long double return
-    if (ret->ty == TY::Tfloat80 || ret->ty == TY::Timaginary80) {
-      return "objc_msgSend_fpret";
-    }
+  // float, double, long double return
+  if (ret && ret->isfloating()) {
+    return ret->ty == TY::Tcomplex80 ? "objc_msgSend_fp2ret" : "objc_msgSend_fpret";
   }
-  return "objc_msgSend";
+  return directcall ? "objc_msgSendSuper" : "objc_msgSend";
 }
+
+// The public getter for abi.cpp
+TargetABI *getX86_64TargetABI() { return new X86_64TargetABI; }

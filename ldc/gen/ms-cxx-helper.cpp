@@ -97,8 +97,7 @@ void cloneBlocks(const std::vector<llvm::BasicBlock *> &srcblocks,
     for (auto &II : *bb) {
       llvm::Instruction *Inst = &II;
       llvm::Instruction *newInst = nullptr;
-      if (funclet &&
-          !llvm::isa<llvm::DbgInfoIntrinsic>(Inst)) { // IntrinsicInst?
+      if (funclet && !llvm::isa<llvm::IntrinsicInst>(Inst)) {
         if (auto IInst = llvm::dyn_cast<llvm::InvokeInst>(Inst)) {
           auto invoke = llvm::InvokeInst::Create(
               IInst, llvm::OperandBundleDef("funclet", funclet));
@@ -143,7 +142,6 @@ bool isCatchSwitchBlock(llvm::BasicBlock *bb) {
 
 // routines for constructing the llvm types for MS RTTI structs.
 llvm::StructType *getTypeDescriptorType(IRState &irs,
-                                        llvm::Constant *classInfoPtr,
                                         llvm::StringRef TypeInfoString) {
   llvm::SmallString<256> TDTypeName("rtti.TypeDescriptor");
   TDTypeName += llvm::utostr(TypeInfoString.size());
@@ -152,9 +150,10 @@ llvm::StructType *getTypeDescriptorType(IRState &irs,
   if (TypeDescriptorType)
     return TypeDescriptorType;
   auto int8Ty = LLType::getInt8Ty(gIR->context());
+  auto ptrTy = getOpaquePtrType();
   llvm::Type *FieldTypes[] = {
-      classInfoPtr->getType(), // CGM.Int8PtrPtrTy,
-      getPtrToType(int8Ty),    // CGM.Int8PtrTy,
+      ptrTy, // CGM.Int8PtrPtrTy,
+      ptrTy, // CGM.Int8PtrTy,
       llvm::ArrayType::get(int8Ty, TypeInfoString.size() + 1)};
   TypeDescriptorType =
       llvm::StructType::create(gIR->context(), FieldTypes, TDTypeName);
@@ -164,7 +163,7 @@ llvm::StructType *getTypeDescriptorType(IRState &irs,
 llvm::GlobalVariable *getTypeDescriptor(IRState &irs, ClassDeclaration *cd) {
   if (cd->isCPPclass()) {
     const char *name = target.cpp.typeInfoMangle(cd);
-    return declareGlobal(cd->loc, irs.module, getVoidPtrType(), name,
+    return declareGlobal(cd->loc, irs.module, getOpaquePtrType(), name,
                          /*isConstant*/ true, false,
                          /*useDLLImport*/ cd->isExport());
   }
@@ -185,12 +184,11 @@ llvm::GlobalVariable *getTypeDescriptor(IRState &irs, ClassDeclaration *cd) {
 
   // Declare and initialize the TypeDescriptor.
   llvm::Constant *Fields[] = {
-      classInfoPtr, // VFPtr
-      llvm::ConstantPointerNull::get(
-          LLType::getInt8PtrTy(gIR->context())), // Runtime data
+      classInfoPtr,                                     // VFPtr
+      getNullPtr(),                                     // Runtime data
       llvm::ConstantDataArray::getString(gIR->context(), TypeNameString)};
   llvm::StructType *TypeDescriptorType =
-      getTypeDescriptorType(irs, classInfoPtr, TypeNameString);
+      getTypeDescriptorType(irs, TypeNameString);
 
   const LinkageWithCOMDAT lwc = {LLGlobalVariable::LinkOnceODRLinkage, true};
   Var = defineGlobal(cd->loc, gIR->module, TypeDescName,

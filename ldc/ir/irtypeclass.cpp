@@ -12,6 +12,7 @@
 #include "dmd/aggregate.h"
 #include "dmd/declaration.h"
 #include "dmd/dsymbol.h"
+#include "dmd/errors.h"
 #include "dmd/mtype.h"
 #include "dmd/target.h"
 #include "dmd/template.h"
@@ -24,7 +25,7 @@
 
 IrTypeClass::IrTypeClass(ClassDeclaration *cd)
     : IrTypeAggr(cd), cd(cd), tc(static_cast<TypeClass *>(cd->type)) {
-  vtbl_type = LLArrayType::get(getVoidPtrType(), cd->vtbl.length);
+  vtbl_type = LLArrayType::get(getOpaquePtrType(), cd->vtbl.length);
 }
 
 void IrTypeClass::addClassData(AggrTypeBuilder &builder,
@@ -48,7 +49,7 @@ void IrTypeClass::addClassData(AggrTypeBuilder &builder,
 
       // add to the interface map
       addInterfaceToMap(b->sym, builder.currentFieldIndex());
-      auto vtblTy = LLArrayType::get(getVoidPtrType(), b->sym->vtbl.length);
+      auto vtblTy = LLArrayType::get(getOpaquePtrType(), b->sym->vtbl.length);
       builder.addType(llvm::PointerType::get(vtblTy, 0), target.ptrsize);
 
       ++num_interface_vtbls;
@@ -60,12 +61,22 @@ void IrTypeClass::addClassData(AggrTypeBuilder &builder,
 }
 
 IrTypeClass *IrTypeClass::get(ClassDeclaration *cd) {
+  const auto t = new IrTypeClass(cd);
+  getIrType(cd->type) = t;
+  return t;
+}
+
+llvm::Type *IrTypeClass::getLLType() { return getOpaquePtrType(); }
+
+// Lazily build the actual IR struct type when needed.
+// Note that it is this function that initializes most fields!
+llvm::Type *IrTypeClass::getMemoryLLType() {
+  if (!isaStruct(type)->isOpaque())
+    return type;
+
   IF_LOG Logger::println("Building class type %s @ %s", cd->toPrettyChars(),
                          cd->loc.toChars());
   LOG_SCOPE;
-
-  const auto t = new IrTypeClass(cd);
-  getIrType(cd->type) = t;
 
   const unsigned instanceSize = cd->structsize;
   IF_LOG Logger::println("Instance size: %u", instanceSize);
@@ -75,27 +86,27 @@ IrTypeClass *IrTypeClass::get(ClassDeclaration *cd) {
   // Objective-C just has an ISA pointer, so just
   // throw that in there.
   if (cd->classKind == ClassKind::objc) {
-    builder.addType(getVoidPtrType(), target.ptrsize);
-    isaStruct(t->type)->setBody(builder.defaultTypes(), builder.isPacked());
-    return t;
+    builder.addType(getOpaquePtrType(), target.ptrsize);
+    isaStruct(type)->setBody(builder.defaultTypes(), builder.isPacked());
+    return type;
   }
 
   // add vtbl
-  builder.addType(llvm::PointerType::get(t->vtbl_type, 0), target.ptrsize);
+  builder.addType(llvm::PointerType::get(vtbl_type, 0), target.ptrsize);
 
   if (cd->isInterfaceDeclaration()) {
     // interfaces are just a vtable
-    t->num_interface_vtbls =
+    num_interface_vtbls =
         cd->vtblInterfaces ? cd->vtblInterfaces->length : 0;
   } else {
     // classes have monitor and fields
     if (!cd->isCPPclass() && !cd->isCPPinterface()) {
       // add monitor
-      builder.addType(getVoidPtrType(), target.ptrsize);
+      builder.addType(getOpaquePtrType(), target.ptrsize);
     }
 
     // add data members recursively
-    t->addClassData(builder, cd);
+    addClassData(builder, cd);
 
     // add tail padding
     if (instanceSize) // can be 0 for opaque classes
@@ -103,24 +114,38 @@ IrTypeClass *IrTypeClass::get(ClassDeclaration *cd) {
   }
 
   // set struct body and copy GEP indices
-  isaStruct(t->type)->setBody(builder.defaultTypes(), builder.isPacked());
-  t->varGEPIndices = builder.varGEPIndices();
+  isaStruct(type)->setBody(builder.defaultTypes(), builder.isPacked());
+  varGEPIndices = builder.varGEPIndices();
 
-  IF_LOG Logger::cout() << "class type: " << *t->type << std::endl;
+  if (!cd->isInterfaceDeclaration() && instanceSize &&
+      getTypeAllocSize(type) != instanceSize) {
+    error(cd->loc, "ICE: class IR size does not match the frontend size");
+    fatal();
+  }
 
-  return t;
+  IF_LOG Logger::cout() << "class type: " << *type << std::endl;
+
+  return type;
 }
 
-llvm::Type *IrTypeClass::getLLType() { return llvm::PointerType::get(type, 0); }
-
-llvm::Type *IrTypeClass::getMemoryLLType() { return type; }
-
 size_t IrTypeClass::getInterfaceIndex(ClassDeclaration *inter) {
+  getMemoryLLType(); // lazily resolve
+
   auto it = interfaceMap.find(inter);
   if (it == interfaceMap.end()) {
     return ~0UL;
   }
   return it->second;
+}
+
+unsigned IrTypeClass::getNumInterfaceVtbls() {
+  getMemoryLLType(); // lazily resolve
+  return num_interface_vtbls;
+}
+
+const VarGEPIndices &IrTypeClass::getVarGEPIndices() {
+  getMemoryLLType(); // lazily resolve
+  return varGEPIndices;
 }
 
 void IrTypeClass::addInterfaceToMap(ClassDeclaration *inter, size_t index) {

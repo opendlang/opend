@@ -39,10 +39,7 @@ enum LLVM_atleast(int major) = (LLVM_version >= major * 100);
 nothrow:
 @nogc:
 
-version(LDC_LLVM_OpaquePointers)
-    private enum p0i8 = "p0";
-else
-    private enum p0i8 = "p0i8";
+private enum p0i8 = "p0";
 
 //
 // CODE GENERATOR INTRINSICS

@@ -34,6 +34,8 @@
 #include "ir/irvar.h"
 #include "llvm/ADT/SmallString.h"
 
+using namespace dmd;
+
 //////////////////////////////////////////////////////////////////////////////
 
 class CodegenVisitor : public Visitor {
@@ -107,10 +109,11 @@ public:
       m->accept(this);
     }
 
-    // Objective-C protocols are only output if implemented as a class.
-    // If so, they're output via the class declaration
-    if(decl->classKind == ClassKind::objc)
-        return;
+    // Objective-C protocols don't have TypeInfo.
+    if (decl->classKind == ClassKind::objc) {
+      gIR->objc.getProtocol(decl);
+      return;
+    }
 
     // Emit TypeInfo.
     IrClass *ir = getIrAggr(decl);
@@ -208,14 +211,10 @@ public:
       m->accept(this);
     }
 
-    if(decl->classKind == ClassKind::objc) {
-        // for non-extern classes, we need to ensure they are
-        // referenced to populate the global list of them, so
-        // do that here, even though we ignore the return value
-        // it will still populate that list
-        if(!decl->objc.isExtern && !decl->objc.isMeta)
-            gIR->objc.getClassReference(*decl);
-        return;
+    // Objective-C class structure is initialized by calling getClassRef.
+    if (decl->classKind == ClassKind::objc) {
+      gIR->objc.getClass(decl);
+      return;
     }
 
     IrClass *ir = getIrAggr(decl);
@@ -406,6 +405,11 @@ public:
   void visit(PragmaDeclaration *decl) override {
     const auto &triple = *global.params.targetTriple;
 
+#if LDC_LLVM_VER >= 1800
+    #define endswith ends_with
+    #define startswith starts_with
+#endif
+
     if (decl->ident == Id::lib) {
       assert(!irs->dcomputetarget);
       llvm::StringRef name = getPragmaStringArg(decl);
@@ -479,6 +483,11 @@ public:
       }
     }
     visit(static_cast<AttribDeclaration *>(decl));
+
+#if LDC_LLVM_VER >= 1800
+    #undef endswith
+    #undef startswith
+#endif
   }
 
   //////////////////////////////////////////////////////////////////////////
@@ -486,6 +495,19 @@ public:
   void visit(TypeInfoDeclaration *decl) override {
     llvm_unreachable("Should be emitted from codegen layer only");
   }
+
+  //////////////////////////////////////////////////////////////////////////
+
+/*
+  void visit(CAsmDeclaration *ad) override {
+    auto se = ad->code->isStringExp();
+    assert(se);
+
+    DString str = se->peekString();
+    if (str.length)
+      irs->module.appendModuleInlineAsm({str.ptr, str.length});
+  }
+*/
 };
 
 //////////////////////////////////////////////////////////////////////////////

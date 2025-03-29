@@ -4,9 +4,12 @@
 #include "driver/cl_options.h"
 #include "driver/timetrace.h"
 #include "driver/tool.h"
+#include "gen/irstate.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Program.h"
+#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/Target/TargetMachine.h"
 
 namespace {
 const char *getPathToImportc_h(const Loc &loc) {
@@ -22,9 +25,11 @@ const char *getPathToImportc_h(const Loc &loc) {
   return cached;
 }
 
-const std::string &getCC(bool isMSVC) {
-  static std::string cached;
-  if (cached.empty()) {
+const std::string &getCC(bool isMSVC,
+                         std::vector<std::string> &additional_args) {
+  static std::string cached_cc;
+  static std::vector<std::string> cached_args;
+  if (cached_cc.empty()) {
     std::string fallback = "cc";
     if (isMSVC) {
 #ifdef _WIN32
@@ -40,9 +45,11 @@ const std::string &getCC(bool isMSVC) {
       fallback = "clang-cl";
 #endif
     }
-    cached = getGcc(fallback.c_str());
+    cached_cc = getGcc(cached_args, fallback.c_str());
   }
-  return cached;
+
+  additional_args.insert(additional_args.end(), cached_args.cbegin(), cached_args.cend());
+  return cached_cc;
 }
 
 FileName getOutputPath(const Loc &loc, const char *csrcfile) {
@@ -84,8 +91,8 @@ FileName runCPreprocessor(FileName csrcfile, const char*, const Loc &loc, bool &
 
   FileName ipath = getOutputPath(loc, csrcfile.toChars());
 
-  const std::string &cc = getCC(isMSVC);
   std::vector<std::string> args;
+  const std::string &cc = getCC(isMSVC, args);
 
   if (!isMSVC)
     appendTargetArgsForGcc(args);
@@ -104,17 +111,33 @@ FileName runCPreprocessor(FileName csrcfile, const char*, const Loc &loc, bool &
     args.push_back("/nologo");
     args.push_back("/P"); // preprocess only
 
-    const bool isClangCl = llvm::StringRef(cc)
-#if LDC_LLVM_VER >= 1300
-                               .contains_insensitive("clang-cl");
-#else
-                               .contains_lower("clang-cl");
-#endif
+    const bool isClangCl = llvm::StringRef(cc).contains_insensitive("clang-cl");
 
     if (!isClangCl) {
       args.push_back("/PD");              // print all macro definitions
       args.push_back("/Zc:preprocessor"); // use the new conforming preprocessor
     } else {
+      // propagate the target to the preprocessor
+      args.push_back("-target");
+      args.push_back(triple.getTriple());
+
+#if LDC_LLVM_VER >= 1800 // getAllProcessorFeatures was introduced in this version
+      // propagate all enabled/disabled features to the preprocessor
+      const auto &subTarget = gTargetMachine->getMCSubtargetInfo();
+      const auto &featureBits = subTarget->getFeatureBits();
+      llvm::SmallString<64> featureString;
+      for (const auto &feature : subTarget->getAllProcessorFeatures()) {
+        args.push_back("-Xclang");
+        args.push_back("-target-feature");
+        args.push_back("-Xclang");
+
+        featureString += featureBits.test(feature.Value) ? '+' : '-';
+        featureString += feature.Key;
+        args.push_back(featureString.str().str());
+        featureString.clear();
+      }
+#endif
+
       // print macro definitions (clang-cl doesn't support /PD - use clang's
       // -dD)
       args.push_back("-Xclang");
@@ -150,6 +173,5 @@ FileName runCPreprocessor(FileName csrcfile, const char*, const Loc &loc, bool &
     fatal();
   }
 
-  ifile = true;
   return ipath;
 }

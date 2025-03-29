@@ -25,7 +25,8 @@ namespace opts {
 extern llvm::cl::opt<std::string> linker;
 }
 
-std::string getGcc(const char *fallback = "cc");
+std::string getGcc(std::vector<std::string> &additional_args,
+		   const char *fallback = "cc");
 void appendTargetArgsForGcc(std::vector<std::string> &args);
 
 std::string getProgram(const char *fallbackName,
@@ -56,6 +57,10 @@ struct MsvcEnvironmentScope {
   bool setup(bool forPreprocessingOnly = false);
 
   ~MsvcEnvironmentScope();
+
+  // Tries to return the absolute path to a VC tool, falling back to the file
+  // name.
+  std::string tryResolveToolPath(const char *fileName) const;
 
 private:
   // for each changed env var: name & original value

@@ -41,6 +41,8 @@
 #include <math.h>
 #include <stdio.h>
 
+using namespace dmd;
+
 //////////////////////////////////////////////////////////////////////////////
 // FIXME: Integrate these functions
 void GccAsmStatement_toIR(GccAsmStatement *stmt, IRState *irs);
@@ -260,14 +262,6 @@ public:
           Logger::println("Loading value for return");
           returnValue = DtoLoad(funcType->getReturnType(), returnValue);
         }
-
-        // can happen for classes
-        if (returnValue->getType() != funcType->getReturnType()) {
-          returnValue =
-              irs->ir->CreateBitCast(returnValue, funcType->getReturnType());
-          IF_LOG Logger::cout()
-              << "return value after cast: " << *returnValue << '\n';
-        }
       }
     } else {
       // no return value expression means it's a void function.
@@ -417,15 +411,26 @@ public:
     }
     DValue *cond_e = toElemDtor(stmt->condition);
     LLValue *cond_val = DtoRVal(cond_e);
-    // Is it constant?
-    if (LLConstant *const_val = llvm::dyn_cast<LLConstant>(cond_val)) {
+    if (!cond_val->getType()->isIntegerTy(1)) {
+      IF_LOG Logger::cout() << "if conditional: " << *cond_val << std::endl;
+      cond_val = DtoRVal(DtoCast(stmt->loc, cond_e, Type::tbool));
+    }
+
+    // Is it constant, and is its value certainly `false` or `true`?
+    // Note: It must be a simple constant for which it is sufficient to
+    // determine true/false by calling `isZeroValue()`. This is not the case for
+    // complex llvm::Constant such as a CompareConstantExpr where `isZeroValue()
+    // == false` does not imply that the value is always `true`. See LDC issue
+    // #4556.
+    if (llvm::ConstantInt *const_val = llvm::dyn_cast<llvm::ConstantInt>(cond_val)) {
       Statement *executed = stmt->ifbody;
       Statement *skipped = stmt->elsebody;
       if (const_val->isZeroValue()) {
         std::swap(executed, skipped);
       }
       if (!containsLabel(skipped)) {
-        IF_LOG Logger::println("Constant true/false condition - elide.");
+        IF_LOG Logger::cout() << "Constant true/false condition - elide. (cond_val: " << *cond_val << ')' << std::endl;
+
         if (executed) {
           irs->DBuilder.EmitBlockStart(executed->loc);
         }
@@ -447,10 +452,6 @@ public:
     llvm::BasicBlock *elsebb =
         stmt->elsebody ? irs->insertBBAfter(ifbb, "else") : endbb;
 
-    if (!cond_val->getType()->isIntegerTy(1)) {
-      IF_LOG Logger::cout() << "if conditional: " << *cond_val << '\n';
-      cond_val = DtoRVal(DtoCast(stmt->loc, cond_e, Type::tbool));
-    }
     auto brinstr =
         llvm::BranchInst::Create(ifbb, elsebb, cond_val, irs->scopebb());
     PGO.addBranchWeights(brinstr, brweights);

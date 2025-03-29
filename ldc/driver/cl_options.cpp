@@ -137,7 +137,8 @@ static cl::opt<bool, true> verbose_cg_ast("vcg-ast", cl::ZeroOrMore, cl::Hidden,
 
 static cl::opt<unsigned, true> errorLimit(
     "verrors", cl::ZeroOrMore, cl::location(global.params.v.errorLimit),
-    cl::desc("Limit the number of error messages (0 means unlimited)"));
+    cl::desc(
+        "Limit the number of error/deprecation messages (0 means unlimited)"));
 
 static cl::opt<bool, true>
     showGaggedErrors("verrors-spec", cl::ZeroOrMore,
@@ -179,7 +180,7 @@ static cl::opt<Diagnostic, true> warnings(
     cl::init(DIAGNOSTICoff));
 
 static cl::opt<bool, true> ignoreUnsupportedPragmas(
-    "ignore", cl::desc("Ignore unsupported pragmas"), cl::ZeroOrMore,
+    "ignore", cl::desc("Ignore unsupported pragmas (default)"), cl::ZeroOrMore,
     cl::location(global.params.ignoreUnsupportedPragmas));
 
 static cl::opt<CppStdRevision, true> cplusplus(
@@ -319,7 +320,7 @@ struct HCParser : public cl::parser<DummyDataType> {
 
 static cl::opt<DummyDataType, false, HCParser>
     doCxxHdrGen("HC", cl::ZeroOrMore, cl::ValueOptional,
-                cl::desc("Generate C++ header file\n"
+                cl::desc("Write C++ 'header' equivalent to stdout\n"
                          "Use -HC=verbose to add comments for ignored "
                          "declarations (e.g. extern(D))"));
 
@@ -330,7 +331,7 @@ cl::opt<std::string>
 
 cl::opt<std::string>
     cxxHdrFile("HCf", cl::ZeroOrMore, cl::Prefix,
-               cl::desc("Write C++ 'header' file to <filename>"),
+               cl::desc("Write C++ 'header' file to <filename> instead of stdout"),
                cl::value_desc("filename"));
 
 cl::opt<std::string> mixinFile("mixin", cl::ZeroOrMore,
@@ -536,18 +537,6 @@ cl::opt<bool> noPLT(
     "fno-plt", cl::ZeroOrMore,
     cl::desc("Do not use the PLT to make function calls"));
 
-static cl::opt<signed char> passmanager("passmanager",
-    cl::desc("Setting the passmanager (new,legacy):"), cl::ZeroOrMore,
-    #if LDC_LLVM_VER < 1500
-      cl::init(0),
-    #else
-      cl::init(1),
-    #endif
-    cl::values(
-        clEnumValN(0, "legacy", "Use the legacy passmanager (available for LLVM14 and below) "),
-        clEnumValN(1, "new", "Use the new passmanager (available for LLVM14 and above)")));
-bool isUsingLegacyPassManager() { return passmanager == 0; }
-
 // Math options
 bool fFastMath; // Storage for the dynamically created ffast-math option.
 llvm::FastMathFlags defaultFMF;
@@ -604,9 +593,34 @@ static cl::opt<bool, true>
                cl::desc("Implement DIP1008 (@nogc Throwable)"),
                cl::ReallyHidden);
 
-cl::opt<bool, true> betterC(
+static cl::opt<bool, true> betterC(
     "betterC", cl::ZeroOrMore, cl::location(global.params.betterC),
     cl::desc("Omit generating some runtime information and helper functions"));
+
+/*
+static cl::opt<CLIIdentifierTable, true> identifiers(
+    "identifiers", cl::ZeroOrMore, cl::location(global.params.dIdentifierTable),
+    cl::desc("Specify the non-ASCII tables for D identifiers"),
+    cl::values(
+        clEnumValN(CLIIdentifierTable::C99, "c99", "C99"),
+        clEnumValN(CLIIdentifierTable::C11, "c11", "C11"),
+        clEnumValN(CLIIdentifierTable::UAX31, "UAX31", "UAX31"),
+        clEnumValN(CLIIdentifierTable::All, "all",
+                   "All, the least restrictive set, which comes with all "
+                   "others (default)")));
+
+static cl::opt<CLIIdentifierTable, true> identifiersImportc(
+    "identifiers-importc", cl::ZeroOrMore,
+    cl::location(global.params.cIdentifierTable),
+    cl::desc("Specify the non-ASCII tables for ImportC identifiers"),
+    cl::values(
+        clEnumValN(CLIIdentifierTable::C99, "c99", "C99"),
+        clEnumValN(CLIIdentifierTable::C11, "c11", "C11 (default)"),
+        clEnumValN(CLIIdentifierTable::UAX31, "UAX31", "UAX31"),
+        clEnumValN(CLIIdentifierTable::All, "all",
+                   "All, the least restrictive set, which comes with all "
+                   "others")));
+*/
 
 // `-cov[=<n>|ctfe]` parser.
 struct CoverageParser : public cl::parser<DummyDataType> {
@@ -679,6 +693,10 @@ cl::opt<LTOKind> ltoMode(
         clEnumValN(LTO_Full, "full", "Merges all input into a single module"),
         clEnumValN(LTO_Thin, "thin",
                    "Parallel importing and codegen (faster than 'full')")));
+cl::opt<bool> ltoFatObjects(
+    "ffat-lto-objects", cl::ZeroOrMore,
+    cl::desc("Include both IR and object code in object file output; only "
+             "effective when compiling with -flto."));
 
 cl::opt<std::string>
     saveOptimizationRecord("fsave-optimization-record",
@@ -687,14 +705,10 @@ cl::opt<std::string>
                                     "of optimizations performed by LLVM"),
                            cl::ValueOptional);
 
-#if LDC_LLVM_VER >= 1300
-// LLVM < 13 has "--warn-stack-size", but let's not do the effort of forwarding
-// the string to that option, and instead let the user do it himself.
 cl::opt<unsigned>
     fWarnStackSize("fwarn-stack-size", cl::ZeroOrMore, cl::init(UINT_MAX),
                    cl::desc("Warn for stack size bigger than the given number"),
                    cl::value_desc("threshold"));
-#endif
 
 #if LDC_LLVM_SUPPORTED_TARGET_SPIRV || LDC_LLVM_SUPPORTED_TARGET_NVPTX
 cl::list<std::string>
@@ -721,12 +735,6 @@ cl::opt<bool> dynamicCompileTlsWorkaround(
     cl::desc("Enable dynamic compilation TLS workaround"),
     cl::init(true),
     cl::Hidden);
-#endif
-
-#if LDC_LLVM_VER >= 1700
-bool enableOpaqueIRPointers = true; // typed pointers are no longer supported from LLVM 17
-#elif LDC_LLVM_VER >= 1400
-bool enableOpaqueIRPointers = false;
 #endif
 
 static cl::extrahelp
@@ -787,12 +795,7 @@ void createClashingOptions() {
           clEnumValN(FloatABI::Hard, "hard",
                      "Hardware floating-point ABI and instructions")));
 
-#if LDC_LLVM_VER >= 1400
   renameAndHide("opaque-pointers", nullptr); // remove
-  new cl::opt<bool, true>(
-      "opaque-pointers", cl::ZeroOrMore, cl::location(enableOpaqueIRPointers),
-      cl::desc("Use opaque IR pointers (experimental!)"), cl::Hidden);
-#endif
 }
 
 /// Hides command line options exposed from within LLVM that are unlikely
@@ -808,15 +811,15 @@ void hideLLVMOptions() {
       "amdgpu-dump-hsa-metadata", "amdgpu-enable-flat-scratch",
       "amdgpu-enable-global-sgpr-addr", "amdgpu-enable-merge-m0",
       "amdgpu-enable-power-sched", "amdgpu-igrouplp",
-      "amdgpu-promote-alloca-to-vector-limit",
+      "amdgpu-kernarg-preload-count", "amdgpu-promote-alloca-to-vector-limit",
       "amdgpu-reserve-vgpr-for-sgpr-spill", "amdgpu-sdwa-peephole",
       "amdgpu-use-aa-in-codegen", "amdgpu-verify-hsa-metadata",
       "amdgpu-vgpr-index-mode", "arm-add-build-attributes",
       "arm-implicit-it", "asm-instrumentation", "asm-show-inst",
       "atomic-counter-update-promoted", "atomic-first-counter",
       "basic-block-sections",
-      "basicblock-sections", "bounds-checking-single-trap", "bpf-stack-size",
-      "cfg-hide-cold-paths",
+      "basicblock-sections", "bounds-checking-single-trap",
+      "bounds-checking-unique-traps", "bpf-stack-size", "cfg-hide-cold-paths",
       "cfg-hide-deoptimize-paths", "cfg-hide-unreachable-paths",
       "code-model", "cost-kind", "cppfname", "cppfor", "cppgen",
       "cvp-dont-add-nowrap-flags",
@@ -844,10 +847,11 @@ void hideLLVMOptions() {
       "enable-no-nans-fp-math", "enable-no-signed-zeros-fp-math",
       "enable-no-trapping-fp-math", "enable-objc-arc-annotations",
       "enable-objc-arc-opts", "enable-pie", "enable-scoped-noalias",
-      "enable-split-backedge-in-load-pre",
-      "enable-tbaa", "enable-unsafe-fp-math", "exception-model",
-      "exhaustive-register-search", "expensive-combines",
+      "enable-split-backedge-in-load-pre", "enable-split-loopiv-heuristic",
+      "enable-tbaa", "enable-tlsdesc", "enable-unsafe-fp-math",
+      "exception-model", "exhaustive-register-search", "expensive-combines",
       "experimental-debug-variable-locations",
+      "experimental-debuginfo-iterators",
       "fatal-assembler-warnings", "filter-print-funcs",
       "force-dwarf-frame-section", "force-opaque-pointers",
       "force-tail-folding-style",
@@ -864,8 +868,8 @@ void hideLLVMOptions() {
       "instcombine-negator-max-depth", "instcombine-unsafe-select-transform",
       "instrprof-atomic-counter-update-all", "internalize-public-api-file",
       "internalize-public-api-list", "iterative-counter-promotion",
-      "join-liveintervals", "jump-table-type", "limit-float-precision",
-      "lower-global-dtors-via-cxa-atexit",
+      "join-liveintervals", "jump-table-type", "large-data-threshold",
+      "limit-float-precision", "lower-global-dtors-via-cxa-atexit",
       "lto-embed-bitcode", "matrix-default-layout",
       "matrix-print-after-transpose-opt", "matrix-propagate-shape",
       "max-counter-promotions", "max-counter-promotions-per-loop",
@@ -878,20 +882,21 @@ void hideLLVMOptions() {
       "mwarn-noncontigious-register", "mwarn-sign-mismatch", "mxcoff-roptr",
       "no-discriminators", "no-integrated-as", "no-type-check", "no-xray-index",
       "nozero-initialized-in-bss", "nvptx-sched4reg",
-      "objc-arc-annotation-target-identifier", "opaque-pointers",
+      "objc-arc-annotation-target-identifier",
+      "object-size-offset-visitor-max-visit-instructions",
       "pgo-block-coverage", "pgo-temporal-instrumentation",
       "pgo-view-block-coverage-graph",
       "pie-copy-relocations", "poison-checking-function-local",
       "polly-dump-after", "polly-dump-after-file", "polly-dump-before",
       "polly-dump-before-file", "pre-RA-sched", "print-after-all",
       "print-before-all", "print-machineinstrs", "print-module-scope",
-      "print-pipeline-passes",
+      "print-pipeline-passes", "profile-correlate",
       "profile-estimator-loop-weight", "profile-estimator-loop-weight",
       "profile-file", "profile-info-file", "profile-verifier-noassert",
       "pseudo-probe-for-profiling",
       "r600-ir-structurize", "rdf-dump", "rdf-limit", "recip", "regalloc",
       "relax-elf-relocations", "remarks-section", "rewrite-map-file",
-      "riscv-add-build-attributes", "rng-seed",
+      "riscv-add-build-attributes", "riscv-use-aa", "rng-seed",
       "runtime-counter-relocation", "safepoint-ir-verifier-print-only",
       "sample-profile-check-record-coverage",
       "sample-profile-check-sample-coverage",

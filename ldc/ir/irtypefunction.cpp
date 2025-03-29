@@ -15,6 +15,8 @@
 #include "gen/tollvm.h"
 #include "llvm/IR/DerivedTypes.h"
 
+using namespace dmd;
+
 IrTypeFunction::IrTypeFunction(Type *dt, llvm::Type *lt, IrFuncTy irFty_)
     : IrType(dt, lt), irFty(std::move(irFty_)) {}
 
@@ -54,7 +56,7 @@ IrTypeDelegate *IrTypeDelegate::get(Type *t) {
   llvm::Type *ltf =
       DtoFunctionType(tf, irFty, nullptr, Type::tvoid->pointerTo());
   llvm::Type *fptr = ltf->getPointerTo(gDataLayout->getProgramAddressSpace());
-  llvm::Type *types[] = {getVoidPtrType(), fptr};
+  llvm::Type *types[] = {getOpaquePtrType(), fptr};
   LLStructType *lt = LLStructType::get(gIR->context(), types, false);
 
   // Could have already built the type as part of a struct forward reference,
