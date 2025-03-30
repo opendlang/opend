@@ -19,15 +19,13 @@ else
     static assert(false, "This module is only valid for LDC");
 }
 
-     version (LDC_LLVM_1100) enum LLVM_version = 1100;
-else version (LDC_LLVM_1101) enum LLVM_version = 1101;
-else version (LDC_LLVM_1200) enum LLVM_version = 1200;
-else version (LDC_LLVM_1300) enum LLVM_version = 1300;
-else version (LDC_LLVM_1400) enum LLVM_version = 1400;
-else version (LDC_LLVM_1500) enum LLVM_version = 1500;
+     version (LDC_LLVM_1500) enum LLVM_version = 1500;
 else version (LDC_LLVM_1600) enum LLVM_version = 1600;
 else version (LDC_LLVM_1700) enum LLVM_version = 1700;
 else version (LDC_LLVM_1800) enum LLVM_version = 1800;
+else version (LDC_LLVM_1801) enum LLVM_version = 1801;
+else version (LDC_LLVM_1901) enum LLVM_version = 1901;
+else version (LDC_LLVM_2000) enum LLVM_version = 2000;
 else static assert(false, "LDC LLVM version not supported");
 
 enum LLVM_atleast(int major) = (LLVM_version >= major * 100);
@@ -38,8 +36,6 @@ enum LLVM_atleast(int major) = (LLVM_version >= major * 100);
 // strlen() is marked weakly pure as well) and mostly @safe.
 nothrow:
 @nogc:
-
-private enum p0i8 = "p0";
 
 //
 // CODE GENERATOR INTRINSICS
@@ -53,7 +49,7 @@ pragma(LDC_intrinsic, "llvm.returnaddress")
 
 /// The 'llvm.frameaddress' intrinsic attempts to return the target-specific
 /// frame pointer value for the specified stack frame.
-pragma(LDC_intrinsic, "llvm.frameaddress."~p0i8)
+pragma(LDC_intrinsic, "llvm.frameaddress.p0")
     void* llvm_frameaddress(uint level);
 
 /// The 'llvm.stacksave' intrinsic is used to remember the current state of the
@@ -80,7 +76,7 @@ pragma(LDC_intrinsic, "llvm.stackrestore")
 /// keep in cache. The cache type specifies whether the prefetch is performed on
 /// the data (1) or instruction (0) cache. The rw, locality and cache type
 /// arguments must be constant integers.
-pragma(LDC_intrinsic, "llvm.prefetch."~p0i8)
+pragma(LDC_intrinsic, "llvm.prefetch.p0")
     void llvm_prefetch(const(void)* ptr, uint rw, uint locality, uint cachetype) pure @safe;
 
 /// The 'llvm.pcmarker' intrinsic is a method to export a Program Counter (PC)
@@ -144,7 +140,7 @@ pure:
 /// location to the destination location.
 /// Note that, unlike the standard libc function, the llvm.memcpy.* intrinsics do
 /// not return a value.
-pragma(LDC_intrinsic, "llvm.memcpy."~p0i8~"."~p0i8~".i#")
+pragma(LDC_intrinsic, "llvm.memcpy.p0.p0.i#")
     void llvm_memcpy(T)(void* dst, const(void)* src, T len, bool volatile_ = false)
         if (__traits(isIntegral, T));
 
@@ -154,7 +150,7 @@ pragma(LDC_intrinsic, "llvm.memcpy."~p0i8~"."~p0i8~".i#")
 /// intrinsic but allows the two memory locations to overlap.
 /// Note that, unlike the standard libc function, the llvm.memmove.* intrinsics
 /// do not return a value.
-pragma(LDC_intrinsic, "llvm.memmove."~p0i8~"."~p0i8~".i#")
+pragma(LDC_intrinsic, "llvm.memmove.p0.p0.i#")
     void llvm_memmove(T)(void* dst, const(void)* src, T len, bool volatile_ = false)
         if (__traits(isIntegral, T));
 
@@ -162,7 +158,7 @@ pragma(LDC_intrinsic, "llvm.memmove."~p0i8~"."~p0i8~".i#")
 /// value.
 /// Note that, unlike the standard libc function, the llvm.memset intrinsic does
 /// not return a value.
-pragma(LDC_intrinsic, "llvm.memset."~p0i8~".i#")
+pragma(LDC_intrinsic, "llvm.memset.p0.i#")
     void llvm_memset(T)(void* dst, ubyte val, T len, bool volatile_ = false)
         if (__traits(isIntegral, T));
 
@@ -304,6 +300,35 @@ pragma(LDC_intrinsic, "llvm.copysign.f#")
 /// The 'llvm.round.*' intrinsics returns the operand rounded to the nearest integer.
 pragma(LDC_intrinsic, "llvm.round.f#")
     T llvm_round(T)(T val)
+        if (__traits(isFloating, T));
+
+/// The 'llvm.roundeven.*' intrinsics returns the operand rounded to the nearest
+/// integer in floating-point format rounding halfway cases to even (that is, to
+/// the nearest value that is an even integer).
+pragma(LDC_intrinsic, "llvm.roundeven.f#")
+    T llvm_roundeven(T)(T val)
+        if (__traits(isFloating, T));
+
+/// The 'llvm.lround.*' intrinsics return the operand rounded to the nearest
+/// integer with ties away from zero.
+pragma(LDC_intrinsic, "llvm.lround.i32.f#")
+    int llvm_lround(T)(T val)
+        if (__traits(isFloating, T));
+
+/// The 'llvm.llround.*' intrinsics return the operand rounded to the nearest
+/// integer with ties away from zero.
+pragma(LDC_intrinsic, "llvm.llround.i64.f#")
+    long llvm_llround(T)(T val)
+        if (__traits(isFloating, T));
+
+/// The 'llvm.lrint.*' intrinsics return the operand rounded to the nearest integer.
+pragma(LDC_intrinsic, "llvm.lrint.i32.f#")
+    int llvm_lrint(T)(T val)
+        if (__traits(isFloating, T));
+
+/// The 'llvm.llrint.*' intrinsics return the operand rounded to the nearest integer.
+pragma(LDC_intrinsic, "llvm.llrint.i64.f#")
+    long llvm_llrint(T)(T val)
         if (__traits(isFloating, T));
 
 /// The 'llvm.fmuladd.*' intrinsic functions represent multiply-add expressions
@@ -616,6 +641,7 @@ pragma(LDC_intrinsic, "llvm.debugtrap")
 
 /// Provides information about the expected (that is, most probable) runtime
 /// value of an integer expression to the optimizer.
+/// The intrinsic returns `val`.
 ///
 /// Params:
 ///     val = The runtime value, of integer type.
@@ -623,6 +649,13 @@ pragma(LDC_intrinsic, "llvm.debugtrap")
 pragma(LDC_intrinsic, "llvm.expect.i#")
     T llvm_expect(T)(T val, T expectedVal)
         if (__traits(isIntegral, T));
+
+/// The intrinsic allows the optimizer to assume that the provided `condition` is
+/// always true whenever the control flow reaches the intrinsic call. If the condition
+/// is violated during execution, the behavior is undefined.
+/// No machine code is generated for this intrinsic.
+pragma(LDC_intrinsic, "llvm.assume")
+    void llvm_assume(bool condition);
 
 /// LLVM optimizer treats this intrinsic as having side effect, so it can be
 /// inserted into a loop to indicate that the loop shouldn't be assumed to
