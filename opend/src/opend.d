@@ -1,12 +1,15 @@
 import std.process;
 import std.file;
 
-// FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
-
-// FIXME: tell people to install xpack if not already done when then use --target
+// **********************FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
 
 // FIXME mebbe i could make opend --src=path/to/opend/git/dir args.... pull the build versions out of there, that'd be kinda useful
 // hellit oculd even forward itself to the new opend program. hmmmmm
+
+
+// fetch external packages
+
+// edit and test by module name instead of by file name
 
 int main(string[] args) {
 	// maybe override the normal config files
@@ -98,6 +101,8 @@ struct Commands {
 	}
 
 	int sendToCompilerDriver(string[] args, string preferredCompiler = null) {
+		version(OSX) version(AArch64) if(preferredCompiler == "dmd") preferredCompiler = "ldmd2";
+
 		// extract --target
 		string[] argsToKeep;
 		argsToKeep.reserve(args.length);
