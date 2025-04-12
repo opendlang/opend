@@ -2792,6 +2792,11 @@ else version (CRuntime_Musl)
     {
 	// FIXME: copy paste from X86_Any?
     }
+    else version (RISCV64)
+    {
+        enum MINSIGSTKSZ = 2048;
+        enum SIGSTKSZ    = 8192;
+    }
     else
         static assert(0, "unimplemented");
 
