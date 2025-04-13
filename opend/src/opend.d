@@ -33,7 +33,7 @@ int main(string[] args) {
 			foreach(memberName; __traits(allMembers, Commands))
 				case memberName: {
 					string[] argsToSend = allOtherArgs[2 .. $];
-					if(a == "build" || a == "test" || a == "publish" || a == "testOnly" || a == "check")
+					if(a == "build" || a == "test" || a == "publish" || a == "testOnly" || a == "check" || a == "run")
 						argsToSend = buildSpecificArgs ~ allOtherArgs[2 .. $];
 					return __traits(getMember, Commands, memberName)(argsToSend);
 				}
@@ -348,6 +348,11 @@ struct Commands {
 				// you must also install the emsdk
 
 				downloadXpack("xpack-emscripten");
+
+
+				// brianush suggests:
+				// -sSTANDALONE_WASM -sEXPORTED_FUNCTIONS="[\"__start\"]"
+
 				// phobos is compiled but puts out some warnings so gonna reenable it with -i and not link the phobos
 				// tbh might be a good idea to do that for other platforms too
 				installConfig(`
