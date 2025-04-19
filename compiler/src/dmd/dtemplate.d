@@ -6509,11 +6509,14 @@ version (IN_LLVM)
                 }
 
                 // Elide codegen if `this` doesn't need it.
-                if (tithis.minst && !tithis.minst.isRoot() && !tithis.minst.rootImports())
+                if (tithis.minst && !tithis.minst.isRoot() && !tithis.minst.rootImports()) {
                     return ThreeState.no;
+                }
 
                 return ThreeState.none;
             }
+
+            // if(tinst) printf("%s :: %s\n", tinst.toPrettyChars(), tinst.minst ? tinst.minst.toChars() : "null");
 
             if (const needsCodegen = needsCodegenRootOnly(this, tinst))
                 return needsCodegen == ThreeState.yes ? true : false;

@@ -260,7 +260,7 @@ extern (C++) struct Param
     CHECKENABLE useSwitchError = CHECKENABLE._default;  // check for switches without a default
     CHECKENABLE boundscheck    = CHECKENABLE._default;  // state of -boundscheck switch
 
-    CHECKACTION checkAction = CHECKACTION.D; // action to take when bounds, asserts or switch defaults are violated
+    CHECKACTION checkAction = CHECKACTION.context; // action to take when bounds, asserts or switch defaults are violated
 
     const(char)[] argv0;                // program name
     Array!(const(char)*) modFileAliasStrings; // array of char*'s of -I module filename alias strings

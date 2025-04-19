@@ -38,7 +38,7 @@ set(BUILD_SHARED_LIBS     AUTO                                CACHE STRING "Whet
 set(D_FLAGS               -w;-de;-preview=dip1000;-preview=dtorfields;-preview=fieldwise CACHE STRING "Runtime D compiler flags, separated by ';'")
 set(D_EXTRA_FLAGS         ""                                  CACHE STRING "Runtime extra D compiler flags, separated by ';'")
 set(D_FLAGS_DEBUG         -g;-link-defaultlib-debug;-d-debug  CACHE STRING "Runtime D compiler flags (debug libraries), separated by ';'")
-set(D_FLAGS_RELEASE       -O3;-release;-femit-local-var-lifetime  CACHE STRING "Runtime D compiler flags (release libraries), separated by ';'")
+set(D_FLAGS_RELEASE       -O3;-femit-local-var-lifetime  CACHE STRING "Runtime D compiler flags (release libraries), separated by ';'")
 set(COMPILE_ALL_D_FILES_AT_ONCE ON                            CACHE BOOL   "Compile all D files for the runtime libs in a single command line instead of separately. Disabling this is useful for many CPU cores and/or iterative development.")
 set(RT_ARCHIVE_WITH_LDC   ON                                  CACHE STRING "Whether to archive the static runtime libs via LDC instead of CMake archiver")
 set(RT_CFLAGS             ""                                  CACHE STRING "Runtime extra C compiler flags, separated by ' '")
@@ -217,7 +217,7 @@ else()
         list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/etc/valgrind/valgrind.c)
         list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/ldc/arm_unwind.c)
         list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/ldc/msvc.c)
-	# maybe this one can be salvaged...
+        # maybe this one can be salvaged...
         list(REMOVE_ITEM DRUNTIME_C ${RUNTIME_DIR}/src/core/stdc/errno.c)
     endif()
 
@@ -683,7 +683,7 @@ macro(build_runtime_libs druntime_o druntime_bc phobos2_o phobos2_bc c_flags ld_
 endmacro()
 
 # Builds a static and/or shared copy of druntime/Phobos.
-macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit_bc all_d_files_at_once outlist_targets)
+macro(build_runtime_variant is_release d_flags c_flags ld_flags lib_suffix path_suffix emit_bc all_d_files_at_once outlist_targets)
     set(is_unittest OFF)
     if("${lib_suffix}" MATCHES "-unittest")
         set(is_unittest ON)
@@ -701,7 +701,7 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
        AND NOT ${all_d_files_at_once})
         set(phobos2_o "")
         set(phobos2_bc "")
-	if(PHOBOS2_DIR)
+        if(PHOBOS2_DIR)
         compile_phobos2("${phobos2_d_flags};-relocation-model=pic;-fvisibility=public;-dllimport=all"
                         "${lib_suffix}${SHARED_LIB_SUFFIX}" "${path_suffix}"
                         "${emit_bc}" "${all_d_files_at_once}" "OFF" phobos2_o phobos2_bc)
@@ -712,10 +712,11 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
         # (at least with the make generator), a known CMake issue.
         set(phobos2_common phobos2-ldc${target_suffix}-common)
         add_custom_target(${phobos2_common} DEPENDS ${phobos2_o} ${phobos2_bc})
-	endif()
+        endif()
     endif()
 
     set(druntime_d_flags ${d_flags})
+    list(APPEND druntime_d_flags ${is_release})
     if(is_unittest)
         list(APPEND druntime_d_flags ${DRUNTIME_EXTRA_UNITTEST_FLAGS})
     endif()
@@ -728,14 +729,14 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
                          "${emit_bc}" "${all_d_files_at_once}" "OFF" druntime_o druntime_bc)
 
         # compile Phobos (with hidden visibility on Windows)
-	if(PHOBOS2_DIR)
+        if(PHOBOS2_DIR)
         if(phobos2_common STREQUAL "")
             set(phobos2_o "")
             set(phobos2_bc "")
             compile_phobos2("${phobos2_d_flags}" "${lib_suffix}" "${path_suffix}"
                             "${emit_bc}" "${all_d_files_at_once}" "OFF" phobos2_o phobos2_bc)
         endif()
-	endif()
+        endif()
 
         build_runtime_libs("${druntime_o}" "${druntime_bc}" "${phobos2_o}" "${phobos2_bc}"
                            "${c_flags}" "${ld_flags}" "${lib_suffix}" "${path_suffix}"
@@ -797,6 +798,7 @@ endmacro()
 macro(build_runtime_variants d_flags c_flags ld_flags path_suffix outlist_targets)
     # static and/or shared release druntime/Phobos
     build_runtime_variant(
+        "-release"
         "${d_flags};${D_FLAGS};${D_FLAGS_RELEASE}"
         "${c_flags}"
         "${ld_flags}"
@@ -808,6 +810,7 @@ macro(build_runtime_variants d_flags c_flags ld_flags path_suffix outlist_target
     )
     # static and/or shared debug druntime/Phobos
     build_runtime_variant(
+        ""
         "${d_flags};${D_FLAGS};${D_FLAGS_DEBUG}"
         "${c_flags}"
         "${ld_flags}"
@@ -1026,6 +1029,7 @@ function(build_test_runner_variant name_suffix path_suffix d_flags c_flags)
     # static and/or shared pair(s) of druntime/Phobos unittest libs
     set(unittest_libs "")
     build_runtime_variant(
+        ""
         "${full_d_flags}"
         "${full_c_flags}"
         "${linkflags}"

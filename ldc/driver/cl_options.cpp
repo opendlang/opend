@@ -491,7 +491,7 @@ static cl::opt<MultiSetter, true, FlagParser<bool>>
 static cl::opt<CHECKACTION, true> checkAction(
     "checkaction", cl::ZeroOrMore, cl::location(global.params.checkAction),
     cl::desc("Action to take when an assert/boundscheck/final-switch fails"),
-    cl::init(CHECKACTION_D),
+    cl::init(CHECKACTION_context),
     cl::values(
         clEnumValN(CHECKACTION_D, "D",
                    "Usual D behavior of throwing an AssertError"),

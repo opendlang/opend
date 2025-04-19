@@ -6,6 +6,35 @@ import std.file;
 // FIXME mebbe i could make opend --src=path/to/opend/git/dir args.... pull the build versions out of there, that'd be kinda useful
 // hellit oculd even forward itself to the new opend program. hmmmmm
 
+/+
+	PACKAGE FETCHING
+
+	opend fetch [--global] [spec]
+		spec can be:
+			git://thing - requires shell out to git
+			http[s]://thing - downloads zip or tarball or whatever
+			https://github.com - knows how to adjust the thing
+			file:///path - extractors D source from it
+
+	It checks for src/ or source/ for extracting, if present
+
+	UPDATING THE COMPILER
+
+	opend install update
++/
+
+/+
+	opend run
+	opend test
+	opend debug
++/
+
+// rumor has it arm64 for apple can be better than aarch64 but i think they the same
+
+/+
+	BUILD OPTIONS
++/
+
 
 // fetch external packages
 
@@ -38,9 +67,7 @@ int main(string[] args) {
 					return __traits(getMember, Commands, memberName)(argsToSend);
 				}
 			case "-h", "--help":
-				import std.stdio, std.string;
-				foreach(memberName; __traits(allMembers, Commands))
-					writeln(memberName, "\n\t", strip(__traits(docComment, __traits(getMember, Commands, memberName))));
+				Commands.help(null);
 				return 0;
 			default:
 				return Commands.build(buildSpecificArgs ~ allOtherArgs[1 .. $]);
@@ -52,15 +79,43 @@ int main(string[] args) {
 	}
 }
 
+int checkForCrash(int code, string program) {
+	import std.stdio;
+	version(Posix) {
+		if(code < 0) {
+			writeln(program, " killed by signal ", -code);
+		}
+	}
+	version(Windows) {
+		if(code > 255) {
+			writefln(program, " exited with code %08x", code);
+		}
+	}
+	return code;
+}
+
 struct Commands {
 	static:
+
+	/// Displays this information
+	int help(string[] args) {
+		import std.stdio, std.string;
+
+		writeln("`opend command_or_filename [args...]` where commands include:");
+
+		foreach(memberName; __traits(allMembers, Commands))
+			static if(memberName != "sendToCompilerDriver")
+				writefln("%9s\t%s", memberName, strip(__traits(docComment, __traits(getMember, Commands, memberName))));
+
+		writefln("%9s\t%s", "anyfile.d", "Compiles the given file");
+		return 0;
+	}
 
 	/// Does a debug build and immediately runs the program
 	int run(string[] args) {
 		import std.stdio, std.string;
 		if(args.length == 0) {
-			foreach(memberName; __traits(allMembers, Commands))
-				writeln(memberName, "\n\t", strip(__traits(docComment, __traits(getMember, Commands, memberName))));
+			help(null);
 			return 1;
 		}
 
@@ -71,7 +126,7 @@ struct Commands {
 
 		return spawnProcess([oe.exe] ~ oe.args, [
 			"LD_LIBRARY_PATH": getRuntimeLibPath()
-		]).wait;
+		]).wait.checkForCrash("generated program");
 	}
 
 	/// Builds the code and runs its unittests
@@ -100,7 +155,7 @@ struct Commands {
 		return sendToCompilerDriver(["-i", "-O2"] ~ args, "ldmd2");
 	}
 
-	int sendToCompilerDriver(string[] args, string preferredCompiler = null) {
+	private int sendToCompilerDriver(string[] args, string preferredCompiler = null) {
 		version(OSX) version(AArch64) if(preferredCompiler == "dmd") preferredCompiler = "ldmd2";
 
 		// extract --target
@@ -285,6 +340,7 @@ struct Commands {
 	// if i do a server thing i need to be able to migrate it between attached displays
 
 	/// Pre-compiles with the given arguments so future calls to `build` can use the cached library
+	version(none)
 	int precompile(string[] args) {
 		// any modules present in the precompile need to be written to the cache, knowing which output file they went into
 		// FIXME
@@ -292,18 +348,21 @@ struct Commands {
 	}
 
 	/// Watches for changes to its source and attempts to automatically recompile and restart the application (if compatible)
+	version(none)
 	int watch(string[] args) {
 		// FIXME
 		return 1;
 	}
 
 	/// Passes args to the compiler, then opens a debugger to run the generated file.
+	version(none)
 	int dbg(string[] args) {
 		// FIXME
 		return 1;
 	}
 
 	/// Allows for updating the OpenD compiler or libraries
+	version(none)
 	int update(string[] args) {
 		// FIXME
 		return 1;
@@ -311,17 +370,17 @@ struct Commands {
 
 	/// Forwards arguments directly to the OpenD dmd driver
 	int dmd(string[] args) {
-		return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait;
+		return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait.checkForCrash("dmd");
 	}
 
 	/// Forwards arguments directly to the OpenD ldmd2 driver
 	int ldmd2(string[] args) {
-		return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait;
+		return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait.checkForCrash("ldmd2");
 	}
 
 	/// Forwards arguments directly to the OpenD ldc2 driver
 	int ldc2(string[] args) {
-		return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait;
+		return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait.checkForCrash("ldc2");
 	}
 
 	/// Installs optional components or updates to opend

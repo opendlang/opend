@@ -132,7 +132,7 @@ override DFLAGS+=-conf= -I$(DRUNTIME_PATH)/import $(DMDEXTRAFLAGS) -w -de -previ
 ifeq ($(BUILD),debug)
 override DFLAGS += -g -debug
 else
-override DFLAGS += -O -release
+override DFLAGS += -O # -release
 endif
 
 ifdef ENABLE_COVERAGE
