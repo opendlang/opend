@@ -1603,7 +1603,6 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
                     params.unittestFilter = all;
                     continue;
                 case "explicit":
-                    message("`-unittest=explicit` is experimental.");
                     params.unittestFilter = explicitOnly;
                     continue;
                 case "?":
