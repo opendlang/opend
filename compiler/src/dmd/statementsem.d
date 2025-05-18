@@ -3640,12 +3640,14 @@ version (IN_LLVM)
         if (!(global.params.useExceptions && ClassDeclaration.throwable))
             blockexit &= ~BE.throw_;            // don't worry about paths that otherwise may throw
 
+	/+ OpenD reversion - this code here means dtors don't run while unwinding from assert fails, range errors, etc
         // Don't care about paths that halt, either
         if ((blockexit & ~BE.halt) == BE.fallthru)
         {
             result = new CompoundStatement(tfs.loc, tfs._body, tfs.finalbody);
             return;
         }
+	+/
         tfs.bodyFallsThru = (blockexit & BE.fallthru) != 0;
         result = tfs;
     }
