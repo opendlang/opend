@@ -131,12 +131,12 @@ struct Commands {
 
 	/// Builds the code and runs its unittests
 	int test(string[] args) {
-		return run(["-unittest", "-main", "-checkaction=context"] ~ args);
+		return run(["-g", "-unittest", "-main", "-checkaction=context"] ~ args);
 	}
 
 	/// Builds the code and runs unittests but only for files explicitly listed, not auto-imported files
 	int testOnly(string[] args) {
-		return run(["-unittest=explicit", "-main", "-checkaction=context"] ~ args);
+		return run(["-g", "-unittest=explicit", "-main", "-checkaction=context"] ~ args);
 	}
 
 	/// Performs quick syntax and semantic tests, without performing code generation
@@ -146,8 +146,9 @@ struct Commands {
 
 	/// Does a debug build with the given arguments
 	int build(string[] args) {
+		// FIXME: support -gnone?
 		// FIXME: pull info out of the cache to get the right libs and -i modifiers out
-		return sendToCompilerDriver(["-i"] ~ args, "dmd");
+		return sendToCompilerDriver(["-g", "-i"] ~ args, "dmd");
 	}
 
 	/// Does a release build with the given arguments

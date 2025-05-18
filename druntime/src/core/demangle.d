@@ -56,6 +56,9 @@ private struct Demangle(Hooks = NoHooks)
     //       faster than assembling the result piecemeal.
 
 pure @safe:
+
+    bool forBacktrace = false;
+
     enum AddType { no, yes }
 
 
@@ -776,6 +779,19 @@ pure @safe:
             }
         case 'A': // TypeArray (A Type)
             popFront();
+
+            if(forBacktrace && front == 'y') {
+                auto at = pos;
+                popFront();
+                if(front == 'a') {
+                    popFront();
+                    put( "string" );
+                    return dst[beg .. $];
+                } else {
+                    pos = at; // abandon the string shortcut
+                }
+            }
+
             parseType();
             put( "[]" );
             return dst[beg .. $];
@@ -1757,6 +1773,10 @@ pure @safe:
     // if keepAttr, the calling convention and function attributes are not discarded, but returned
     char[] parseFunctionTypeNoReturn( bool keepAttr = false ) return scope
     {
+
+        if (forBacktrace)
+          keepAttr = false;
+
         // try to demangle a function, in case we are pointing to some function local
         auto prevpos = pos;
         auto prevlen = dst.length;
@@ -1837,6 +1857,9 @@ pure @safe:
     */
     void parseMangledName( bool displayType, size_t n = 0 ) scope
     {
+        if(forBacktrace)
+            displayType = false;
+
         debug(trace) printf( "parseMangledName+\n" );
         debug(trace) scope(success) printf( "parseMangledName-\n" );
         char[] name = null;
@@ -1972,18 +1995,18 @@ pure @safe:
  *  The demangled name or the original string if the name is not a mangled
  *  D/C++ name.
  */
-char[] demangle(return scope const(char)[] buf, return scope char[] dst = null, CXX_DEMANGLER __cxa_demangle = null) nothrow pure @safe
+char[] demangle(return scope const(char)[] buf, return scope char[] dst = null, CXX_DEMANGLER __cxa_demangle = null, bool forBacktrace = false) nothrow pure @safe
 {
     if (__cxa_demangle && buf.length > 2 && buf[0..2] == "_Z")
         return demangleCXX(buf, __cxa_demangle, dst);
     auto d = Demangle!()(buf, dst);
+    d.forBacktrace = forBacktrace;
     // fast path (avoiding throwing & catching exception) for obvious
     // non-D mangled names
     if (buf.length < 2 || !(buf[0] == 'D' || buf[0..2] == "_D"))
         return d.dst.copyInput(buf);
     return d.demangleName();
 }
-
 
 /**
  * Demangles a D mangled type.
@@ -2554,10 +2577,10 @@ unittest
     {
         char[] buf = new char[i];
         auto ds = demangle(s, buf);
-        assert(ds == "pure nothrow @safe char[] core.demangle.demangle(scope return const(char)[], scope return char[], extern (C) char* function(const(char*), char*, ulong*, int*) pure nothrow @trusted*)" ||
-               ds == "pure nothrow @safe char[] core.demangle.demangle(return scope const(char)[], return scope char[], extern (C) char* function(const(char*), char*, ulong*, int*) pure nothrow @trusted*)" ||
-               ds == "pure nothrow @safe char[] core.demangle.demangle(scope return const(char)[], scope return char[], extern (C) char* function(const(char*), char*, uint*, int*) pure nothrow @trusted*)" ||
-               ds == "pure nothrow @safe char[] core.demangle.demangle(return scope const(char)[], return scope char[], extern (C) char* function(const(char*), char*, uint*, int*) pure nothrow @trusted*)", ds);
+        assert(ds == "pure nothrow @safe char[] core.demangle.demangle(scope return const(char)[], scope return char[], extern (C) char* function(const(char*), char*, ulong*, int*) pure nothrow @trusted*, bool)" ||
+               ds == "pure nothrow @safe char[] core.demangle.demangle(return scope const(char)[], return scope char[], extern (C) char* function(const(char*), char*, ulong*, int*) pure nothrow @trusted*, bool)" ||
+               ds == "pure nothrow @safe char[] core.demangle.demangle(scope return const(char)[], scope return char[], extern (C) char* function(const(char*), char*, uint*, int*) pure nothrow @trusted*, bool)" ||
+               ds == "pure nothrow @safe char[] core.demangle.demangle(return scope const(char)[], return scope char[], extern (C) char* function(const(char*), char*, uint*, int*) pure nothrow @trusted*, bool)", ds);
     }
 }
 

@@ -119,6 +119,8 @@ struct Location
     {
         import core.demangle;
 
+        sink("  ");
+
         // If there's no file information, there shouldn't be any directory
         // information. If there is we will simply ignore it.
         if (this.file.length)
@@ -150,7 +152,7 @@ struct Location
         if (this.procedure.length)
         {
             sink(" ");
-            sink(demangle(this.procedure, symbolBuffer, getCXXDemangler()));
+            sink(demangle(this.procedure, symbolBuffer, getCXXDemangler(), true));
         }
 
         sink(" [0x");
@@ -240,6 +242,19 @@ struct TraceInfoBuffer
 
 private:
 
+bool isModTest(scope const(char)[] s) {
+    enum search = "__modtestFZv"; // module unittest runner
+    return s.length >= search.length && s[$-search.length .. $] == search;
+}
+
+bool isSkippableLibraryCode(scope const(char)[] s) {
+    static immutable string[] searches = ["_D3std", "_D4core", "_D2rt"];
+    foreach(search; searches)
+        if(s.length > search.length && s[0 .. search.length] == search)
+            return true;
+    return false;
+}
+
 @system
 int processCallstack(Location[] locations, const(ubyte)[] debugLineSectionData,
                      size_t baseAddress, scope int delegate(ref size_t, ref const(char[])) dg)
@@ -252,10 +267,31 @@ int processCallstack(Location[] locations, const(ubyte)[] debugLineSectionData,
             resolveAddressesWithAtos(locations);
     }
 
+    int depthInLibraryCode;
+    const(Location)* mostRecentLibraryCode;
+
     TraceInfoBuffer buffer;
     foreach (idx, const ref loc; locations)
     {
+        if (isModTest(loc.procedure))
+            break;
+
+        if (isSkippableLibraryCode(loc.procedure)) {
+            depthInLibraryCode++;
+            mostRecentLibraryCode = &loc;
+            continue;
+        }
+
         buffer.reset();
+
+
+        if(depthInLibraryCode && mostRecentLibraryCode) {
+            (*mostRecentLibraryCode).toString(&buffer.put);
+            buffer.put("\n");
+            depthInLibraryCode = 0;
+            mostRecentLibraryCode = null;
+        }
+
         loc.toString(&buffer.put);
 
         auto lvalue = buffer[];
