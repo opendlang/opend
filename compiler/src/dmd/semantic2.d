@@ -672,7 +672,7 @@ private extern(C++) final class Semantic2Visitor : Visitor
     override void visit(ClassDeclaration cd)
     {
         /// Checks that the given class implements all methods of its interfaces.
-        static void checkInterfaceImplementations(ClassDeclaration cd)
+        static void checkInterfaceImplementations(ClassDeclaration ecd, ClassDeclaration cd, bool forceError)
         {
             foreach (base; cd.interfaces)
             {
@@ -695,7 +695,7 @@ private extern(C++) final class Semantic2Visitor : Visitor
                         continue;
 
                     auto type = ifd.type.toTypeFunction();
-                    auto fd = cd.findFunc(ifd.ident, type);
+                    auto fd = ecd.findFunc(ifd.ident, type);
 
                     if (fd && !fd.isAbstract)
                     {
@@ -707,15 +707,15 @@ private extern(C++) final class Semantic2Visitor : Visitor
                         // Check that it is current
                         //printf("newinstance = %d fd.toParent() = %s ifd.toParent() = %s\n",
                             //newinstance, fd.toParent().toChars(), ifd.toParent().toChars());
-                        if (fd.toParent() != cd && ifd.toParent() == base.sym)
-                            .error(cd.loc, "%s `%s` interface function `%s` is not implemented", cd.kind, cd.toPrettyChars, ifd.toFullSignature());
+                        if ((!forceError && fd.toParent() != ecd) && ifd.toParent() == base.sym)
+                            .error(cd.loc, "%s `%s` interface function `%s` is not implemented", ecd.kind, ecd.toPrettyChars, ifd.toFullSignature());
                     }
                     else
                     {
                         //printf("            not found %p\n", fd);
                         // BUG: should mark this class as abstract?
-                        if (!cd.isAbstract())
-                            .error(cd.loc, "%s `%s` interface function `%s` is not implemented", cd.kind, cd.toPrettyChars, ifd.toFullSignature());
+                        if (!cd.isAbstract() || forceError)
+                            .error(cd.loc, "%s `%s` interface function `%s` is not implemented", ecd.kind, ecd.toPrettyChars, ifd.toFullSignature());
                     }
                 }
             }
@@ -726,7 +726,15 @@ private extern(C++) final class Semantic2Visitor : Visitor
         assert(cd.semanticRun <= PASS.semantic2);
         cd.semanticRun = PASS.semantic2;
 
-        checkInterfaceImplementations(cd);
+        checkInterfaceImplementations(cd, cd, false);
+	if(!cd.isAbstract()) {
+		if(cd.baseclasses.length) {
+			auto base = (*cd.baseclasses)[0].sym;
+			if(base && base.isAbstract)
+				checkInterfaceImplementations(cd, base, true);
+		}
+	}
+
         visit(cast(AggregateDeclaration) cd);
     }
 
