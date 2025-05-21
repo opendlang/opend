@@ -1156,16 +1156,6 @@ private:
         assert(job.next is null);
         assert(job.prev is null);
 
-        scope(exit)
-        {
-            if (!isSingleTask)
-            {
-                waiterLock();
-                scope(exit) waiterUnlock();
-                notifyWaiters();
-            }
-        }
-
         try
         {
             job.job();
@@ -1176,6 +1166,13 @@ private:
         }
 
         atomicSetUbyte(job.taskStatus, TaskStatus.done);
+
+	if (!isSingleTask)
+	{
+            waiterLock();
+            scope(exit) waiterUnlock();
+            notifyWaiters();
+        }
     }
 
     // This function is used for dummy pools created by Task.executeInNewThread().
