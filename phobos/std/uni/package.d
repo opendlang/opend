@@ -1784,9 +1784,8 @@ alias sharSwitchLowerBound = sharMethod!switchUniformLowerBound;
     {
         debug
         {
-            import core.memory : GC;
-            if (!__ctfe && !GC.inFinalizer) // only do this if we are not in the GC finalizer
-                arr[] = cast(typeof(T.init[0]))(0xdead_beef);
+            assert(accessIsSafe);
+            arr[] = cast(typeof(T.init[0]))(0xdead_beef);
         }
         arr = null;
     }
@@ -1795,6 +1794,18 @@ alias sharSwitchLowerBound = sharMethod!switchUniformLowerBound;
         if (isDynamicArray!T && !is(Unqual!T == T))
     {
         arr = null;
+    }
+
+    // This is unfortunately necessary to "fake pure". It will only ever be called
+    // in the destructor for a GC-allocated CowArray, which is the only place where
+    // this might return false. Current code expects this to be pure, so we can't
+    // break that. But before this change, the code would access the referenced
+    // array inside a GC finalizer, which is invalid.
+    pragma(mangle, "gc_inFinalizer") private static extern(C) bool pureInGCFinalizer() @safe pure nothrow;
+
+    static @property bool accessIsSafe() @safe nothrow pure
+    {
+        return __ctfe || !pureInGCFinalizer;
     }
 }
 
@@ -1893,6 +1904,8 @@ alias sharSwitchLowerBound = sharMethod!switchUniformLowerBound;
             pureFree(arr.ptr);
         arr = null;
     }
+
+    enum accessIsSafe = true;
 }
 
 //build hack
@@ -3235,6 +3248,10 @@ struct CowArray(SP=GcPolicy)
 
     ~this()
     {
+        if (!SP.accessIsSafe)
+            // detach from the array, we can no longer access it.
+            data = null;
+
         if (!empty)
         {
             immutable cnt = refCount;
