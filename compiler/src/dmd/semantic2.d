@@ -728,11 +728,16 @@ private extern(C++) final class Semantic2Visitor : Visitor
 
         checkInterfaceImplementations(cd, cd, false);
 	if(!cd.isAbstract()) {
-		if(cd.baseclasses.length) {
-			auto base = (*cd.baseclasses)[0].sym;
-			if(base && base.isAbstract)
-				checkInterfaceImplementations(cd, base, true);
+		void confirmBases(ClassDeclaration thingToCheck) {
+			if(thingToCheck.baseclasses.length) {
+				auto base = (*thingToCheck.baseclasses)[0].sym;
+				if(base && base.isAbstract) {
+					checkInterfaceImplementations(cd, base, true);
+					confirmBases(base);
+				}
+			}
 		}
+		confirmBases(cd);
 	}
 
         visit(cast(AggregateDeclaration) cd);
