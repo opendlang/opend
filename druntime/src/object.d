@@ -2571,27 +2571,8 @@ class Throwable : Object
      * $(D Throwable) is thrown from inside a $(D catch) block. The originally
      * caught $(D Exception) will be chained to the new $(D Throwable) via this
      * field.
-     *
-     * If the 0 bit is set in this, it means the next exception is refcounted,
-     * meaning this object owns that object and should destroy it on
-     * destruction.
-     *
-     * WARNING: This means we are storing an interior pointer to the next in
-     * chain, to signify that the next in the chain is actually reference
-     * counted. We rely on the fact that a pointer to a Throwable is not 1-byte
-     * aligned. It is important to use a local field to indicate reference
-     * counting since we are not allowed to look at GC-allocated references
-     * inside the destructor. It is very important to store this as a void*,
-     * since optimizers can consider an unaligned pointer to not exist.
      */
-    private void*   _nextInChainPtr;
-
-    private @property bool _nextIsRefcounted() @trusted scope pure nothrow @nogc const
-    {
-        if (__ctfe)
-            return false;
-        return (cast(size_t)_nextInChainPtr) & 1;
-    }
+    private Throwable   nextInChain;
 
     private uint _refcount;     // 0 : allocated by GC
                                 // 1 : allocated by _d_newThrowable()
@@ -2604,36 +2585,24 @@ class Throwable : Object
      * caught $(D Exception) will be chained to the new $(D Throwable) via this
      * field.
      */
-    @property inout(Throwable) next() @trusted inout return scope pure nothrow @nogc
-    {
-        if (__ctfe)
-            return cast(inout(Throwable)) _nextInChainPtr;
-
-        return cast(inout(Throwable)) (_nextInChainPtr - _nextIsRefcounted);
-    }
-
+    @property inout(Throwable) next() @safe inout return scope pure nothrow @nogc { return nextInChain; }
 
     /**
      * Replace next in chain with `tail`.
      * Use `chainTogether` instead if at all possible.
      */
-    @property void next(Throwable tail) @trusted scope pure nothrow @nogc
+    @property void next(Throwable tail) @safe scope pure nothrow @nogc
     {
-        void* newTail = cast(void*)tail;
         if (tail && tail._refcount)
-        {
             ++tail._refcount;           // increment the replacement *first*
-            ++newTail;                  // indicate ref counting is used
-        }
 
-        auto n = next;
-        auto nrc = _nextIsRefcounted;
-        _nextInChainPtr = null;          // sever the tail before deleting it
+        auto n = nextInChain;
+        nextInChain = null;             // sever the tail before deleting it
 
-        if (nrc)
+        if (n && n._refcount)
             _d_delThrowable(n);         // now delete the old tail
 
-        _nextInChainPtr = newTail;       // and set the new tail
+        nextInChain = tail;             // and set the new tail
     }
 
     /**
@@ -2652,7 +2621,7 @@ class Throwable : Object
     int opApply(scope int delegate(Throwable) dg)
     {
         int result = 0;
-        for (Throwable t = this; t; t = t.next)
+        for (Throwable t = this; t; t = t.nextInChain)
         {
             result = dg(t);
             if (result)
@@ -2675,12 +2644,14 @@ class Throwable : Object
             return e2;
         if (!e2)
             return e1;
+        if (e2.refcount())
+            ++e2.refcount();
 
-        for (auto e = e1; 1; e = e.next)
+        for (auto e = e1; 1; e = e.nextInChain)
         {
-            if (!e.next)
+            if (!e.nextInChain)
             {
-                e.next = e2;
+                e.nextInChain = e2;
                 break;
             }
         }
@@ -2690,7 +2661,9 @@ class Throwable : Object
     @nogc @safe pure nothrow this(string msg, Throwable nextInChain = null)
     {
         this.msg = msg;
-        this.next = nextInChain;
+        this.nextInChain = nextInChain;
+        if (nextInChain && nextInChain._refcount)
+            ++nextInChain._refcount;
         //this.info = _d_traceContext();
     }
 
@@ -2704,9 +2677,8 @@ class Throwable : Object
 
     @trusted nothrow ~this()
     {
-        if (_nextIsRefcounted)
-            _d_delThrowable(next);
-
+        if (nextInChain && nextInChain._refcount)
+            _d_delThrowable(nextInChain);
         // handle owned traceinfo
         if (infoDeallocator !is null)
         {
@@ -2835,7 +2807,7 @@ class Exception : Throwable
         auto e = new Exception("msg");
         assert(e.file == __FILE__);
         assert(e.line == __LINE__ - 2);
-        assert(e._nextInChainPtr is null);
+        assert(e.nextInChain is null);
         assert(e.msg == "msg");
     }
 
@@ -2843,7 +2815,7 @@ class Exception : Throwable
         auto e = new Exception("msg", new Exception("It's an Exception!"), "hello", 42);
         assert(e.file == "hello");
         assert(e.line == 42);
-        assert(e._nextInChainPtr !is null);
+        assert(e.nextInChain !is null);
         assert(e.msg == "msg");
     }
 
@@ -2851,7 +2823,7 @@ class Exception : Throwable
         auto e = new Exception("msg", "hello", 42, new Exception("It's an Exception!"));
         assert(e.file == "hello");
         assert(e.line == 42);
-        assert(e._nextInChainPtr !is null);
+        assert(e.nextInChain !is null);
         assert(e.msg == "msg");
     }
 
@@ -2918,7 +2890,7 @@ class Error : Throwable
         auto e = new Error("msg");
         assert(e.file is null);
         assert(e.line == 0);
-        assert(e._nextInChainPtr is null);
+        assert(e.nextInChain is null);
         assert(e.msg == "msg");
         assert(e.bypassedException is null);
     }
@@ -2927,7 +2899,7 @@ class Error : Throwable
         auto e = new Error("msg", new Exception("It's an Exception!"));
         assert(e.file is null);
         assert(e.line == 0);
-        assert(e._nextInChainPtr !is null);
+        assert(e.nextInChain !is null);
         assert(e.msg == "msg");
         assert(e.bypassedException is null);
     }
@@ -2936,7 +2908,7 @@ class Error : Throwable
         auto e = new Error("msg", "hello", 42, new Exception("It's an Exception!"));
         assert(e.file == "hello");
         assert(e.line == 42);
-        assert(e._nextInChainPtr !is null);
+        assert(e.nextInChain !is null);
         assert(e.msg == "msg");
         assert(e.bypassedException is null);
     }

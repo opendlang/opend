@@ -6782,9 +6782,8 @@ ThrownExceptionExp chainExceptions(ThrownExceptionExp oldest, ThrownExceptionExp
     }
     // Little sanity check to make sure it's really a Throwable
     ClassReferenceExp boss = oldest.thrown;
-    const next = 5;                          // index of Throwable._nextInChainPtr
-    with ((*boss.value.elements)[next].type) // Throwable._nextInChainPtr
-        assert(ty == Tpointer || ty == Tclass);
+    const next = 5;                         // index of Throwable.next
+    assert((*boss.value.elements)[next].type.ty == Tclass); // Throwable.next
     ClassReferenceExp collateral = newest.thrown;
     if (collateral.originalClass().isErrorException() && !boss.originalClass().isErrorException())
     {
