@@ -5029,9 +5029,6 @@ public:
             if (vd is null)
                 return false;
 
-            if(vd._init is null)
-                return false;
-
             auto ei = vd._init.isExpInitializer();
             if (ei is null)
                 return false;
@@ -6145,7 +6142,7 @@ public:
                     return;
                 }
 
-                import dmd.utils : arrayCastBigEndian;
+		import dmd.utils : arrayCastBigEndian;
 
                 auto str = arrayCastBigEndian(se.peekData(), sz);
                 emplaceExp!(StringExp)(pue, e1.loc, str, se.len / sz, cast(ubyte) sz);
