@@ -230,7 +230,7 @@ public:
 
     const(char)* getBuiltinLibPath() const
     {
-        version (IN_LLVM)
+        version (IN_LLVM) {} else
         if (auto p = FileName.searchPath(getenv("LIB"w), r"mingw\kernel32.lib"[], false))
             return FileName.path(p).ptr;
 
