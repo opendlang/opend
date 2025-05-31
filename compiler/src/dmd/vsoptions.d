@@ -304,6 +304,14 @@ version (IN_LLVM) { /* not needed */ } else
     const(char)* linkOptions(bool x64)
     {
         OutBuffer cmdbuf;
+
+        if (auto p = getBuiltinLibPath())
+        {
+            cmdbuf.writestring(" /LIBPATH:\"");
+            cmdbuf.writestring(p);
+            cmdbuf.writeByte('\"');
+        }
+
         if (auto vclibdir = getVCLibDir(x64))
         {
             cmdbuf.writestring(" /LIBPATH:\"");
@@ -323,12 +331,6 @@ version (IN_LLVM) { /* not needed */ } else
             }
         }
         if (auto p = getSDKLibPath(x64))
-        {
-            cmdbuf.writestring(" /LIBPATH:\"");
-            cmdbuf.writestring(p);
-            cmdbuf.writeByte('\"');
-        }
-        if (auto p = getBuiltinLibPath())
         {
             cmdbuf.writestring(" /LIBPATH:\"");
             cmdbuf.writestring(p);
