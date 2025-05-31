@@ -139,7 +139,11 @@ Expression implicitCastTo(Expression e, Scope* sc, Type t)
 
             AggregateDeclaration ad = isAggregate(t);
 
-            if (ad) {
+	    static bool hackToAvoidRecursivePain = false;
+            if (ad && !hackToAvoidRecursivePain) {
+		hackToAvoidRecursivePain = true;
+		scope(exit)
+			hackToAvoidRecursivePain = false;
                 import dmd.identifier;
                 import dmd.id;
                 auto tmp = new VarDeclaration(e.loc, t, Identifier.generateId("__ictorcmp"), new ExpInitializer(e.loc, e));

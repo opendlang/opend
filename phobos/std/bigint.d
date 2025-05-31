@@ -1380,6 +1380,7 @@ public:
     // for backwards compatibility, see unittest below
     /// ditto
     void toString(scope void delegate(scope const(char)[]) sink, scope const ref FormatSpec!char f) const
+    @trusted // meh a hack to make some boring project work
     {
         toString!(void delegate(scope const(char)[]))(sink, f);
     }
