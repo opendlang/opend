@@ -225,12 +225,14 @@ public:
             }
         }
 
-version (IN_LLVM) {} else
-{
-        // try mingw fallback relative to phobos library folder that's part of LIB
+        return null;
+    }
+
+    const(char)* getBuiltinLibPath() const
+    {
+        version (IN_LLVM)
         if (auto p = FileName.searchPath(getenv("LIB"w), r"mingw\kernel32.lib"[], false))
             return FileName.path(p).ptr;
-}
 
         return null;
     }
@@ -321,6 +323,12 @@ version (IN_LLVM) { /* not needed */ } else
             }
         }
         if (auto p = getSDKLibPath(x64))
+        {
+            cmdbuf.writestring(" /LIBPATH:\"");
+            cmdbuf.writestring(p);
+            cmdbuf.writeByte('\"');
+        }
+        if (auto p = getBuiltinLibPath())
         {
             cmdbuf.writestring(" /LIBPATH:\"");
             cmdbuf.writestring(p);
