@@ -145,7 +145,16 @@ unittest {
 	$(H3 Single Key)
 
 	This shows how to get one single character press using
-	the [RealTimeConsoleInput] structure.
+	the [RealTimeConsoleInput] structure. The return value
+	is normally a character, but can also be a member of
+	[KeyboardEvent.Key] for certain keys on the keyboard such
+	as arrow keys.
+
+	For more advanced cases, you might consider looping on
+	[RealTimeConsoleInput.nextEvent] which gives you full events
+	including paste events, mouse activity, resizes, and more.
+
+	See_Also: [KeyboardEvent], [KeyboardEvent.Key], [kbhit]
 +/
 unittest {
 	import arsd.terminal;
@@ -157,6 +166,34 @@ unittest {
 		terminal.writeln("Press any key to continue...");
 		auto ch = input.getch();
 		terminal.writeln("You pressed ", ch);
+	}
+
+	version(demos) main; // exclude from docs
+}
+
+/// ditto
+unittest {
+	import arsd.terminal;
+
+	void main() {
+		auto terminal = Terminal(ConsoleOutputType.linear);
+		auto rtti = RealTimeConsoleInput(&terminal, ConsoleInputFlags.raw);
+		loop: while(true) {
+			switch(rtti.getch()) {
+				case 'q': // other characters work as chars in the switch
+					break loop;
+				case KeyboardEvent.Key.F1: // also f-keys via that enum
+					terminal.writeln("You pressed F1!");
+				break;
+				case KeyboardEvent.Key.LeftArrow: // arrow keys, etc.
+					terminal.writeln("left");
+				break;
+				case KeyboardEvent.Key.RightArrow:
+					terminal.writeln("right");
+				break;
+				default: {}
+			}
+		}
 	}
 
 	version(demos) main; // exclude from docs
@@ -350,6 +387,18 @@ version(Posix) {
 	import core.stdc.stdio;
 
 	import core.sys.posix.sys.ioctl;
+}
+version(CRuntime_Musl) {
+	// Druntime currently doesn't have bindings for termios on Musl.
+	// We define our own bindings whenever the import fails.
+	// When druntime catches up, this block can slowly be removed,
+	// although for backward compatibility we might want to keep it.
+	static if (!__traits(compiles, { import core.sys.posix.termios : tcgetattr; })) {
+		extern (C) {
+			int tcgetattr (int, termios *);
+			int tcsetattr (int, int, const termios *);
+		}
+	}
 }
 
 version(VtEscapeCodes) {
@@ -3248,6 +3297,8 @@ struct RealTimeConsoleInput {
 		function is really only meant to be used in conjunction with getch. Typically,
 		you should use a full-fledged event loop if you want all kinds of input. kbhit+getch
 		are just for simple keyboard driven applications.
+
+		See_Also: [KeyboardEvent], [KeyboardEvent.Key], [kbhit]
 	*/
 	bool kbhit() {
 		auto got = getch(true);

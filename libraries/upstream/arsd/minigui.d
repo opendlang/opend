@@ -678,7 +678,6 @@ version(Windows) {
 			// OpenD always supports it
 			version=UseManifestMinigui;
 		} else {
-			static if(__VERSION__ >= 2_083)
 			version(CRuntime_Microsoft) // FIXME: mingw?
 				version=UseManifestMinigui;
 		}
@@ -883,6 +882,7 @@ class Widget : ReflectableProperties {
 				EnableWindow(hwnd, yes);
 		}
 		setDynamicState(DynamicState.disabled, yes);
+		redraw();
 	}
 
 	private string disabledReason_;
@@ -1007,7 +1007,7 @@ class Widget : ReflectableProperties {
 	protected final int defaultLineHeight() {
 		auto cs = getComputedStyle();
 		if(cs.font && !cs.font.isNull)
-			return cs.font.height() * 5 / 4;
+			return castFnumToCnum(cs.font.height() * 5 / 4);
 		else
 			return scaleWithDpi(Window.lineHeightNotDeprecatedButShouldBeSinceItIsJustAFallback * 5/4);
 	}
@@ -1020,7 +1020,7 @@ class Widget : ReflectableProperties {
 	protected final int defaultTextHeight(int numberOfLines = 1) {
 		auto cs = getComputedStyle();
 		if(cs.font && !cs.font.isNull)
-			return cs.font.height() * numberOfLines;
+			return castFnumToCnum(cs.font.height() * numberOfLines);
 		else
 			return Window.lineHeightNotDeprecatedButShouldBeSinceItIsJustAFallback * numberOfLines;
 	}
@@ -1028,7 +1028,7 @@ class Widget : ReflectableProperties {
 	protected final int defaultTextWidth(const(char)[] text) {
 		auto cs = getComputedStyle();
 		if(cs.font && !cs.font.isNull)
-			return cs.font.stringWidth(text);
+			return castFnumToCnum(cs.font.stringWidth(text));
 		else
 			return scaleWithDpi(Window.lineHeightNotDeprecatedButShouldBeSinceItIsJustAFallback * cast(int) text.length / 2);
 	}
@@ -1875,7 +1875,10 @@ class Widget : ReflectableProperties {
 			x = pt.x;
 			y = pt.y;
 		} else {
-			featureNotImplemented();
+			auto rect = this.parentWindow.win.impl.window.frame;
+			// FIXME: confirm?
+			x += cast(int) rect.origin.x;
+			y += cast(int) rect.origin.y;
 		}
 
 		return Point(x, y);
@@ -2967,7 +2970,6 @@ private class CustomComboBoxPopup : Window {
 			if(visible) {
 				this.redraw();
 				captureMouse(this);
-				//dropDown.grabInput();
 
 				if(previouslyFocusedWidget is null)
 					previouslyFocusedWidget = associatedWidget.parentWindow.focusedWidget;
@@ -4978,12 +4980,44 @@ class TipPopupButton : Button {
 		this.factory = factory;
 		super("?", parent);
 	}
+	/// ditto
+	this(string tip, Widget parent) {
+		this((parent) {
+			auto td = new TextDisplayTooltip(tip, parent);
+			return td;
+		}, parent);
+	}
 
 	private Widget delegate(Widget p) factory;
 
 	override void defaultEventHandler_triggered(scope Event e) {
 		auto window = new TooltipWindow(factory, this);
 		window.popup(this);
+	}
+
+	private static class TextDisplayTooltip : TextDisplay {
+		this(string txt, Widget parent) {
+			super(txt, parent);
+		}
+
+		// override int minHeight() { return defaultLineHeight; }
+		// override int flexBasisHeight() { return defaultLineHeight; }
+
+		static class Style : TextDisplay.Style {
+			override WidgetBackground background() {
+				return WidgetBackground(Color.yellow);
+			}
+
+			override FrameStyle borderStyle() {
+				return FrameStyle.solid;
+			}
+
+			override Color borderColor() {
+				return Color.black;
+			}
+		}
+
+		mixin OverrideStyle!Style;
 	}
 }
 
@@ -4992,36 +5026,24 @@ class TipPopupButton : Button {
 		Added March 23, 2025
 +/
 class TooltipWindow : Window {
+
+	private Widget previouslyFocusedWidget;
+	private Widget* previouslyFocusedWidgetBelongsIn;
+
 	void popup(Widget parent, int offsetX = 0, int offsetY = int.min) {
-		/+
-		this.menuParent = parent;
-
-		previouslyFocusedWidget = parent.parentWindow.focusedWidget;
-		previouslyFocusedWidgetBelongsIn = &parent.parentWindow.focusedWidget;
-		parent.parentWindow.focusedWidget = this;
-
-		int w = 150;
-		int h = paddingTop + paddingBottom;
-		if(this.children.length) {
-			// hacking it to get the ideal height out of recomputeChildLayout
-			this.width = w;
-			this.height = h;
-			this.recomputeChildLayoutEntry();
-			h = this.children[$-1].y + this.children[$-1].height + this.children[$-1].marginBottom;
-			h += paddingBottom;
-
-			h -= 2; // total hack, i just like the way it looks a bit tighter even though technically MenuItem reserves some space to center in normal circumstances
-		}
-		+/
-
 		if(offsetY == int.min)
-			offsetY = parent.defaultLineHeight;
+			offsetY = 0;
 
-		int w = 150;
-		int h = 50;
+		int w = child.flexBasisWidth();
+		int h = child.flexBasisHeight() + this.paddingTop + this.paddingBottom + /* horiz scroll bar - FIXME */ 16 + 2 /* for border */;
 
 		auto coord = parent.globalCoordinates();
 		dropDown.moveResize(coord.x + offsetX, coord.y + offsetY, w, h);
+
+		this.width = w;
+		this.height = h;
+
+		this.recomputeChildLayout();
 
 		static if(UsingSimpledisplayX11)
 			XSync(XDisplayConnection.get, 0);
@@ -5029,19 +5051,29 @@ class TooltipWindow : Window {
 		dropDown.visibilityChanged = (bool visible) {
 			if(visible) {
 				this.redraw();
-				dropDown.grabInput();
+				//dropDown.grabInput();
+				captureMouse(this);
+
+				if(previouslyFocusedWidget is null)
+					previouslyFocusedWidget = parent.parentWindow.focusedWidget;
+				parent.parentWindow.focusedWidget = this;
 			} else {
-				dropDown.releaseInputGrab();
+				releaseMouseCapture();
+				//dropDown.releaseInputGrab();
+
+				parent.parentWindow.focusedWidget = previouslyFocusedWidget;
+
+				static if(UsingSimpledisplayX11)
+					flushGui();
 			}
 		};
 
 		dropDown.show();
 
 		clickListener = this.addEventListener((scope ClickEvent ev) {
-			unpopup();
-			// need to unlock asap just in case other user handlers block...
-			static if(UsingSimpledisplayX11)
-				flushGui();
+			if(ev.target is this) {
+				unpopup();
+			}
 		}, true /* again for asap action */);
 	}
 
@@ -5051,6 +5083,11 @@ class TooltipWindow : Window {
 		mouseLastOver = mouseLastDownOn = null;
 		dropDown.hide();
 		clickListener.disconnect();
+	}
+
+	override void defaultEventHandler_char(CharEvent ce) {
+		if(ce.character == '\033')
+			unpopup();
 	}
 
 	private SimpleWindow dropDown;
@@ -7964,9 +8001,6 @@ class TabMessageWidget : Widget {
 		} else static assert(0);
 	}
 
-	version(custom_widgets)
-		string[] tabs;
-
 	this(Widget parent) {
 		super(parent);
 
@@ -8032,6 +8066,8 @@ class TabMessageWidget : Widget {
 		private int currentTab_;
 		private int tabBarHeight() { return defaultLineHeight; }
 		int tabWidth() { return scaleWithDpi(80); }
+
+		string[] tabs;
 	}
 
 	version(win32_widgets)
@@ -8304,9 +8340,8 @@ class PageWidget : Widget {
 
 +/
 class TabWidgetPage : Widget {
-	string title;
 	this(string title, Widget parent) {
-		this.title = title;
+		this.title_ = title;
 		this.tabStop = false;
 		super(parent);
 
@@ -8315,6 +8350,29 @@ class TabWidgetPage : Widget {
 			createWin32Window(this, Win32Class!"arsd_minigui_TabWidgetPage"w, "", 0);
 		}
 		//*/
+	}
+
+	private string title_;
+
+	/++
+		History:
+			Prior to April 6, 2025, it was a public field. It was changed to properties so it can queue redraws;
+	+/
+	string title() {
+		return title_;
+	}
+
+	/// ditto
+	void title(string t) {
+		title_ = t;
+		version(custom_widgets) {
+			if(auto tw = cast(TabWidget) parent) {
+				foreach(idx, child; tw.children)
+					if(child is this)
+						tw.tabs[idx] = t;
+				tw.redraw();
+			}
+		}
 	}
 
 	override int minHeight() {
@@ -9206,12 +9264,12 @@ class Window : Widget {
 			if(defaultHeightCache == 0) {
 				font = new OperatingSystemFont;
 				font.loadDefault;
-				defaultHeightCache = font.height();// * 5 / 4;
+				defaultHeightCache = castFnumToCnum(font.height());// * 5 / 4;
 			}
 			return defaultHeightCache;
 		}
 
-		return font.height();// * 5 / 4;
+		return castFnumToCnum(font.height());// * 5 / 4;
 	}
 
 	Widget focusedWidget;
@@ -12166,7 +12224,7 @@ class StatusBar : Widget {
 					auto cs = getComputedStyle();
 					auto font = cs.font;
 
-					part.currentlyAssignedWidth = font.averageWidth * this.width;
+					part.currentlyAssignedWidth = castFnumToCnum(font.averageWidth * this.width);
 					remainingLength -= part.currentlyAssignedWidth;
 				break;
 				case Proportional:
@@ -13019,6 +13077,8 @@ class MouseActivatedWidget : Widget {
 		super.defaultEventHandler_keyup(ev);
 		if(!(dynamicState & DynamicState.depressed))
 			return;
+		if(!enabled)
+			return;
 		setDynamicState(DynamicState.depressed, false);
 		setDynamicState(DynamicState.hover, false);
 		this.redraw();
@@ -13028,7 +13088,7 @@ class MouseActivatedWidget : Widget {
 	}
 	override void defaultEventHandler_click(ClickEvent ev) {
 		super.defaultEventHandler_click(ev);
-		if(ev.button == MouseButton.left) {
+		if(ev.button == MouseButton.left && enabled) {
 			auto event = new Event(EventType.triggered, this);
 			event.sendDirectly();
 		}
@@ -13551,18 +13611,25 @@ class Button : MouseActivatedWidget {
 			auto cs = widget.getComputedStyle(); // FIXME: this is potentially recursive
 
 			auto pressed = DynamicState.depressed | DynamicState.hover;
-			if((widget.dynamicState & pressed) == pressed) {
+			if((widget.dynamicState & pressed) == pressed && widget.enabled) {
 				return WidgetBackground(cs.depressedButtonColor());
-			} else if(widget.dynamicState & DynamicState.hover) {
+			} else if(widget.dynamicState & DynamicState.hover && widget.enabled) {
 				return WidgetBackground(cs.hoveringColor());
 			} else {
 				return WidgetBackground(cs.buttonColor());
 			}
 		}
 
+		override Color foregroundColor() {
+			auto clr = super.foregroundColor();
+			if(widget.enabled) return clr;
+
+			return Color(clr.r, clr.g, clr.b, clr.a / 2);
+		}
+
 		override FrameStyle borderStyle() {
 			auto pressed = DynamicState.depressed | DynamicState.hover;
-			if((widget.dynamicState & pressed) == pressed) {
+			if((widget.dynamicState & pressed) == pressed && widget.enabled) {
 				return FrameStyle.sunk;
 			} else {
 				return FrameStyle.risen;
@@ -13587,6 +13654,7 @@ class Button : MouseActivatedWidget {
 			Point pos = bounds.upperLeft;
 			if(this.height == 16)
 				pos.y -= 2; // total hack omg
+
 			painter.drawText(pos, label, bounds.lowerRight, alignment | TextAlignment.VerticalCenter);
 		}
 		return bounds;
@@ -14577,12 +14645,12 @@ class TextDisplayHelper : Widget {
 		}
 
 		bool isMonospace() { return false; }
-		int averageWidth() { return image_.width; }
-		int height() { return image_.height; }
-		int ascent() { return image_.height; }
-		int descent() { return 0; }
+		fnum averageWidth() { return image_.width; }
+		fnum height() { return image_.height; }
+		fnum ascent() { return image_.height; }
+		fnum descent() { return 0; }
 
-		int stringWidth(scope const(char)[] s, SimpleWindow window = null) {
+		fnum stringWidth(scope const(char)[] s, SimpleWindow window = null) {
 			return image_.width;
 		}
 
@@ -15018,7 +15086,7 @@ class PasswordEdit : EditableTextWidget {
 			this() {
 				super(cs.font);
 			}
-			override int stringWidth(scope const(char)[] text, SimpleWindow window = null) {
+			override fnum stringWidth(scope const(char)[] text, SimpleWindow window = null) {
 				int count = 0;
 				foreach(dchar ch; text)
 					count++;
@@ -15195,7 +15263,7 @@ class TextDisplay : EditableTextWidget {
 		}
 	}
 
-	class Style : Widget.Style {
+	static class Style : Widget.Style {
 		// just want the generic look for these
 	}
 
@@ -18887,7 +18955,7 @@ final class DefaultVisualTheme : VisualTheme!DefaultVisualTheme {
 }
 
 /++
-	Event fired when an [Observeable] variable changes. You will want to add an event listener referencing
+	Event fired when an [Observable] variable changes. You will want to add an event listener referencing
 	the field like `widget.addEventListener((scope StateChanged!(Whatever.field) ev) { });`
 
 	History:

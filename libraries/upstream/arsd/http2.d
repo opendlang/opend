@@ -59,6 +59,15 @@ unittest {
 	version(arsd_http2_integration_test) main(); // exclude from docs
 }
 
+/+
+// arsd core is now default but you can opt out for a lil while
+version(no_arsd_core) {
+
+} else {
+	version=use_arsd_core;
+}
++/
+
 static import arsd.core;
 
 // FIXME: I think I want to disable sigpipe here too.
@@ -4074,6 +4083,7 @@ version(use_openssl) {
 			OpenSSL.SSL_free(ssl);
 			OpenSSL.SSL_CTX_free(ctx);
 			ssl = null;
+			ctx = null;
 		}
 
 		~this() {
@@ -5423,6 +5433,10 @@ class WebSocket {
 			clientRequiredExtensionMissing = 1010, // only the client should send this
 			unnexpectedCondition = 1011,
 			unverifiedCertificate = 1015, // not set by client
+		}
+
+		string toString() {
+			return cast(string) (arsd.core.toStringInternal(code) ~ ": " ~ reason);
 		}
 	}
 
