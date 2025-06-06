@@ -1124,9 +1124,6 @@ else
         if (params.useArrayBounds == CHECKENABLE._default)
             params.useArrayBounds = CHECKENABLE.safeonly;
 
-        if (params.useNullCheck == CHECKENABLE._default)
-            params.useNullCheck = CHECKENABLE.off;
-
         if (params.useAssert == CHECKENABLE._default)
             params.useAssert = CHECKENABLE.off;
 
@@ -1146,9 +1143,6 @@ else
 
         if (params.useArrayBounds == CHECKENABLE._default)
             params.useArrayBounds = CHECKENABLE.on;
-
-        if (params.useNullCheck == CHECKENABLE._default)
-            params.useNullCheck = CHECKENABLE.on;
 
         if (params.useAssert == CHECKENABLE._default)
             params.useAssert = CHECKENABLE.on;

@@ -414,11 +414,10 @@ void translateArgs(const llvm::SmallVectorImpl<const char *> &ldmdArgs,
        */
       else if (startsWith(p + 1, "check=")) {
         // Parse:
-        //      -check=[assert|bounds|in|invariant|out|switch|null][=[on|off]]
+        //      -check=[assert|bounds|in|invariant|out|switch][=[on|off]]
         const char *arg = p + 7;
         if (strcmp(arg, "on") == 0) {
           ldcArgs.push_back("-boundscheck=on");
-          ldcArgs.push_back("-nullcheck=on");
           ldcArgs.push_back("-enable-asserts");
           ldcArgs.push_back("-enable-preconditions");
           ldcArgs.push_back("-enable-invariants");
@@ -426,7 +425,6 @@ void translateArgs(const llvm::SmallVectorImpl<const char *> &ldmdArgs,
           ldcArgs.push_back("-enable-switch-errors");
         } else if (strcmp(arg, "off") == 0) {
           ldcArgs.push_back("-boundscheck=off");
-          ldcArgs.push_back("-nullcheck=off");
           ldcArgs.push_back("-disable-asserts");
           ldcArgs.push_back("-disable-preconditions");
           ldcArgs.push_back("-disable-invariants");
@@ -460,8 +458,6 @@ void translateArgs(const llvm::SmallVectorImpl<const char *> &ldmdArgs,
 
           if (kindLength == 6 && memcmp(arg, "bounds", 6) == 0) {
             ldcArgs.push_back(enabled ? "-boundscheck=on" : "-boundscheck=off");
-          } else if (kindLength == 4 && memcmp(arg, "null", 4) == 0) {
-            ldcArgs.push_back(enabled ? "-nullcheck=on" : "-nullcheck=off");
           } else if (!(check(6, "assert", "asserts") ||
                        check(2, "in", "preconditions") ||
                        check(9, "invariant", "invariants") ||

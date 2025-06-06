@@ -860,9 +860,6 @@ DValue *DtoCallFunction(const Loc &loc, Type *resulttype, DValue *fnval,
 
   // get callee llvm value
   LLValue *callable = DtoCallableValue(fnval);
-
-  DtoNullPointerCheck(loc, callable);
-
   LLFunctionType *callableTy = irFty.funcType;
   if (dfnval && dfnval->func->isCsymbol()) {
     // See note in DtoDeclareFunction about K&R foward declared (void) functions

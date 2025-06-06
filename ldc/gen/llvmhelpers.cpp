@@ -1827,57 +1827,6 @@ FuncDeclaration *getParentFunc(Dsymbol *sym) {
   return nullptr;
 }
 
-
-  /*
-  emitRangeErrorImpl(irs, loc, "array index out of bounds",
-                     "_d_arraybounds_index", {index, length});
-                    */
-static void emitNullErrorImpl(IRState *irs, const Loc &loc) {
-  const char* cAssertMsg = "null pointer";
-  const char* dFnName = "_d_nullpointer";
-
-  Module *const module = irs->func()->decl->getModule();
-
-  switch (global.params.checkAction) {
-  case CHECKACTION_C:
-    DtoCAssert(module, loc, DtoConstCString(cAssertMsg));
-    break;
-  case CHECKACTION_halt:
-    irs->ir->CreateCall(GET_INTRINSIC_DECL(trap, {}), {});
-    irs->ir->CreateUnreachable();
-    break;
-  case CHECKACTION_context:
-  case CHECKACTION_D: {
-    auto fn = getRuntimeFunction(loc, irs->module, dFnName);
-    LLSmallVector<LLValue *, 5> args;
-    args.push_back(DtoModuleFileName(module, loc));
-    args.push_back(DtoConstUint(loc.linnum()));
-    irs->CreateCallOrInvoke(fn, args);
-    irs->ir->CreateUnreachable();
-    break;
-  }
-  default:
-    llvm_unreachable("Unhandled checkAction");
-  }
-}
-
-void DtoNullPointerCheck(const Loc &loc, LLValue * const llPtr) {
-  LLValue *const cond = gIR->ir->CreateIsNull(llPtr, "null.cmp");
-
-  llvm::BasicBlock *okbb = gIR->insertBB("null.ok");
-  llvm::BasicBlock *failbb = gIR->insertBBAfter(okbb, "null.fail");
-  gIR->ir->CreateCondBr(cond, failbb, okbb);
-
-  // set up failbb to call the array bounds error runtime function
-  gIR->ir->SetInsertPoint(failbb);
-  emitNullErrorImpl(gIR, loc);
-
-  // if ok, proceed in okbb
-  gIR->ir->SetInsertPoint(okbb);
-}
-
-
-
 DLValue *DtoIndexAggregate(LLValue *src, AggregateDeclaration *ad,
                            VarDeclaration *vd) {
   IF_LOG Logger::println("Indexing aggregate field %s:", vd->toPrettyChars());
@@ -1934,7 +1883,6 @@ DLValue *DtoIndexAggregate(LLValue *src, AggregateDeclaration *ad,
     if (p->getAddressSpace())
       return new DDcomputeLValue(vd->type, p, ptr);
   }
-
   return new DLValue(vd->type, ptr);
 }
 

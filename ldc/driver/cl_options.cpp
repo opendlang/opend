@@ -460,15 +460,6 @@ static cl::opt<CHECKENABLE, true> boundsCheck(
                           "Enabled for @safe functions only"),
                clEnumValN(CHECKENABLEon, "on", "Enabled for all functions")));
 
-static cl::opt<CHECKENABLE, true> nullCheck(
-    "nullcheck", cl::ZeroOrMore, cl::desc("Null dereference check"),
-    cl::location(global.params.useNullCheck), cl::init(CHECKENABLEdefault),
-    cl::values(clEnumValN(CHECKENABLEoff, "off", "Disabled"),
-               clEnumValN(CHECKENABLEsafeonly, "safeonly",
-                          "Enabled for @safe functions only"),
-               clEnumValN(CHECKENABLEon, "on", "Enabled for all functions")));
-
-
 static cl::opt<CHECKENABLE, true, FlagParser<CHECKENABLE>> switchErrors(
     "switch-errors", cl::ZeroOrMore,
     cl::desc("(*) Enable runtime errors for unhandled switch cases"),

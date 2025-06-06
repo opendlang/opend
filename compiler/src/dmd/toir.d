@@ -145,38 +145,6 @@ struct IRState
         return result;
     }
 
-    bool nullCheck()
-    {
-        if (m.filetype == FileType.c)
-            return false;
-        bool result;
-        final switch (global.params.useNullCheck)
-        {
-        case CHECKENABLE.off:
-            result = false;
-            break;
-        case CHECKENABLE.on:
-            result = true;
-            break;
-        case CHECKENABLE.safeonly:
-            {
-                result = false;
-                FuncDeclaration fd = getFunc();
-                if (fd)
-                {
-                    Type t = fd.type;
-                    if (t.ty == Tfunction && (cast(TypeFunction)t).trust == TRUST.safe)
-                        result = true;
-                }
-                break;
-            }
-        case CHECKENABLE._default:
-            assert(0);
-        }
-        return result;
-    }
-
-
     /****************************
      * Returns:
      *  true if in a nothrow section of code

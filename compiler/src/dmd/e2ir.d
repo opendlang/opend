@@ -3158,23 +3158,10 @@ elem* toElem(Expression e, ref IRState irs)
             bitfieldarg = bf.fieldWidth * 256 + bitOffset;
         }
 
-
-        if (irs.nullCheck())
-        {
-            auto originale = e;
-            auto ea = buildNullError(irs, dve.loc);
-            e = el_bin(OPoror,TYvoid,e,ea);
-            e = el_bin(OPcomma, typ, e, el_same(&originale));
-        }
-
-
-
         auto eoffset = el_long(TYsize_t, voffset);
         e = el_bin(OPadd, typ, e, objc.getOffset(v, tb1, eoffset));
         if (v.storage_class & (STC.out_ | STC.ref_))
             e = el_una(OPind, TYnptr, e);
-
-
         e = el_una(OPind, tym, e);
         if (bf)
         {
@@ -3560,18 +3547,7 @@ elem* toElem(Expression e, ref IRState irs)
         {
             e.Ety = TYimmutPtr;     // pointer to immutable
         }
-
-        if (irs.nullCheck())
-        {
-            auto ea = buildNullError(irs, pe.loc);
-            auto originale = e;
-            auto originalt = e.Ety;
-            e = el_bin(OPoror,TYvoid,e,ea);
-            e = el_bin(OPcomma, originalt, e, el_same(&originale));
-        }
-
         e = el_una(OPind,totym(pe.type),e);
-
         if (tybasic(e.Ety) == TYstruct)
         {
             e.ET = Type_toCtype(pe.type);
@@ -5426,31 +5402,6 @@ elem *callfunc(const ref Loc loc,
             tym = (tf.parameterList.varargs == VarArg.variadic) ? TYnfunc : TYmfunc;
         else
             tym = totym(tf);
-
-
-        if (irs.nullCheck())
-        {
-            /+
-              // FIXME this didn't work so `Object obj; string delegate() a = &obj.toString; a();` still fails
-            { // check the context pointer
-            auto ea = buildRangeError(irs, loc);
-            auto originale = ethis;
-            auto originalt = ethis.Ety;
-            ethis = el_bin(OPoror,TYvoid,ethis,ea);
-            ethis = el_bin(OPcomma, originalt, ethis, el_same(&originale));
-            }
-            +/
-
-            { // check the funcptr
-            auto ea = buildNullError(irs, loc);
-            auto originale = ec;
-            auto originalt = ec.Ety;
-            ec = el_bin(OPoror,TYvoid,ec,ea);
-            ec = el_bin(OPcomma, originalt, ec, el_same(&originale));
-            }
-        }
-
-
         ec = el_una(OPind, tym, ec);
     }
 
@@ -5699,14 +5650,6 @@ elem *callfunc(const ref Loc loc,
             // make virtual call
             assert(ethis);
             elem *ev = el_same(&ethis);
-
-            if (irs.nullCheck())
-            {
-                auto ea = buildNullError(irs, loc);
-                ev = el_bin(OPoror,TYvoid,ev,ea);
-                ev = el_bin(OPcomma, TYnptr, ev, el_same(&ethis));
-            }
-
             ev = el_una(OPind, TYnptr, ev);
             uint vindex = fd.vtblIndex;
             assert(cast(int)vindex >= 0);
@@ -6895,22 +6838,6 @@ elem* buildRangeError(ref IRState irs, const ref Loc loc)
         return el_bin(OPcall, TYvoid, el_var(getRtlsym(RTLSYM.DARRAYP)), el_params(el_long(TYint, loc.linnum), efile, null));
     }
 }
-
-elem* buildNullError(ref IRState irs, const ref Loc loc)
-{
-    final switch (irs.params.checkAction)
-    {
-    case CHECKACTION.C:
-        return callCAssert(irs, loc, null, null, "null pointer dereference");
-    case CHECKACTION.halt:
-        return genHalt(loc);
-    case CHECKACTION.context:
-    case CHECKACTION.D:
-        const efile = irs.locToFileElem(loc);
-        return el_bin(OPcall, TYvoid, el_var(getRtlsym(RTLSYM.DNULLP)), el_params(el_long(TYint, loc.linnum), efile, null));
-    }
-}
-
 
 /******************************************************
  * Construct elem to run when an array slice is created that is out of bounds
