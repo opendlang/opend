@@ -823,6 +823,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             {
                 params.useAssert        = CHECKENABLE.on;
                 params.useArrayBounds   = CHECKENABLE.on;
+                params.useNullCheck     = CHECKENABLE.on;
                 params.useIn            = CHECKENABLE.on;
                 params.useInvariants    = CHECKENABLE.on;
                 params.useOut           = CHECKENABLE.on;
@@ -832,6 +833,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             {
                 params.useAssert        = CHECKENABLE.off;
                 params.useArrayBounds   = CHECKENABLE.off;
+                params.useNullCheck     = CHECKENABLE.off;
                 params.useIn            = CHECKENABLE.off;
                 params.useInvariants    = CHECKENABLE.off;
                 params.useOut           = CHECKENABLE.off;
@@ -839,6 +841,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             }
             else if (!(check(checkarg, "assert",    params.useAssert) ||
                   check(checkarg, "bounds",    params.useArrayBounds) ||
+                  check(checkarg, "null",    params.useNullCheck) ||
                   check(checkarg, "in",        params.useIn         ) ||
                   check(checkarg, "invariant", params.useInvariants ) ||
                   check(checkarg, "out",       params.useOut        ) ||

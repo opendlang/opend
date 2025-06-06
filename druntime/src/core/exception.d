@@ -67,6 +67,21 @@ unittest
     }
 }
 
+/++
+   Thrown when attempting to use a null pointer when generated checks are on
++/
+class NullPointerError : Error {
+    this( string file = __FILE__, size_t line = __LINE__, Throwable next = null ) @nogc nothrow pure @safe
+    {
+        super( "Null pointer error", file, line, next );
+    }
+
+    protected this( string msg, string file, size_t line, Throwable next = null ) @nogc nothrow pure @safe
+    {
+        super( msg, file, line, next );
+    }
+}
+
 /**
  * Thrown when an out of bounds array index is accessed.
  */
@@ -624,6 +639,10 @@ extern (C) noreturn onRangeError( string file = __FILE__, size_t line = __LINE__
     throw staticError!RangeError(file, line, null);
 }
 
+extern (C) noreturn onNullPointerError( string file = __FILE__, size_t line = __LINE__ ) @trusted pure nothrow @nogc
+{
+    throw staticError!NullPointerError(file, line, null);
+}
 /**
  * A callback for array slice out of bounds errors in D.
  *
@@ -837,6 +856,17 @@ extern (C)
     void _d_arraybounds(string file, uint line)
     {
         onRangeError(file, line);
+    }
+
+    void _d_nullpointer(string file, uint line)
+    {
+        onNullPointerError(file, line);
+    }
+
+    void _d_nullpointerp(immutable(char*) file, uint line)
+    {
+        import core.stdc.string : strlen;
+        onNullPointerError(file[0 .. strlen(file)], line);
     }
 
     /// Called when an out of range slice of an array is created

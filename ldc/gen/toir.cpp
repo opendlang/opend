@@ -785,6 +785,7 @@ public:
       LLValue *thisArg = thisExp->type->toBasetype()->ty == TY::Tclass
                              ? DtoRVal(thisExp)
                              : DtoLVal(thisExp); // when calling a struct method
+
       fnval = new DFuncValue(fdecl, DtoCallee(fdecl), thisArg);
     } else {
       fnval = toElem(e->e1);
@@ -819,6 +820,7 @@ public:
       // it here to do the "assume" optimization below.
       if (canEmitVTableUnchangedAssumption && !dfnval->vtable &&
           dfnval->vthis && dfnval->func->isVirtual()) {
+
         dfnval->vtable =
             DtoLoad(getOpaquePtrType(), dfnval->vthis, "saved_vtable");
       }
@@ -1009,6 +1011,11 @@ public:
     if (e->type->toBasetype()->ty == TY::Tfunction) {
       DValue *dv = toElem(e->e1);
       LLValue *llVal = DtoRVal(dv);
+
+      if (p->emitNullChecks()) {
+          DtoNullPointerCheck(e->loc, llVal);
+      }
+
       if (DFuncValue *dfv = dv->isFunc()) {
         result = new DFuncValue(e->type, dfv->func, llVal);
       } else {
@@ -1019,6 +1026,10 @@ public:
 
     // get the rvalue and return it as an lvalue
     LLValue *V = DtoRVal(e->e1);
+
+    if (p->emitNullChecks()) {
+        DtoNullPointerCheck(e->loc, V);
+    }
 
     result = new DLValue(e->type, V);
   }
@@ -1067,6 +1078,9 @@ public:
         llvm_unreachable("Unknown DotVarExp type for VarDeclaration.");
       }
 
+      if (p->emitNullChecks()) {
+        DtoNullPointerCheck(e->loc, aggrPtr);
+      }
       auto ptr = DtoIndexAggregate(aggrPtr, ad, vd);
 
       // special case for bit fields (no real lvalues), and address spaced pointers
@@ -1098,6 +1112,11 @@ public:
       LLValue *funcval = nullptr;
       LLValue *vtable = nullptr;
       if (nonFinal) {
+
+        if (p->emitNullChecks()) {
+            DtoNullPointerCheck(e->loc, DtoRVal(l));
+        }
+
         DtoResolveFunction(fdecl);
         std::tie(funcval, vtable) = DtoVirtualFunctionPointer(l, fdecl);
       } else {
@@ -1106,6 +1125,7 @@ public:
       assert(funcval);
 
       LLValue *vthis = (DtoIsInMemoryOnly(l->type) ? DtoLVal(l) : DtoRVal(l));
+
       result = new DFuncValue(fdecl, funcval, vthis, vtable);
     } else {
       llvm_unreachable("Unknown target for VarDeclaration.");
