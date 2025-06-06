@@ -564,7 +564,7 @@ static void buildRuntimeModule() {
 
   // void _d_assert(string file, uint line)
   // void _d_arraybounds(string file, uint line)
-  createFwdDecl(LINK::c, Type::tvoid, {"_d_assert", "_d_arraybounds"},
+  createFwdDecl(LINK::c, Type::tvoid, {"_d_assert", "_d_arraybounds", "_d_nullpointer"},
                 {stringTy, uintTy}, {}, Attr_Cold_NoReturn);
 
   // void _d_assert_msg(string msg, string file, uint line)

@@ -222,6 +222,7 @@ public:
 
   /// Whether to emit array bounds checking in the current function.
   bool emitArrayBoundsChecks();
+  bool emitNullChecks();
 
   // Sets the initializer for a global LL variable.
   // If the types don't match, this entails creating a new helper global

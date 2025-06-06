@@ -132,6 +132,20 @@ bool IRState::emitArrayBoundsChecks() {
   return t->ty == TY::Tfunction && ((TypeFunction *)t)->trust == TRUST::safe;
 }
 
+bool IRState::emitNullChecks() {
+  if (global.params.useNullCheck != CHECKENABLEsafeonly) {
+    return global.params.useNullCheck == CHECKENABLEon;
+  }
+
+  // Safe functions only.
+  if (funcGenStates.empty()) {
+    return false;
+  }
+
+  Type *t = func()->decl->type;
+  return t->ty == TY::Tfunction && ((TypeFunction *)t)->trust == TRUST::safe;
+}
+
 LLGlobalVariable *
 IRState::setGlobalVarInitializer(LLGlobalVariable *globalVar,
                                  LLConstant *initializer,
