@@ -3136,6 +3136,14 @@ elem* toElem(Expression e, ref IRState irs)
         {
             e = addressElem(e, tb1);
             typ = tybasic(e.Ety);
+        } else {
+            if (irs.nullCheck())
+            {
+                auto ea = buildNullError(irs, dve.loc);
+                auto originale = el_same(&e);
+                e = el_bin(OPoror, TYvoid, e, ea);
+                e = el_bin(OPcomma, typ, e, originale);
+            }
         }
 
         const tym = totym(dve.type);
@@ -3157,17 +3165,6 @@ elem* toElem(Expression e, ref IRState irs)
             //printf("voffset %u bitOffset %u fieldWidth %u bits %u\n", cast(uint)voffset, bitOffset, bf.fieldWidth, szbits);
             bitfieldarg = bf.fieldWidth * 256 + bitOffset;
         }
-
-
-        if (irs.nullCheck())
-        {
-            auto originale = e;
-            auto ea = buildNullError(irs, dve.loc);
-            e = el_bin(OPoror,TYvoid,e,ea);
-            e = el_bin(OPcomma, typ, e, el_same(&originale));
-        }
-
-
 
         auto eoffset = el_long(TYsize_t, voffset);
         e = el_bin(OPadd, typ, e, objc.getOffset(v, tb1, eoffset));
@@ -3564,10 +3561,10 @@ elem* toElem(Expression e, ref IRState irs)
         if (irs.nullCheck())
         {
             auto ea = buildNullError(irs, pe.loc);
-            auto originale = e;
+            auto originale = el_same(&e);
             auto originalt = e.Ety;
             e = el_bin(OPoror,TYvoid,e,ea);
-            e = el_bin(OPcomma, originalt, e, el_same(&originale));
+            e = el_bin(OPcomma, originalt, e, originale);
         }
 
         e = el_una(OPind,totym(pe.type),e);
@@ -5433,7 +5430,7 @@ elem *callfunc(const ref Loc loc,
             /+
               // FIXME this didn't work so `Object obj; string delegate() a = &obj.toString; a();` still fails
             { // check the context pointer
-            auto ea = buildRangeError(irs, loc);
+            auto ea = buildNullError(irs, loc);
             auto originale = ethis;
             auto originalt = ethis.Ety;
             ethis = el_bin(OPoror,TYvoid,ethis,ea);
@@ -5443,10 +5440,10 @@ elem *callfunc(const ref Loc loc,
 
             { // check the funcptr
             auto ea = buildNullError(irs, loc);
-            auto originale = ec;
+            auto originale = el_same(&ec);
             auto originalt = ec.Ety;
             ec = el_bin(OPoror,TYvoid,ec,ea);
-            ec = el_bin(OPcomma, originalt, ec, el_same(&originale));
+            ec = el_bin(OPcomma, originalt, ec, originale);
             }
         }
 

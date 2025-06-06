@@ -841,7 +841,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             }
             else if (!(check(checkarg, "assert",    params.useAssert) ||
                   check(checkarg, "bounds",    params.useArrayBounds) ||
-                  check(checkarg, "null",    params.useNullCheck) ||
+                  check(checkarg, "null",      params.useNullCheck) ||
                   check(checkarg, "in",        params.useIn         ) ||
                   check(checkarg, "invariant", params.useInvariants ) ||
                   check(checkarg, "out",       params.useOut        ) ||

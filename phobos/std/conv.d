@@ -2451,6 +2451,15 @@ if (isIntegral!Target && !is(Target == enum) &&
             import std.string : representation;
             auto source = s.representation;
         }
+        else static if (is(Source : string))
+        {
+            // with rvaluerefparam, anything with alias toString this can trigger this branch
+            // we need to have the string called explicitly, not implicitly, or else the popFront
+            // below will work on a temporary and you loop forever
+            import std.string : representation;
+            const(char)[] sourceAsString = s;
+            auto source = sourceAsString.representation;
+        }
         else
         {
             alias source = s;
