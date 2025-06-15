@@ -158,13 +158,13 @@ Expression implicitCastTo(Expression e, Scope* sc, Type t)
                 auto ce = new CallExp(e.loc, e2, e);
                 e2 = ce;
 
-                //auto declareTmps = new CommaExp(e.loc, decl, e2);
+                auto declareTmps = new CommaExp(e.loc, decl, e2);
 
                 if (sc && .trySemantic(e2, sc)) {
                         if (hasImplicitAttr(ce.f)) {
                             //printf("implicit construction of %s @ %s\n", declareTmps.toChars(), e.loc.toChars());
                             //printf("implicit construction of %s @ %s\n", decl.toChars(), e.loc.toChars());
-                            result = decl.expressionSemantic(sc);
+                            result = declareTmps.expressionSemantic(sc);
                             // printf("implicit construction of %s @ %s\n", t.toChars(), e.loc.toChars());
                             return result;
                         }
