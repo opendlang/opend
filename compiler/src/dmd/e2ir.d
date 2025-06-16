@@ -5438,7 +5438,9 @@ elem *callfunc(const ref Loc loc,
             }
             +/
 
-            { // check the funcptr
+            // causes bug in arsd.core timer, throwing null pointer when it is checked and confirmed not to be null
+            // fighting efforts to reduce, just gonna rollback for now
+            version(none){ // check the funcptr
             auto ea = buildNullError(irs, loc);
             auto originale = el_same(&ec);
             auto originalt = ec.Ety;
