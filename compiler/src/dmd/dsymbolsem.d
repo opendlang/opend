@@ -678,8 +678,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
             dsym.alignment = sc.alignment();
         }
 
-        if (dsym.storage_class & STC.extern_ && dsym._init)
-            .error(dsym.loc, "%s `%s` extern symbols cannot have initializers", dsym.kind, dsym.toPrettyChars);
+        checkDefaultInit(dsym);
 
         AggregateDeclaration ad = dsym.isThis();
         if (ad)
@@ -1533,6 +1532,21 @@ version (IN_LLVM)
                  sym = sym.parent ? sym.parent.isScopeDsymbol() : null)
                 dsym.endlinnum = sym.endlinnum;
         }
+    }
+
+    private void checkDefaultInit(VarDeclaration dsym)
+    {
+        if (dsym.storage_class & STC.extern_ && dsym._init)
+            .error(dsym.loc, "%s `%s` extern symbols cannot have initializers", dsym.kind, dsym.toPrettyChars);
+
+        if(dsym._init)
+        {
+            return;
+        }
+
+        .deprecation(dsym.loc, "uninitialized variable `%s`, please initialize to a value or:", dsym.toPrettyChars);
+        errorSupplemental(dsym.loc, "- use `= %s.init;` to explicitly initialize to default", dsym.type.toChars());
+        errorSupplemental(dsym.loc, "- use `= void;` to explicitly avoid initialization");
     }
 
     override void visit(TypeInfoDeclaration dsym)
