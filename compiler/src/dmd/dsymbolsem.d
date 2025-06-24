@@ -1539,12 +1539,21 @@ version (IN_LLVM)
         if (dsym.storage_class & STC.extern_ && dsym._init)
             .error(dsym.loc, "%s `%s` extern symbols cannot have initializers", dsym.kind, dsym.toPrettyChars);
 
-        if(dsym._init)
+        if (dsym._init || dsym.isRef || dsym.isParameter)
         {
             return;
         }
 
-        .deprecation(dsym.loc, "uninitialized variable `%s`, please initialize to a value or:", dsym.toPrettyChars);
+        if (strcmp(dsym.type.toChars(), "float") != 0 &&
+            strcmp(dsym.type.toChars(), "double") != 0 &&
+            strcmp(dsym.type.toChars(), "real") != 0 &&
+            strcmp(dsym.type.toChars(), "char") != 0)
+        {
+            return;
+        }
+
+        .deprecation(dsym.loc, "`%s`: values of type `%s` might not initialize to what you expect, consider to either:", dsym.toPrettyChars(), dsym.type.toChars());
+        errorSupplemental(dsym.loc, "- initiazlie to a useful value");
         errorSupplemental(dsym.loc, "- use `= %s.init;` to explicitly initialize to default", dsym.type.toChars());
         errorSupplemental(dsym.loc, "- use `= void;` to explicitly avoid initialization");
     }
