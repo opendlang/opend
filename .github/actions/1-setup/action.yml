@@ -45,7 +45,7 @@ runs:
           https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ inputs.clang_version }}/LLVM-${{ inputs.clang_version }}-win64.exe
         ./clang.exe //S # double-slash for bash
         rm clang.exe
-        choco upgrade llvm --version=17.0.6 --allow-downgrade -y
+        choco upgrade llvm --version=19.1.7 --allow-downgrade -y
         echo "LLVM_PATH=C:\Program Files\LLVM\bin" >> $GITHUB_ENV
         # C:\Program Files\LLVM\bin should already be in PATH
         clang-cl --version
