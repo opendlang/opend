@@ -2240,7 +2240,7 @@ version (IN_LLVM)
             fa.visibility = resolvedFd.visibility;
             auto sym_ex = new DsymbolExp(Loc.initial, fa, false);
 
-            return sym_ex;
+            return expressionSemantic(sym_ex, scx);
         }
 
         // error(e.loc, "no match found %s", o.toChars());
