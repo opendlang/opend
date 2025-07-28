@@ -70,6 +70,7 @@ runs:
         set installDir=%CD%\install
         mkdir "${{ inputs.build_dir }}" || exit /b
         cd "${{ inputs.build_dir }}" || exit /b
+        set PATH="C:\Program Files\LLVM\bin";%PATH%
         cmake -G Ninja ..\opend\ldc ^
           -DCMAKE_BUILD_TYPE=Release ^
           "-DLLVM_ROOT_DIR=%CD%\..\${{ inputs.llvm_dir }}" ^
