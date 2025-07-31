@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CLANG_VERSION: 17.0.6
+  CLANG_VERSION: 15.0.6
   LLVM_VERSION: 17.0.6
 
 jobs:
@@ -87,7 +87,7 @@ jobs:
       - name: Install prerequisites
         uses: ./.github/actions/1-setup
         with:
-          clang_version: ${{ runner.os == 'Windows' && '17.0.6' || env.CLANG_VERSION }}
+          clang_version: ${{ runner.os == 'Windows' && '16.0.6' || env.CLANG_VERSION }}
           llvm_version: ${{ matrix.llvm_version || env.LLVM_VERSION }}
           arch: ${{ matrix.arch }}
       - name: Build bootstrap LDC
