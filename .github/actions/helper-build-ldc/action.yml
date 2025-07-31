@@ -38,6 +38,7 @@ runs:
       shell: cmd
       run: |
         call "%LDC_VSDIR%\Common7\Tools\VsDevCmd.bat" -arch=${{ inputs.arch }} || exit /b
+        set PATH=C:\Program Files\LLVM\bin;%PATH%
         echo on
         make HOST_DMD=${{ inputs.host_dc }}.exe ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
 
