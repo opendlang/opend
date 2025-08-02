@@ -861,7 +861,10 @@ DValue *DtoCallFunction(const Loc &loc, Type *resulttype, DValue *fnval,
   // get callee llvm value
   LLValue *callable = DtoCallableValue(fnval);
 
-  DtoNullPointerCheck(loc, callable);
+  const bool objccall = irFty.type->linkage == LINK::objc;
+  if (!objccall && gIR->emitNullChecks()) {
+    DtoNullPointerCheck(loc, callable);
+  }
 
   LLFunctionType *callableTy = irFty.funcType;
   if (dfnval && dfnval->func->isCsymbol()) {
