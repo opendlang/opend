@@ -520,6 +520,7 @@ immutable Msgtable[] msgtable =
     { "parameters" },
     { "docComment" },
     { "resolveFunctionCall" },
+    { "canResolveFunctionCall" },
 
     // For C++ mangling
     { "allocator" },
