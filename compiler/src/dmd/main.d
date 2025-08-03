@@ -605,7 +605,7 @@ version (IN_LLVM) {} else
     foreach (m; modules)
     {
         if (params.v.verbose)
-            message("semantic3 %s", m.toChars());
+            message("semantic3 %s", m.toPrettyChars());
         m.semantic3(null);
     }
     if (includeImports)

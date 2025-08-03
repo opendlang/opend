@@ -45,10 +45,6 @@ runs:
           https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ inputs.clang_version }}/LLVM-${{ inputs.clang_version }}-win64.exe
         ./clang.exe //S # double-slash for bash
         rm clang.exe
-        choco upgrade llvm --version=17.0.6 --allow-downgrade -y
-        echo "LLVM_PATH=C:\Program Files\LLVM\bin" >> $GITHUB_ENV
-        # C:\Program Files\LLVM\bin should already be in PATH
-        clang-cl --version
 
     - name: Download & extract LDC-flavoured LLVM # into ../llvm
       shell: bash
@@ -103,14 +99,11 @@ runs:
         sudo ln -sf "$(dirname "$PWD")/llvm/bin/ld.lld" /usr/bin/ld
         ld --version
 
-    - name: Install ninja
-      uses: symmetryinvestments/gha-setup-ninja@v1
-
     - name: Install D host compiler
       uses: dlang-community/setup-dlang@v1
       with:
         # macOS arm64: use LDC v1.40.0 using LLVM v17, as Xcode v16
-        compiler: ${{ inputs.arch == 'arm64' && 'ldc-master' || 'ldc-master' }}
+        compiler: ${{ inputs.arch == 'arm64' && 'ldc-1.41.0' || 'ldc-1.41.0' }}
     - name: 'Posix: Clear LD_LIBRARY_PATH env variable' # don't use host druntime/Phobos .so/.dylib etc.
       if: runner.os != 'Windows'
       shell: bash

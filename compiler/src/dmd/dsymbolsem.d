@@ -8199,6 +8199,7 @@ private void writeMixin(const(char)[] s, ref const Loc loc, ref int lines, ref O
 {
     buf.writestring("// expansion at ");
     buf.writestring(loc.toChars());
+    buf.writestring(" {");
     buf.writenl();
 
     ++lines;
@@ -8228,6 +8229,7 @@ private void writeMixin(const(char)[] s, ref const Loc loc, ref int lines, ref O
         buf.writenl(); // ensure empty line after expansion
         ++lines;
     }
+    buf.writestring("// }");
     buf.writenl();
     ++lines;
 }
