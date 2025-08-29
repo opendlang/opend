@@ -3685,6 +3685,16 @@ version (IN_LLVM)
             funcdecl.type = funcdecl.type.addSTC(stc);
 
             funcdecl.type = funcdecl.type.typeSemantic(funcdecl.loc, sc);
+
+            // semantic for parameters' UDAs
+            if (auto f = getFunctionType(funcdecl))
+                foreach (i, param; f.parameterList)
+                {
+                    sc.userAttribDecl = null;
+                    if (param && param.userAttribDecl)
+                        param.userAttribDecl.dsymbolSemantic(sc);
+                }
+
             sc = sc.pop();
         }
 
@@ -4416,13 +4426,6 @@ version (IN_LLVM)
         }
 
         assert(funcdecl.type.ty != Terror || funcdecl.errors);
-
-        // semantic for parameters' UDAs
-        foreach (i, param; f.parameterList)
-        {
-            if (param && param.userAttribDecl)
-                param.userAttribDecl.dsymbolSemantic(sc);
-        }
     }
 
      /// Do the semantic analysis on the external interface to the function.
