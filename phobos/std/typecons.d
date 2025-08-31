@@ -3409,7 +3409,7 @@ struct Nullable(T)
      * Returns:
      *     A `string` if `writer` and `fmt` are not set; `void` otherwise.
      */
-    string toString()
+    string toString()()
     {
         import std.array : appender;
         auto app = appender!string();
@@ -3419,7 +3419,7 @@ struct Nullable(T)
     }
 
     /// ditto
-    string toString() const
+    string toString()() const
     {
         import std.array : appender;
         auto app = appender!string();
