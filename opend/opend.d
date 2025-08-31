@@ -27,6 +27,10 @@ import std.file;
 	opend run
 	opend test
 	opend debug
+
+	--driver=dmd/ldmd2
+
+	make it work for a dev build too
 +/
 
 // rumor has it arm64 for apple can be better than aarch64 but i think they the same
@@ -413,6 +417,10 @@ struct Commands {
 				// brianush suggests:
 				// -sSTANDALONE_WASM -sEXPORTED_FUNCTIONS="[\"__start\"]"
 
+				string ext = "";
+				version(Windows)
+					ext = ".bat";
+
 				// phobos is compiled but puts out some warnings so gonna reenable it with -i and not link the phobos
 				// tbh might be a good idea to do that for other platforms too
 				installConfig(`
@@ -424,7 +432,7 @@ struct Commands {
 
 					    switches = [
 						"-defaultlib=druntime-ldc",
-						"--linker=emcc",
+						"--linker=emcc`~ext~`",
 						"-i=std",
 					    ];
 					};
