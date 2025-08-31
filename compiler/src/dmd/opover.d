@@ -930,7 +930,6 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                 return null;
             }
 
-	    /+
             /* Check for class equality with null literal or typeof(null).
              */
             if (t1.ty == Tclass && e.e2.op == EXP.null_ ||
@@ -941,7 +940,6 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                     EXPtoString(e.op).ptr);
                 return ErrorExp.get();
             }
-	    +/
             if (t1.ty == Tclass && t2.ty == Tnull ||
                 t1.ty == Tnull && t2.ty == Tclass)
             {
