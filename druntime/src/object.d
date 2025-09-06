@@ -133,6 +133,8 @@ else version (AArch64)
     else version = WithArgTypes;
 }
 
+extern (C) void _d_monitordelete(Object h, bool det);
+
 /**
  * All D class objects inherit from Object.
  */
@@ -251,6 +253,16 @@ class Object
         void unlock();
     }
 
+    ref void* __monitor() nothrow @nogc pure { assert(0); }
+
+    mixin template EnableSynchronization() {
+        private void* __monitor_storage;
+        override ref void* __monitor() { return cast() __monitor_storage; } // cast away shared or whatever
+        ~this() {
+            _d_monitordelete(cast() this, true);
+        }
+    }
+
     /**
      * Create instance of class specified by the fully qualified name
      * classname.
@@ -293,6 +305,10 @@ class Object
         assert(valid_obj !is null);
         assert(invalid_obj is null);
     }
+}
+
+class SynchronizableObject {
+    mixin EnableSynchronization;
 }
 
 /++
@@ -615,6 +631,8 @@ struct OffsetTypeInfo
  */
 class TypeInfo
 {
+    mixin EnableSynchronization;
+
     override string toString() const @safe nothrow
     {
         return typeid(this).name;

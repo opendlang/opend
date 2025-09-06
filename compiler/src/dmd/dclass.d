@@ -611,7 +611,26 @@ version (IN_LLVM) {} else
      */
     final bool hasMonitor()
     {
-        return classKind == ClassKind.d;
+        if(classKind != ClassKind.d)
+            return false; // non-D classes never have monitors
+
+        // but D classes do if it is an instance of TypeInfo or else it is done in the library (which we don't need to know here)
+        ClassDeclaration topBeforeObject;
+
+        if(this is Type.dtypeinfo)
+            topBeforeObject = this;
+        else {
+            topBeforeObject = baseClass;
+            while(topBeforeObject && topBeforeObject.baseClass && topBeforeObject.baseClass.baseClass)
+                topBeforeObject = topBeforeObject.baseClass;
+        }
+        if(topBeforeObject && topBeforeObject is Type.dtypeinfo) {
+            // typeinfo things still have monitors defined in druntime because people like to synchronize on typeid()
+            //printf("%s has monitor\n", toPrettyChars());
+            return true;
+        }
+        return false;
+        //return classKind == ClassKind.d;
     }
 
     final bool isFuncHidden(FuncDeclaration fd)

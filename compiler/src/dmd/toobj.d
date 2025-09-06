@@ -1314,7 +1314,7 @@ private void genClassInfoForClass(ClassDeclaration cd, Symbol* sinit)
     else
     {
         dtb.size(0);                    // BUG: should be an assert()
-        dtb.size(0);                    // call hasMonitor()?
+        dtb.size(0);                    // call hasMonitor()? rn it assumes all typeinfo has a monitor, see also
     }
 
     // m_init[]
@@ -1546,7 +1546,7 @@ private void genClassInfoForInterface(InterfaceDeclaration id)
     else
     {
         dtb.size(0);                    // BUG: should be an assert()
-        dtb.size(0);                    // call hasMonitor()?
+        dtb.size(0);                    // call hasMonitor()? assuming all typeinfo have monitors rn
     }
 
     // m_init[]
@@ -1572,7 +1572,7 @@ private void genClassInfoForInterface(InterfaceDeclaration id)
         {
             if (Type.typeinfoclass.structsize != offset)
             {
-                .error(id.loc, "%s `%s` mismatch between dmd and object.d or object.di found. Check installation and import paths with -v compiler switch.", id.kind, id.toPrettyChars);
+                .error(id.loc, "%s `%s` has a mismatch between dmd and object.d or object.di found. Check installation and import paths with -v compiler switch.", id.kind, id.toPrettyChars);
                 fatal();
             }
         }

@@ -36,9 +36,13 @@
  *      $(LINK2 http://www.digitalmars.com/d/archives/16583.html, The importance of component programming (properties$(COMMA) signals and slots$(COMMA) etc))$(BR)
  *      $(LINK2 http://www.digitalmars.com/d/archives/16368.html, signals and slots)$(BR)
  *
+ * History:
+    As of September 2025, the slot classes MUST be marked Synchronizable. This is a breaking change.
+    Make your slot classes either inherit from SynchronizableObject or `mixin EnableSynchronization;` inside its definition.
+ *
  * Bugs:
- *      $(RED Slots can only be delegates referring directly to
- *      class or interface member functions. If a delegate to something else
+ *      $(PITFALL Slots can only be delegates referring directly to
+ *      `Synchronizable` class or interface member functions. If a delegate to something else
  *      is passed to connect(), such as a struct member function,
  *      a nested function, a COM interface, a closure, undefined behavior
  *      will result.)
@@ -294,7 +298,7 @@ mixin template Signal(T1...)
 
     int observedMessageCounter = 0;
 
-    class Observer
+    class Observer : SynchronizableObject
     {   // our slot
         void watch(string msg, int value)
         {
@@ -314,7 +318,7 @@ mixin template Signal(T1...)
         }
     }
 
-    class Observer2
+    class Observer2 : SynchronizableObject
     {   // our slot
         void watch(string msg, int value)
         {
@@ -377,7 +381,7 @@ void linkin() { }
 
 @system unittest
 {
-    class Observer
+    class Observer : SynchronizableObject
     {
         void watch(string msg, int i)
         {
@@ -447,7 +451,7 @@ void linkin() { }
 
 @system unittest
 {
-    class Observer
+    class Observer : SynchronizableObject
     {
         int    i;
         long   l;
@@ -627,7 +631,7 @@ void linkin() { }
 // Triggers bug from https://issues.dlang.org/show_bug.cgi?id=15341
 @system unittest
 {
-    class Observer
+    class Observer : SynchronizableObject
     {
        void watch() { }
        void watch2() { }
@@ -680,7 +684,7 @@ version (none) // Disabled because of https://issues.dlang.org/show_bug.cgi?id=5
         }
     }
 
-    class Dot
+    class Dot : SynchronizableObject
     {
         int value;
 
@@ -723,7 +727,7 @@ version (none) // Disabled because of https://issues.dlang.org/show_bug.cgi?id=5
 {
     import std.signals;
 
-    class Observer
+    class Observer : SynchronizableObject
     {   // our slot
         void watch(string msg, int value)
         {

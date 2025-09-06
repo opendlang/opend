@@ -20,7 +20,7 @@ import core.atomic, core.stdc.stdlib, core.stdc.string;
 extern (C) void _d_setSameMutex(shared Object ownee, shared Object owner) nothrow @system
 in
 {
-    assert(ownee.__monitor is null);
+    assert((cast()ownee).__monitor is null);
 }
 do
 {
@@ -30,7 +30,7 @@ do
         atomicOp!("+=")(m.refs, cast(size_t) 1);
     }
     // Assume the monitor is garbage collected and simply copy the reference.
-    ownee.__monitor = owner.__monitor;
+    (cast()ownee).__monitor = cast(void*)(cast()owner).__monitor;
 }
 
 extern (C) void _d_monitordelete(Object h, bool det)
@@ -98,7 +98,7 @@ extern (C) void _d_monitorexit(Object h)
         i.unlock();
 }
 
-extern (C) void rt_attachDisposeEvent(Object h, DEvent e)
+extern (C) void rt_attachDisposeEvent(SynchronizableObject h, DEvent e)
 {
     synchronized (h)
     {
@@ -127,7 +127,7 @@ extern (C) void rt_attachDisposeEvent(Object h, DEvent e)
     }
 }
 
-extern (C) void rt_detachDisposeEvent(Object h, DEvent e)
+extern (C) void rt_detachDisposeEvent(SynchronizableObject h, DEvent e)
 {
     synchronized (h)
     {
@@ -240,7 +240,7 @@ private:
 
 @property ref shared(Monitor*) monitor(return scope Object h) pure nothrow @nogc @system
 {
-    return *cast(shared Monitor**)&h.__monitor;
+    return *cast(shared Monitor**)&(h.__monitor());
 }
 
 private shared(Monitor)* getMonitor(Object h) pure @nogc

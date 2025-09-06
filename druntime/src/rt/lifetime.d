@@ -26,8 +26,6 @@ private
     alias bool function(Object) CollectHandler;
     __gshared CollectHandler collectHandler = null;
 
-    extern (C) void _d_monitordelete(Object h, bool det);
-
     enum : size_t
     {
         PAGESIZE = 4096,
@@ -1427,8 +1425,7 @@ extern (C) void rt_finalize2(void* p, bool det = true, bool resetMemory = true) 
             while ((c = c.base) !is null);
         }
 
-        if (ppv[1]) // if monitor is not null
-            _d_monitordelete(cast(Object) p, det);
+        // note the monitor is destroyed by the mixed in destructor if present
 
         if (resetMemory)
         {

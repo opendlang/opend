@@ -21,6 +21,8 @@ version(WebAssembly) {} else:
  */
 class ThreadGroup
 {
+    mixin EnableSynchronization;
+
     /**
      * Creates and starts a new Thread object that executes fn and adds it to
      * the list of tracked threads.

@@ -3285,7 +3285,25 @@ version (IN_LLVM)
 
                 ss.exp = new CastExp(ss.loc, ss.exp, t);
                 ss.exp = ss.exp.expressionSemantic(sc);
+
+                cd = ss.exp.type.isClassHandle();
+                assert(cd);
             }
+
+            // ct error check when convenient
+            {
+                auto id = Identifier.idPool("__monitor_storage");
+                // FIXME if the class decl is synchronized, no need to error here; dsymbolsym will get it instead
+                if (!cd.search(ss.loc, id, SearchOpt.ignoreVisibility))
+                {
+                    if(cd.storage_class & STC.synchronized_) // FIXME: this should be on the class decl instead
+                    error(ss.loc, "attempting to synchronize on object with no monitor; synchronized class must inherit from `SynchronizableObject`");
+                    else
+                    error(ss.loc, "attempting to synchronize on object with no monitor; enable it by adding `mixin EnableSynchronization;` inside the class definition or by inheriting from `SynchronizableObject`");
+                    return setError();
+                }
+            }
+
             version (all)
             {
                 /* Rewrite as:

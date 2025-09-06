@@ -52,6 +52,9 @@ else
 class Mutex :
     Object.Monitor
 {
+
+    mixin EnableSynchronization;
+
     ////////////////////////////////////////////////////////////////////////////
     // Initialization
     ////////////////////////////////////////////////////////////////////////////
@@ -99,7 +102,7 @@ class Mutex :
         }
 
         m_proxy.link = this;
-        this.__monitor = cast(void*) &m_proxy;
+        (cast()this).__monitor = cast(void*) &m_proxy;
     }
 
 
