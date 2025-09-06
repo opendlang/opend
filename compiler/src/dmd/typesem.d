@@ -5282,6 +5282,7 @@ extern (C++) Expression defaultInit(Type mt, const ref Loc loc, const bool isCfi
 
         switch (mt.ty)
         {
+        /+ // opend
         case Tchar:
             value = isCfile ? 0 : 0xFF;
             break;
@@ -5290,14 +5291,16 @@ extern (C++) Expression defaultInit(Type mt, const ref Loc loc, const bool isCfi
         case Tdchar:
             value = isCfile ? 0 : 0xFFFF;
             break;
-
+        +/
         case Timaginary32:
         case Timaginary64:
         case Timaginary80:
         case Tfloat32:
         case Tfloat64:
         case Tfloat80:
-            return new RealExp(loc, isCfile ? CTFloat.zero : target.RealProperties.nan, mt);
+            // return new RealExp(loc, isCfile ? CTFloat.zero : target.RealProperties.nan, mt);
+
+            return new RealExp(loc, CTFloat.zero, mt); // opend
 
         case Tcomplex32:
         case Tcomplex64:

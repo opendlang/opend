@@ -3213,15 +3213,19 @@ extern (C++) final class TypeBasic : Type
     {
         switch (ty)
         {
+        /+ // opend
         case Tchar:
         case Twchar:
         case Tdchar:
+        +/
         case Timaginary32:
         case Timaginary64:
         case Timaginary80:
+        /+ // opend
         case Tfloat32:
         case Tfloat64:
         case Tfloat80:
+        +/
         case Tcomplex32:
         case Tcomplex64:
         case Tcomplex80:
