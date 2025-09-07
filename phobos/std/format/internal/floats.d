@@ -2312,6 +2312,7 @@ if (is(T == float) || is(T == double)
 
     bool useE = false;
 
+    if(val != 0.0)
     final switch (rm)
     {
     case RoundingMode.up:

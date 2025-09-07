@@ -102,7 +102,7 @@ llvm::Type *IrTypeClass::getMemoryLLType() {
     // classes have monitor and fields
     if (!cd->isCPPclass() && !cd->isCPPinterface()) {
       // add monitor
-      builder.addType(getOpaquePtrType(), target.ptrsize);
+      //builder.addType(getOpaquePtrType(), target.ptrsize); // opend
     }
 
     // add data members recursively

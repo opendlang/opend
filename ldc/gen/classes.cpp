@@ -146,6 +146,7 @@ void DtoInitClass(TypeClass *tc, LLValue *dst) {
   LLValue *val = irClass->getVtblSymbol();
   DtoStore(val, tmp);
 
+  /* // opend
   // For D classes, set the monitor field to null.
   const bool isCPPclass = tc->sym->isCPPclass() ? true : false;
   if (!isCPPclass) {
@@ -156,6 +157,10 @@ void DtoInitClass(TypeClass *tc, LLValue *dst) {
 
   // Copy the rest from the static initializer, if any.
   unsigned const firstDataIdx = isCPPclass ? 1 : 2;
+  */
+
+  // Copy the rest from the static initializer, if any.
+  unsigned const firstDataIdx = 1;
   uint64_t const dataBytes =
       tc->sym->structsize - target.ptrsize * firstDataIdx;
   if (dataBytes == 0) {
@@ -206,6 +211,7 @@ void DtoFinalizeScopeClass(const Loc &loc, DValue *dval,
     return;
   }
 
+  /* // opend
   // no dtors => only finalize (via druntime call) if monitor is set,
   // see https://github.com/ldc-developers/ldc/issues/2515
   llvm::BasicBlock *ifbb = gIR->insertBB("if");
@@ -225,6 +231,7 @@ void DtoFinalizeScopeClass(const Loc &loc, DValue *dval,
   gIR->ir->CreateBr(endbb);
 
   gIR->ir->SetInsertPoint(endbb);
+  */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -332,7 +339,7 @@ bool DtoIsObjcLinkage(Type *_to) {
     DtoResolveClass(to->sym);
     return to->sym->classKind == ClassKind::objc;
   }
-  
+
   return false;
 }
 
@@ -408,7 +415,7 @@ DValue *DtoDynamicCastInterface(const Loc &loc, DValue *val, Type *_to) {
   // In this case we want to call the Objective-C runtime to first
   // get a Class object from the `id`.
   // Then check if class_conformsToProtocol returns true,
-  // if it does, then we can cast and return the casted value, 
+  // if it does, then we can cast and return the casted value,
   // otherwise return null.
   if (DtoIsObjcLinkage(_to)) {
     llvm::Function *getClassFunc =
@@ -417,10 +424,10 @@ DValue *DtoDynamicCastInterface(const Loc &loc, DValue *val, Type *_to) {
     llvm::Function *kindOfProtocolFunc =
       getRuntimeFunction(loc, gIR->module, "class_conformsToProtocol");
 
-    // id -> Class 
+    // id -> Class
     LLValue *obj = DtoRVal(val);
     LLValue *objClass = gIR->CreateCallOrInvoke(getClassFunc, obj);
-    
+
     // Get prototype_t handle
     LLValue *protoTy = getNullPtr();
     if (auto ifhndl = _to->isClassHandle()->isInterfaceDeclaration()) {
@@ -430,7 +437,7 @@ DValue *DtoDynamicCastInterface(const Loc &loc, DValue *val, Type *_to) {
     // Class && kindOfProtocolFunc(Class) ? id : null
     LLValue *ret = gIR->ir->CreateSelect(
       gIR->CreateCallOrInvoke(kindOfProtocolFunc, objClass, protoTy),
-      obj, 
+      obj,
       getNullPtr()
     );
     return new DImValue(_to, ret);

@@ -1830,3 +1830,4 @@ private void formatReflectTest(T)(ref T val, string fmt, string[] formatted, str
         aaTest();
     });
 }
+

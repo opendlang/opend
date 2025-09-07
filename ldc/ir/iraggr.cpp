@@ -205,8 +205,9 @@ IrAggr::createInitializerConstant(const VarInitMap &explicitInitializers) {
 
     // add monitor (except for C++ classes)
     if (!cd->isCPPclass()) {
-      constants.push_back(getNullPtr());
-      offset += target.ptrsize;
+      // opend
+      //constants.push_back(getNullPtr());
+      //offset += target.ptrsize;
     }
   }
 
