@@ -1111,7 +1111,7 @@ Note: The worker threads in this pool will not stop until
       never end. If you do not want this behaviour, you can set `isDaemon`
       to true.
  */
-final class TaskPool
+final class TaskPool : SynchronizableObject
 {
 private:
 

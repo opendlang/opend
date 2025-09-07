@@ -112,13 +112,13 @@ class Mutex :
      * In:
      *  `obj` must not already have a monitor.
      */
-    this(Object obj) @trusted nothrow @nogc
+    this(SynchronizableObject obj) @trusted nothrow @nogc
     {
         this(obj, true);
     }
 
     /// ditto
-    this(Object obj) shared @trusted nothrow @nogc
+    this(SynchronizableObject obj) shared @trusted nothrow @nogc
     {
         this(obj, true);
     }
