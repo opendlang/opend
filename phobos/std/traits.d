@@ -5829,7 +5829,8 @@ template IntegralTypeOf(T)
     else
         alias X = OriginalType!T;
 
-    static if (__traits(isIntegral, X) && __traits(isZeroInit, X) // Not char, wchar, or dchar.
+    static if (__traits(isIntegral, X)
+        && !(is(immutable X == immutable U, U) && is(U == char) || is(U == wchar) || is(U == dchar))
         && !is(immutable X == immutable bool) && !is(X == __vector))
     {
         alias IntegralTypeOf = X;
@@ -6249,7 +6250,7 @@ template isIntegral(T)
     else static if (is(T U == enum))
         enum isIntegral = isIntegral!U;
     else
-        enum isIntegral = __traits(isZeroInit, T) // Not char, wchar, or dchar.
+        enum isIntegral = !(is(immutable T == immutable U, U) && is(U == char) || is(U == wchar) || is(U == dchar))
             && !is(immutable T == immutable bool) && !is(T == __vector);
 }
 
@@ -6370,7 +6371,7 @@ template isNumeric(T)
     else static if (is(T U == enum))
         enum isNumeric = isNumeric!U;
     else
-        enum isNumeric = __traits(isZeroInit, T) // Not char, wchar, or dchar.
+        enum isNumeric = !(is(immutable T == immutable U, U) && is(U == char) || is(U == wchar) || is(U == dchar))
             && !is(immutable T == immutable bool) && !is(T == __vector);
 }
 
@@ -6510,7 +6511,7 @@ template isUnsigned(T)
     else static if (is(T U == enum))
         enum isUnsigned = isUnsigned!U;
     else
-        enum isUnsigned = __traits(isZeroInit, T) // Not char, wchar, or dchar.
+        enum isUnsigned = !(is(immutable T == immutable U, U) && is(U == char) || is(U == wchar) || is(U == dchar))
             && !is(immutable T == immutable bool) && !is(T == __vector);
 }
 
@@ -6632,7 +6633,7 @@ template isSomeChar(T)
     else static if (is(T U == enum))
         enum isSomeChar = isSomeChar!U;
     else
-        enum isSomeChar = !__traits(isZeroInit, T);
+        enum isSomeChar = (is(immutable T == immutable U, U) && is(U == char) || is(U == wchar) || is(U == dchar));
 }
 
 ///
