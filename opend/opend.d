@@ -434,6 +434,7 @@ struct Commands {
 						"-defaultlib=druntime-ldc",
 						"--linker=emcc`~ext~`",
 						"-i=std",
+						"-i=.",
 					    ];
 					};
 				`);
