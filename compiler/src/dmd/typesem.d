@@ -1968,13 +1968,16 @@ extern(C++) Type typeSemantic(Type type, const ref Loc loc, Scope* sc)
                         }
                         else
                         {
-				// FIXME: undo deprecation
+                            // opend is undeprecating this cuz it is nonsense. just let it work normally like it has for years
+                            /+
 
                             // Note that this deprecation will not trigger on `in ref` / `ref in`
                             // parameters, however the parser will trigger a deprecation on them.
                             .deprecation(loc, "using `in` parameters with `extern(%s)` functions is deprecated",
                                          linkageToChars(tf.linkage));
                             .deprecationSupplemental(loc, "parameter `%s` declared as `in` here", fparam.toChars());
+
+                            +/
                         }
                         break;
                     }
