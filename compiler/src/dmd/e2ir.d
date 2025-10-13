@@ -5780,9 +5780,17 @@ elem *callfunc(const ref Loc loc,
                 //printf("OPvecsto\n");
                 elem *tmp = e.EV.E1;
                 e.EV.E1 = e.EV.E2.EV.E1;
+
+                if(irs.nullCheck()) {
+                    // the backend doesn't like the null check, so
+                    // we need to strip it back out of here
+                    e.EV.E1.EV.E1 = e.EV.E1.EV.E1.EV.E2;
+                }
+
                 e.EV.E2.EV.E1 = tmp;
                 e.Eoper = OPvecsto;
                 e.Ety = tyret;
+                // elem_print(e); printf("\n*****\n");
             }
             else
                 e = el_una(op,tyret,ep);
