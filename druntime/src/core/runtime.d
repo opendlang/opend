@@ -563,6 +563,7 @@ extern (C) UnitTestResult runModuleUnitTests() @system
     version (Windows)
         import core.sys.windows.stacktrace;
 
+    version(D_OpenD) {} else // don't want this, we have null pointer error instead
     static if (hasExecinfo)
     {
         import core.sys.posix.signal; // segv handler
