@@ -5411,6 +5411,14 @@ elem *callfunc(const ref Loc loc,
         assert(!fd);
         tf = t.nextOf().isTypeFunction();
         assert(tf);
+
+        if (irs.nullCheck() && ec.Eoper != OPvar)
+        {
+            Symbol* stmp = symbol_genauto(type_fake(ec.Ety));
+            eside = el_bin(OPeq, ec.Ety, el_var(stmp), ec);
+            ec = el_var(stmp);
+        }
+
         ethis = ec;
         ec = el_same(&ethis);
         ethis = el_una(target.isX86_64 ? OP128_64 : OP64_32, TYnptr, ethis); // get this
@@ -5440,13 +5448,11 @@ elem *callfunc(const ref Loc loc,
 
             // causes bug in arsd.core timer, throwing null pointer when it is checked and confirmed not to be null
             // fighting efforts to reduce, just gonna rollback for now
-            version(none){ // check the funcptr
             auto ea = buildNullError(irs, loc);
             auto originale = el_same(&ec);
             auto originalt = ec.Ety;
             ec = el_bin(OPoror,TYvoid,ec,ea);
             ec = el_bin(OPcomma, originalt, ec, originale);
-            }
         }
 
 
@@ -5591,7 +5597,7 @@ elem *callfunc(const ref Loc loc,
             !irs.Cfile)     // C11 leaves evaluation order implementation-defined, but
                             // try to match evaluation order of other C compilers
         {
-            eside = fixArgumentEvaluationOrder(elems);
+            eside = el_combine(fixArgumentEvaluationOrder(elems), eside);
         }
 
         foreach (ref e; elems)
