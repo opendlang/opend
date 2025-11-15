@@ -570,6 +570,23 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         return isCopyable(t) ? True() : False();
     }
 
+    if (e.ident == Id.hasAliasing)
+    {
+        foreach (o; *e.args)
+        {
+            auto t = isType(o);
+            if (!t)
+            {
+                error(e.loc, "type expected as non-first argument of __traits `%s` instead of `%s`",
+                        e.ident.toChars(), o.toChars());
+                return ErrorExp.get();
+            }
+            if (t.hasAliasing)
+                return True();
+        }
+        return False();
+    }
+
     if (e.ident == Id.isNested)
     {
         if (dim != 1)
@@ -1832,7 +1849,7 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
                 return False();
         return True();
     }
-    if (e.ident == Id.getUnitTestName) 
+    if (e.ident == Id.getUnitTestName)
     {
         auto o = (*e.args)[0];
         auto s = getDsymbolWithoutExpCtx(o);
@@ -2482,7 +2499,7 @@ private void traitNotFound(TraitsExp e) @system
         initialized = true;     // lazy initialization
 
         // All possible traits
-        __gshared Identifier*[61] idents =
+        __gshared Identifier*[62] idents =
         [
             &Id.allMembers,
             &Id.child,
@@ -2545,6 +2562,7 @@ private void traitNotFound(TraitsExp e) @system
             &Id.parameters,
             &Id.parent,
             &Id.resolveFunctionCall,
+            &Id.hasAliasing,
         ];
 
         StringTable!(bool)* stringTable = cast(StringTable!(bool)*) &traitsStringTable;

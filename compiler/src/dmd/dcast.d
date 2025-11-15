@@ -1517,6 +1517,42 @@ extern(C++) MATCH implicitConvTo(Expression e, Type t)
         return result;
     }
 
+    MATCH visitCat(CatExp e) {
+        static if (LOG)
+        {
+            printf("CatExp::implicitConvTo(this=%s, type=%s, t=%s)\n", e.toChars(), e.type.toChars(), t.toChars());
+        }
+
+        auto result = visit(cast(Expression)e);
+        if (result != MATCH.nomatch)
+            return result;
+
+        if (TypeDArray da = e.type.isTypeDArray)
+        {
+            auto te = da.next;  // type of element
+            assert(te);         // TODO: always defined right? remove?
+            if (!te.hasAliasing)
+            {
+                result = da.immutableOf().implicitConvTo(t.constOf()); // t.constOf() to work when `da` is `string`
+                if (result > MATCH.constant)
+                {
+                    result = MATCH.constant;
+                }
+                // printf("CatExp::implicitConvTo(this=%s, type=%s, t=%s) result:%d\n",
+                //        e.toChars(), e.type.toChars(), t.toChars(), result);
+            }
+            else
+            {
+                /* TODO: move this error message to a common place that special
+                 * cases message if (hasAliasing(te)) is non-null */
+                // printf("TODO: error: cannot implicit convert because %s has non-immutable indirections\n", e.type.toChars());
+            }
+        }
+
+        return result;
+    }
+
+
     switch (e.op)
     {
         default                   : return visit(e);
@@ -1543,6 +1579,7 @@ extern(C++) MATCH implicitConvTo(Expression e, Type t)
         case EXP.new_             : return visitNew(e.isNewExp());
         case EXP.slice            : return visitSlice(e.isSliceExp());
         case EXP.tuple            : return visitTuple(e.isTupleExp());
+        case EXP.concatenate      : return visitCat(e.isCatExp());
     }
 }
 

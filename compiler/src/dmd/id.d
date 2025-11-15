@@ -521,6 +521,7 @@ immutable Msgtable[] msgtable =
     { "docComment" },
     { "resolveFunctionCall" },
     { "canResolveFunctionCall" },
+    { "hasAliasing" },
 
     // For C++ mangling
     { "allocator" },
