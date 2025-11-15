@@ -1,5 +1,6 @@
 import std.process;
 import std.file;
+import test_runner;
 
 // **********************FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
 
@@ -135,7 +136,94 @@ struct Commands {
 
 	/// Builds the code and runs its unittests
 	int test(string[] args) {
+		// Check if user wants advanced test runner features
+		if(args.length > 0) {
+			switch(args[0]) {
+				case "list":
+					return testList(args[1..$]);
+				case "filter":
+					return testFilter(args[1..$]);
+				case "run":
+					return testRun(args[1..$]);
+				case "--help", "-h":
+					// Delegate to test runner's help system to avoid duplication
+					auto buildArgs = ["-g", "-unittest", "-checkaction=context", "test_runner.d"];
+					auto oe = getOutputExecutable(buildArgs);
+					
+					if(auto err = build(oe.buildArgs))
+						return err;
+					
+					return spawnProcess([oe.exe, "help"], [
+						"LD_LIBRARY_PATH": getRuntimeLibPath()
+					]).wait.checkForCrash("test runner");
+				case "help":
+					// Also handle "opend test help" 
+					goto case "--help";
+				default:
+					// Fall through to normal test execution
+					break;
+			}
+		}
+		
+		// Original test behavior - run all tests
 		return run(["-g", "-unittest", "-main", "-checkaction=context"] ~ args);
+	}
+
+	private int testList(string[] args) {
+		// Build executable with test runner embedded (no -main since test_runner.d has its own)
+		auto buildArgs = ["-g", "-unittest", "-checkaction=context", 
+		                  "test_runner.d"] ~ args;
+		auto oe = getOutputExecutable(buildArgs);
+		
+		if(auto err = build(oe.buildArgs))
+			return err;
+		
+		return spawnProcess([oe.exe, "list"] ~ oe.args, [
+			"LD_LIBRARY_PATH": getRuntimeLibPath()
+		]).wait.checkForCrash("test runner");
+	}
+
+	private int testFilter(string[] args) {
+		if(args.length == 0) {
+			import std.stdio;
+			stderr.writeln("Error: Please specify a filter pattern.");
+			stderr.writeln("Usage: opend test filter <pattern>");
+			stderr.writeln("Example: opend test filter \"Math*\"");
+			return 1;
+		}
+		
+		// Build executable with test runner embedded (no -main since test_runner.d has its own)
+		auto buildArgs = ["-g", "-unittest", "-checkaction=context", 
+		                  "test_runner.d"] ~ args[1..$];
+		auto oe = getOutputExecutable(buildArgs);
+		
+		if(auto err = build(oe.buildArgs))
+			return err;
+		
+		return spawnProcess([oe.exe, "filter", args[0]] ~ oe.args, [
+			"LD_LIBRARY_PATH": getRuntimeLibPath()
+		]).wait.checkForCrash("test runner");
+	}
+
+	private int testRun(string[] args) {
+		if(args.length == 0) {
+			import std.stdio;
+			stderr.writeln("Error: Please specify a test name.");
+			stderr.writeln("Usage: opend test run <test_name>");
+			return 1;
+		}
+		
+		// Build executable with test runner embedded (no -main since test_runner.d has its own)
+		auto buildArgs = ["-g", "-unittest", "-checkaction=context", 
+		                  "test_runner.d"] ~ args[1..$];
+		auto oe = getOutputExecutable(buildArgs);
+		
+		if(auto err = build(oe.buildArgs))
+			return err;
+		
+		return spawnProcess([oe.exe, "run", args[0]] ~ oe.args, [
+			"LD_LIBRARY_PATH": getRuntimeLibPath()
+		]).wait.checkForCrash("test runner");
 	}
 
 	/// Builds the code and runs unittests but only for files explicitly listed, not auto-imported files
