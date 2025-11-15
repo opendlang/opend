@@ -34,6 +34,7 @@ template _d_cmain()
 	}
 	else
 	{
+            version(OD_TestRunner) {} else // if we using the test runner, let it define this instead
             int main(int argc, char **argv)
             {
                 return _d_run_main(argc, argv, &_Dmain);

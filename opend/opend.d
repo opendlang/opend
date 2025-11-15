@@ -1,6 +1,5 @@
 import std.process;
 import std.file;
-import test_runner;
 
 // **********************FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
 
@@ -45,6 +44,12 @@ import test_runner;
 
 // edit and test by module name instead of by file name
 
+string[] testRunnerBuildArgs(string[] userArgs) {
+    auto args = ["-g", "-oftest_runner", "-unittest", "-checkaction=context", "-version=OD_TestRunner", getBundledModulePath("odc.test_runner")];
+    args ~= userArgs;
+    return args;
+}
+
 int main(string[] args) {
 	// maybe override the normal config files
 	// --opend-config-file
@@ -67,7 +72,7 @@ int main(string[] args) {
 			foreach(memberName; __traits(allMembers, Commands))
 				case memberName: {
 					string[] argsToSend = allOtherArgs[2 .. $];
-					if(a == "build" || a == "test" || a == "publish" || a == "testOnly" || a == "check" || a == "run")
+					if(a == "build" /*|| a == "test"*/ || a == "publish" || a == "testOnly" || a == "check" || a == "run")
 						argsToSend = buildSpecificArgs ~ allOtherArgs[2 .. $];
 					return __traits(getMember, Commands, memberName)(argsToSend);
 				}
@@ -147,8 +152,7 @@ struct Commands {
 					return testRun(args[1..$]);
 				case "--help", "-h":
 					// Delegate to test runner's help system to avoid duplication
-					auto buildArgs = ["-g", "-unittest", "-checkaction=context", "test_runner.d"];
-					auto oe = getOutputExecutable(buildArgs);
+					auto oe = getOutputExecutable(testRunnerBuildArgs([]));
 					
 					if(auto err = build(oe.buildArgs))
 						return err;
@@ -171,9 +175,7 @@ struct Commands {
 
 	private int testList(string[] args) {
 		// Build executable with test runner embedded (no -main since test_runner.d has its own)
-		auto buildArgs = ["-g", "-unittest", "-checkaction=context", 
-		                  "test_runner.d"] ~ args;
-		auto oe = getOutputExecutable(buildArgs);
+		auto oe = getOutputExecutable(testRunnerBuildArgs(args));
 		
 		if(auto err = build(oe.buildArgs))
 			return err;
@@ -193,9 +195,7 @@ struct Commands {
 		}
 		
 		// Build executable with test runner embedded (no -main since test_runner.d has its own)
-		auto buildArgs = ["-g", "-unittest", "-checkaction=context", 
-		                  "test_runner.d"] ~ args[1..$];
-		auto oe = getOutputExecutable(buildArgs);
+		auto oe = getOutputExecutable(testRunnerBuildArgs(args[1..$]));
 		
 		if(auto err = build(oe.buildArgs))
 			return err;
@@ -214,9 +214,7 @@ struct Commands {
 		}
 		
 		// Build executable with test runner embedded (no -main since test_runner.d has its own)
-		auto buildArgs = ["-g", "-unittest", "-checkaction=context", 
-		                  "test_runner.d"] ~ args[1..$];
-		auto oe = getOutputExecutable(buildArgs);
+		auto oe = getOutputExecutable(testRunnerBuildArgs(args[1..$]));
 		
 		if(auto err = build(oe.buildArgs))
 			return err;
@@ -572,6 +570,14 @@ string getCompilerPath(string compiler) {
 	else
 		string exeExtension = "";
 	return buildPath([dirName(thisExePath()), setExtension(compiler, exeExtension)]);
+}
+
+
+string getBundledModulePath(string moduleName) {
+	import std.file, std.path;
+    import std.string;
+	return buildPath([dirName(thisExePath()), "../import/" ~ moduleName.replace(".", "/") ~ ".d"]);
+
 }
 
 string getRuntimeLibPath() {
