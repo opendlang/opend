@@ -48,12 +48,12 @@ unittest{
 }
 //copied from min viable std TODO: belongs elsewhere
 alias seq(T...)=T;
+struct Tuple(T...){
+	enum istuple=true;
+	T expand; alias expand this;
+}
 auto tuple(T...)(T args){
-	struct Tuple{
-		enum istuple=true;
-		T expand; alias expand this;
-	}
-	return Tuple(args);
+	return Tuple!T(args);
 }
 unittest{
 	auto foo=tuple(1,"hi");
@@ -93,7 +93,7 @@ struct maxlengtharray(T,int N){
 	enum isstatic=false;
 	ref opIndex(int i)=>data[i.clamp(0,$-1)];
 	void opOpAssign(string op:"~")(T a){
-		if(length>=10){return;}
+		if(length>=N){return;}
 		data[length++]=a;
 	}
 	/*CONSIDER: by abstracting this im changing the behavoir to not react when you append 
@@ -117,11 +117,22 @@ hacks; would it be possible to make simple range know?*/
 			data[j]=data[j+1];
 	}}
 	void remove(){length--;}
-	void removefast(int i){//swaping changes the order and is therefore less correct, meta-programming vs you know what your doing tradeoff //TODO test
-		data[i]=data[$-1];
+	void removefast(int i){//swaping changes the order and is therefore less correct, meta-programming vs you know what your doing tradeoff
+		this[i]=this[$-1];
 		length--;
 	}
 }
+//unittest{//TODO formalize
+//	import std;
+//	maxlengtharray!(int,5) foo;
+//	foo~=1;
+//	foo~=2;
+//	foo~=3;
+//	foo~=4;
+//	foo[].writeln;
+//	foo.removefast(1);
+//	foo[].writeln;
+//}
 struct set(T){
 	typeof(null)[T] data;
 	enum isstatic=false;
@@ -245,7 +256,6 @@ struct ringarray(T,int N){//note: spelling cuircluar hard
 			return;
 		}
 		if(end-start>N){assert(0,"not yet implimented");}
-		//CONSIDER: do I care to make this decide between which direction it slides? O(N) vs O(N/2)?
 		foreach(j;i..length-1){
 			this[j]=this[j+1];
 		}
@@ -283,6 +293,30 @@ struct stack(T,int N=-1){
 	}
 	auto length()=>cast(int)data.length;
 	ref opIndex(int i)=>data[$-i-1];
+	auto opSlice()=>simplerange!(typeof(this))(&this,0,length);
+}
+struct queue(T,int N=-1){
+	static if(N==-1){
+		T[] data;
+		void remove(int i){
+			foreach_reverse(j;i..data.length-1){
+				this[cast(int)j]=this[cast(int)j+1];
+			}
+			data=data[0..$-1];
+		}
+		void reset(){data=[];}
+	} else {
+		maxlengtharray!(T,N) data;
+		void remove(int i)=>data.remove(i);
+		void reset()=>data.reset;
+	}
+		enum isstatic=false;
+	auto lastindex()=>cast(int)data.length-1;
+	void opOpAssign(string op:"~")(T a){
+		data~=a;
+	}
+	auto length()=>cast(int)data.length;
+	ref opIndex(int i)=>data[i];
 	auto opSlice()=>simplerange!(typeof(this))(&this,0,length);
 }
 //--- lazy temp-ish functions
@@ -441,6 +475,8 @@ unittest{
 	alias r=ringarray!(int,10);
 	alias k=stack!(int,10);
 	alias c=stack!int;
+	alias q=queue!(int,10);
+	alias que=queue!int;
 	//test1!mla;
 	////test1!s;
 	////test1!d;
@@ -463,47 +499,10 @@ unittest{
 	//NOTE: tests 1-3 print or have spooky templates effects, test 4 is where I swap to more pure tests
 	
 	enum numtest=6;
-	enum numdata=6;//for adding tests 1 data structure at a time
+	enum numdata=8;//for adding tests 1 data structure at a time
 	
 	static foreach(I;4..numtest+1){
-	static foreach(D;seq!(mla,s,d,r,k,c)[0..numdata]){
+	static foreach(D;seq!(mla,s,d,r,k,c,q,que)[0..numdata]){
 		mixin("test"~I.stringof~"!(D);");
 	}}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//oh no 500 lines of code, better call it quits and submit
