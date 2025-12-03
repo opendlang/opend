@@ -95,9 +95,10 @@ StructLiteralExp *getMagicAttribute(Dsymbol *sym, const Identifier *id,
   Expressions *attrs = sym->userAttribDecl()->getAttributes();
   expandTuples(attrs);
   for (auto attr : *attrs) {
-    if (auto sle = attr->isStructLiteralExp())
+    if (auto sle = attr->isStructLiteralExp()) {
       if (isFromMagicModule(sle, from) && id == sle->sd->ident)
         return sle;
+    }
   }
 
   return nullptr;

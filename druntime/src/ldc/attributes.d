@@ -421,7 +421,7 @@ struct target
  + @weak int user_hook() { return 1; }
  + ---
  +/
-immutable weak = _weak();
+enum weak = _weak();
 private struct _weak
 {
 }

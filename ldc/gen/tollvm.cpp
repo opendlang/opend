@@ -220,8 +220,9 @@ LLValue *DtoDelegateEquals(EXP op, LLValue *lhs, LLValue *rhs) {
 
 namespace {
 LLGlobalValue::LinkageTypes DtoLinkageOnly(Dsymbol *sym) {
-  if (hasWeakUDA(sym))
+  if (hasWeakUDA(sym)) {
     return LLGlobalValue::WeakAnyLinkage;
+  }
 
   // static in ImportC translates to internal linkage
   if (auto decl = sym->isDeclaration())
@@ -701,7 +702,7 @@ LLGlobalVariable *makeGlobal(LLStringRef name, LLType* type, LLStringRef section
 
   if (!section.empty())
     var->setSection(section);
-    
+
   return var;
 }
 
@@ -737,7 +738,7 @@ LLGlobalVariable *makeGlobalWithBytes(LLStringRef name, LLConstantList packedCon
     0u,
     externInit
   );
-  
+
   return var;
 }
 
