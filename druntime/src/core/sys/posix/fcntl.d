@@ -143,26 +143,17 @@ version (linux)
   }
   else version (MIPS_Any)
   {
-    version (CRuntime_Musl)
+    static if ( __USE_FILE_OFFSET64 )
     {
-        enum F_GETLK      = 14;
-        enum F_SETLK      = 6;
-        enum F_SETLKW     = 7;
+      enum F_GETLK      = 33;
+      enum F_SETLK      = 34;
+      enum F_SETLKW     = 35;
     }
     else
     {
-        static if ( __USE_FILE_OFFSET64 )
-        {
-            enum F_GETLK      = 33;
-            enum F_SETLK      = 34;
-            enum F_SETLKW     = 35;
-        }
-        else
-        {
-            enum F_GETLK      = 14;
-            enum F_SETLK      = 6;
-            enum F_SETLKW     = 7;
-        }
+      enum F_GETLK      = 14;
+      enum F_SETLK      = 6;
+      enum F_SETLKW     = 7;
     }
   }
   else version (LoongArch64)
@@ -433,9 +424,8 @@ version (linux)
         enum O_PATH         = 0x200000; // octal 010000000
         enum O_NDELAY       = O_NONBLOCK;
     }
-    else version (WebAssembly)
-    {
-	// FIXME: numbers might be wrong
+    else version(WebAssembly) {
+        // FIXME: NONE of these are verified!
         enum O_CREAT        = 0x40;     // octal     0100
         enum O_EXCL         = 0x80;     // octal     0200
         enum O_NOCTTY       = 0x100;    // octal     0400
@@ -513,6 +503,7 @@ else version (Darwin)
     enum F_UNLCK        = 2;
     enum F_WRLCK        = 3;
 
+    enum O_NOFOLLOW     = 0x0100;
     enum O_CREAT        = 0x0200;
     enum O_EXCL         = 0x0800;
     enum O_NOCTTY       = 0;

@@ -87,6 +87,18 @@ uid_t
 
 version (linux)
 {
+  static if ( __USE_FILE_OFFSET64 )
+  {
+    alias long      blkcnt_t;
+    alias ulong     ino_t;
+    alias long      off_t;
+  }
+  else
+  {
+    alias slong_t   blkcnt_t;
+    alias ulong_t   ino_t;
+    alias slong_t   off_t;
+  }
     alias slong_t   blksize_t;
     alias ulong     dev_t;
     alias uint      gid_t;
@@ -94,17 +106,11 @@ version (linux)
     alias ulong_t   nlink_t;
     alias int       pid_t;
     //size_t (defined in core.stdc.stddef)
-    alias c_long ssize_t;
-    alias uint uid_t;
+    alias c_long    ssize_t;
+    alias uint      uid_t;
 
     version (CRuntime_Musl)
     {
-        alias slong_t blkcnt_t;
-        alias ulong_t ino_t;
-	version(WebAssembly)
-        alias long off_t;
-	else
-        alias slong_t off_t;
         /**
          * Musl versions before v1.2.0 (up to v1.1.24) had different
          * definitions for `time_t` for 32 bits.
@@ -125,27 +131,15 @@ version (linux)
          * one can recompile druntime with `CRuntime_Musl_Pre_Time64`.
          */
         version (D_X32)
-            alias long time_t;
+           alias long   time_t;
         else version (CRuntime_Musl_Pre_Time64)
             alias c_long time_t;
         else
-            alias long time_t;
+            alias long  time_t;
     }
     else
     {
-        static if (__USE_FILE_OFFSET64)
-        {
-            alias long blkcnt_t;
-            alias ulong ino_t;
-            alias long off_t;
-        }
-        else
-        {
-            alias slong_t blkcnt_t;
-            alias ulong_t ino_t;
-            alias slong_t off_t;
-        }
-        alias slong_t time_t;
+        alias slong_t   time_t;
     }
 }
 else version (Darwin)
@@ -305,21 +299,15 @@ useconds_t
 
 version (linux)
 {
-  version(CRuntime_Musl)
+  static if ( __USE_FILE_OFFSET64 )
+  {
+    alias ulong     fsblkcnt_t;
+    alias ulong     fsfilcnt_t;
+  }
+  else
   {
     alias ulong_t   fsblkcnt_t;
     alias ulong_t   fsfilcnt_t;
-  } else {
-    static if ( __USE_FILE_OFFSET64 )
-    {
-        alias ulong     fsblkcnt_t;
-        alias ulong     fsfilcnt_t;
-    }
-    else
-    {
-        alias ulong_t   fsblkcnt_t;
-        alias ulong_t   fsfilcnt_t;
-    }
   }
     alias slong_t   clock_t;
     alias uint      id_t;

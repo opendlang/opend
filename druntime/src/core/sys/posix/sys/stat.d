@@ -33,6 +33,11 @@ version (RISCV64) version = RISCV_Any;
 version (SPARC)   version = SPARC_Any;
 version (SPARC64) version = SPARC_Any;
 
+// Android uses 64-bit offsets for stat, but 32-bit offsets for most
+// other types on 32-bit architectures.
+version (CRuntime_Bionic)
+    private enum __USE_FILE_OFFSET64 = true;
+
 version (Posix):
 extern (C) nothrow @nogc:
 
@@ -63,14 +68,21 @@ S_TYPEISSEM(buf)
 S_TYPEISSHM(buf)
  */
 
-version (linux)
-{
-    version (X86)
+    version (WebAssembly)
     {
+        // FIXME: NONE of this is verified!
         struct stat_t
         {
             dev_t       st_dev;
             ushort      __pad1;
+            static if (!__USE_FILE_OFFSET64)
+            {
+                ino_t       st_ino;
+            }
+            else
+            {
+                uint        __st_ino;
+            }
             mode_t      st_mode;
             nlink_t     st_nlink;
             uid_t       st_uid;
@@ -101,25 +113,73 @@ version (linux)
                 time_t      st_ctime;
                 ulong_t     st_ctimensec;
             }
-            version (CRuntime_Musl)
+            static if (__USE_FILE_OFFSET64)
             {
                 ino_t       st_ino;
-                c_ulong     __unused4;
-                c_ulong     __unused5;
             }
             else
             {
-                static if (__USE_FILE_OFFSET64)
+                c_ulong     __unused4;
+                c_ulong     __unused5;
+            }
+        }
+
+    }
+    else
+version (linux)
+{
+    version (X86)
+    {
+        struct stat_t
+        {
+            dev_t       st_dev;
+            ushort      __pad1;
+            static if (!__USE_FILE_OFFSET64)
+            {
+                ino_t       st_ino;
+            }
+            else
+            {
+                uint        __st_ino;
+            }
+            mode_t      st_mode;
+            nlink_t     st_nlink;
+            uid_t       st_uid;
+            gid_t       st_gid;
+            dev_t       st_rdev;
+            ushort      __pad2;
+            off_t       st_size;
+            blksize_t   st_blksize;
+            blkcnt_t    st_blocks;
+            static if (_DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
+            {
+                timespec    st_atim;
+                timespec    st_mtim;
+                timespec    st_ctim;
+                extern(D) @safe @property inout pure nothrow
                 {
-                    uint        __st_ino;
-                    ino_t       st_ino;
+                    ref inout(time_t) st_atime() return { return st_atim.tv_sec; }
+                    ref inout(time_t) st_mtime() return { return st_mtim.tv_sec; }
+                    ref inout(time_t) st_ctime() return { return st_ctim.tv_sec; }
                 }
-                else
-                {
-                    ino_t       st_ino;
-                    c_ulong     __unused4;
-                    c_ulong     __unused5;
-                }
+            }
+            else
+            {
+                time_t      st_atime;
+                ulong_t     st_atimensec;
+                time_t      st_mtime;
+                ulong_t     st_mtimensec;
+                time_t      st_ctime;
+                ulong_t     st_ctimensec;
+            }
+            static if (__USE_FILE_OFFSET64)
+            {
+                ino_t       st_ino;
+            }
+            else
+            {
+                c_ulong     __unused4;
+                c_ulong     __unused5;
             }
         }
     }
@@ -186,6 +246,14 @@ version (linux)
             __dev_t st_dev;
             ushort __pad1;
 
+            static if (!__USE_FILE_OFFSET64)
+            {
+                __ino_t st_ino;
+            }
+            else
+            {
+                __ino_t __st_ino;
+            }
             __mode_t st_mode;
             __nlink_t st_nlink;
             __uid_t st_uid;
@@ -193,33 +261,24 @@ version (linux)
             __dev_t st_rdev;
             ushort __pad2;
 
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
-                __ino_t st_ino;
                 __off_t st_size;
-                __blkcnt_t st_blocks;
-                c_ulong __unused4;
-                c_ulong __unused5;
             }
             else
             {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    __ino_t st_ino;
-                    __off_t st_size;
-                    __blkcnt_t st_blocks;
-                    c_ulong __unused4;
-                    c_ulong __unused5;
-                }
-                else
-                {
-                    __ino_t __st_ino;
-                    __off64_t st_size;
-                    __blkcnt64_t st_blocks;
-                    __ino64_t st_ino;
-                }
+                __off64_t st_size;
             }
             __blksize_t st_blksize;
+
+            static if (!__USE_FILE_OFFSET64)
+            {
+                __blkcnt_t st_blocks;
+            }
+            else
+            {
+                __blkcnt64_t st_blocks;
+            }
 
             static if ( _DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -242,18 +301,21 @@ version (linux)
                 __time_t st_ctime;
                 c_ulong st_ctimensec;
             }
-        }
-        version (CRuntime_Musl)
-        {
-            static assert(stat_t.sizeof == 88);
-        }
-        else
-        {
-            static if (__USE_FILE_OFFSET64)
-                static assert(stat_t.sizeof == 104);
+
+            static if (!__USE_FILE_OFFSET64)
+            {
+                c_ulong __unused4;
+                c_ulong __unused5;
+            }
             else
-                static assert(stat_t.sizeof == 88);
+            {
+                __ino64_t st_ino;
+            }
         }
+        static if (__USE_FILE_OFFSET64)
+            static assert(stat_t.sizeof == 104);
+        else
+            static assert(stat_t.sizeof == 88);
     }
     else version (MIPS_O32)
     {
@@ -267,29 +329,16 @@ version (linux)
             uid_t       st_uid;
             gid_t       st_gid;
             c_ulong     st_rdev;
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
                 c_long[2]   st_pad2;
                 off_t       st_size;
                 c_long      st_pad3;
-                blkcnt_t    st_blocks;
             }
             else
             {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    c_long[2]   st_pad2;
-                    off_t       st_size;
-                    c_long      st_pad3;
-                    blkcnt_t    st_blocks;
-                }
-                else
-                {
-                    c_long[3]   st_pad2;
-                    off_t       st_size;
-                    c_long      st_pad4;
-                    blkcnt_t    st_blocks;
-                }
+                c_long[3]   st_pad2;
+                off_t       st_size;
             }
             static if (_DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -313,19 +362,21 @@ version (linux)
                 c_ulong     st_ctimensec;
             }
             blksize_t   st_blksize;
+            static if (!__USE_FILE_OFFSET64)
+            {
+                blkcnt_t    st_blocks;
+            }
+            else
+            {
+                c_long      st_pad4;
+                blkcnt_t    st_blocks;
+            }
             c_long[14]  st_pad5;
         }
-        version (CRuntime_Musl)
-        {
+        static if (!__USE_FILE_OFFSET64)
             static assert(stat_t.sizeof == 144);
-        }
         else
-        {
-            static if (!__USE_FILE_OFFSET64)
-                static assert(stat_t.sizeof == 144);
-            else
-                static assert(stat_t.sizeof == 160);
-        }
+            static assert(stat_t.sizeof == 160);
     }
     else version (MIPS64)
     {
@@ -339,7 +390,7 @@ version (linux)
             uid_t       st_uid;
             gid_t       st_gid;
             dev_t       st_rdev;
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
                 uint[2]     st_pad2;
                 off_t       st_size;
@@ -347,17 +398,8 @@ version (linux)
             }
             else
             {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    uint[2]     st_pad2;
-                    off_t       st_size;
-                    int         st_pad3;
-                }
-                else
-                {
-                    uint[3]     st_pad2;
-                    off_t       st_size;
-                }
+                uint[3]     st_pad2;
+                off_t       st_size;
             }
             static if (_DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -387,31 +429,17 @@ version (linux)
         }
         version (MIPS_N32)
         {
-            version (CRuntime_Musl)
-            {
+            static if (!__USE_FILE_OFFSET64)
                 static assert(stat_t.sizeof == 160);
-            }
             else
-            {
-                static if (!__USE_FILE_OFFSET64)
-                    static assert(stat_t.sizeof == 160);
-                else
-                    static assert(stat_t.sizeof == 176);
-            }
+                static assert(stat_t.sizeof == 176);
         }
         else version (MIPS_O64)
         {
-            version (CRuntime_Musl)
-            {
+            static if (!__USE_FILE_OFFSET64)
                 static assert(stat_t.sizeof == 160);
-            }
             else
-            {
-                static if (!__USE_FILE_OFFSET64)
-                    static assert(stat_t.sizeof == 160);
-                else
-                    static assert(stat_t.sizeof == 176);
-            }
+                static assert(stat_t.sizeof == 176);
         }
         else
         {
@@ -423,20 +451,13 @@ version (linux)
         struct stat_t
         {
             dev_t       st_dev;
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
+                ushort  __pad1;
                 ino_t   st_ino;
             }
             else
-            {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    ushort  __pad1;
-                    ino_t   st_ino;
-                }
-                else
-                    ino_t   st_ino;
-            }
+                ino_t   st_ino;
             mode_t      st_mode;
             nlink_t     st_nlink;
             uid_t       st_uid;
@@ -470,17 +491,10 @@ version (linux)
             c_ulong     __unused4;
             c_ulong     __unused5;
         }
-        version (CRuntime_Musl)
-        {
-            static assert(stat_t.sizeof == 88);
-        }
+        static if (__USE_FILE_OFFSET64)
+            static assert(stat_t.sizeof == 104);
         else
-        {
-            static if (__USE_FILE_OFFSET64)
-                static assert(stat_t.sizeof == 104);
-            else
-                static assert(stat_t.sizeof == 88);
-        }
+            static assert(stat_t.sizeof == 88);
     }
     else version (PPC64)
     {
@@ -547,26 +561,13 @@ version (linux)
         {
             __dev_t st_dev;
 
-            version (CRuntime_Musl)
+            static if (__USE_FILE_OFFSET64)
             {
-                __ino_t st_ino;
-                __off_t st_size;
-                __blkcnt_t st_blocks;
+                __ino64_t st_ino;
             }
             else
             {
-                static if (__USE_FILE_OFFSET64)
-                {
-                    __ino64_t st_ino;
-                    __off64_t st_size;
-                    __blkcnt64_t st_blocks;
-                }
-                else
-                {
-                    __ino_t st_ino;
-                    __off_t st_size;
-                    __blkcnt_t st_blocks;
-                }
+                __ino_t st_ino;
             }
             __mode_t st_mode;
             __nlink_t st_nlink;
@@ -575,8 +576,25 @@ version (linux)
             __dev_t st_rdev;
             __dev_t __pad1;
 
+            static if (__USE_FILE_OFFSET64)
+            {
+                __off64_t st_size;
+            }
+            else
+            {
+                __off_t st_size;
+            }
             __blksize_t st_blksize;
             int __pad2;
+
+            static if (__USE_FILE_OFFSET64)
+            {
+                __blkcnt64_t st_blocks;
+            }
+            else
+            {
+                __blkcnt_t st_blocks;
+            }
 
             static if (_DEFAULT_SOURCE)
             {
@@ -626,31 +644,13 @@ version (linux)
             __dev_t st_dev;
             ushort __pad1;
 
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
                 __ino_t st_ino;
-                __off_t st_size;
-                __blkcnt_t st_blocks;
-                c_ulong __unused4;
-                c_ulong __unused5;
             }
             else
             {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    __ino_t st_ino;
-                    __off_t st_size;
-                    __blkcnt_t st_blocks;
-                    c_ulong __unused4;
-                    c_ulong __unused5;
-                }
-                else
-                {
-                    __ino_t __st_ino;
-                    __off64_t st_size;
-                    __blkcnt64_t st_blocks;
-                    __ino64_t st_ino;
-                }
+                __ino_t __st_ino;
             }
             __mode_t st_mode;
             __nlink_t st_nlink;
@@ -659,7 +659,24 @@ version (linux)
             __dev_t st_rdev;
             ushort __pad2;
 
+            static if (!__USE_FILE_OFFSET64)
+            {
+                __off_t st_size;
+            }
+            else
+            {
+                __off64_t st_size;
+            }
             __blksize_t st_blksize;
+
+            static if (!__USE_FILE_OFFSET64)
+            {
+                __blkcnt_t st_blocks;
+            }
+            else
+            {
+                __blkcnt64_t st_blocks;
+            }
 
             static if ( _DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -682,18 +699,21 @@ version (linux)
                 __time_t st_ctime;
                 c_ulong st_ctimensec;
             }
-        }
-        version (CRuntime_Musl)
-        {
-            static assert(stat_t.sizeof == 88);
-        }
-        else
-        {
-            static if (__USE_FILE_OFFSET64)
-                static assert(stat_t.sizeof == 104);
+
+            static if (!__USE_FILE_OFFSET64)
+            {
+                c_ulong __unused4;
+                c_ulong __unused5;
+            }
             else
-                static assert(stat_t.sizeof == 88);
+            {
+                __ino64_t st_ino;
+            }
         }
+        static if (__USE_FILE_OFFSET64)
+            static assert(stat_t.sizeof == 104);
+        else
+            static assert(stat_t.sizeof == 88);
     }
     else version (AArch64)
     {
@@ -718,26 +738,13 @@ version (linux)
         {
             __dev_t st_dev;
 
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
                 __ino_t st_ino;
-                __off_t st_size;
-                __blkcnt_t st_blocks;
             }
             else
             {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    __ino_t st_ino;
-                    __off_t st_size;
-                    __blkcnt_t st_blocks;
-                }
-                else
-                {
-                    __ino64_t st_ino;
-                    __off64_t st_size;
-                    __blkcnt64_t st_blocks;
-                }
+                __ino64_t st_ino;
             }
             __mode_t st_mode;
             __nlink_t st_nlink;
@@ -746,8 +753,25 @@ version (linux)
             __dev_t st_rdev;
             __dev_t __pad1;
 
+            static if (!__USE_FILE_OFFSET64)
+            {
+                __off_t st_size;
+            }
+            else
+            {
+                __off64_t st_size;
+            }
             __blksize_t st_blksize;
             int __pad2;
+
+            static if (!__USE_FILE_OFFSET64)
+            {
+                __blkcnt_t st_blocks;
+            }
+            else
+            {
+                __blkcnt64_t st_blocks;
+            }
 
             static if (_DEFAULT_SOURCE)
             {
@@ -815,25 +839,24 @@ version (linux)
             __dev_t st_rdev;
             ushort __pad2;
 
-            version (CRuntime_Musl)
+            static if (!__USE_FILE_OFFSET64)
             {
                 __off_t st_size;
+            }
+            else
+            {
+                __off64_t st_size;
+            }
+            __blksize_t st_blksize;
+
+            static if (!__USE_FILE_OFFSET64)
+            {
                 __blkcnt_t st_blocks;
             }
             else
             {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    __off_t st_size;
-                    __blkcnt_t st_blocks;
-                }
-                else
-                {
-                    __off64_t st_size;
-                    __blkcnt64_t st_blocks;
-                }
+                __blkcnt64_t st_blocks;
             }
-            __blksize_t st_blksize;
 
             static if (_XOPEN_SOURCE >= 700)
             {
@@ -860,24 +883,14 @@ version (linux)
             c_ulong __unused4;
             c_ulong __unused5;
         }
-        version (CRuntime_Musl)
-        {
-            static if (__WORDSIZE == 64)
-                static assert(stat_t.sizeof == 144);
-            else
-                static assert(stat_t.sizeof == 88);
-        }
-        else
-        {
-            static if (__USE_LARGEFILE64) alias stat_t stat64_t;
+        static if (__USE_LARGEFILE64) alias stat_t stat64_t;
 
-            static if (__WORDSIZE == 64)
-                static assert(stat_t.sizeof == 144);
-            else static if (__USE_FILE_OFFSET64)
-                static assert(stat_t.sizeof == 104);
-            else
-                static assert(stat_t.sizeof == 88);
-        }
+        static if (__WORDSIZE == 64)
+            static assert(stat_t.sizeof == 144);
+        else static if (__USE_FILE_OFFSET64)
+            static assert(stat_t.sizeof == 104);
+        else
+            static assert(stat_t.sizeof == 88);
 
     }
     else version (S390)
@@ -913,25 +926,15 @@ version (linux)
             __gid_t st_gid;
             __dev_t st_rdev;
             uint __pad2;
-            version (CRuntime_Musl)
-            {
+            static if (!__USE_FILE_OFFSET64)
                 __off_t st_size;
-                __blkcnt_t st_blocks;
-            }
             else
-            {
-                static if (!__USE_FILE_OFFSET64)
-                {
-                    __off_t st_size;
-                    __blkcnt_t st_blocks;
-                }
-                else
-                {
-                    __off64_t st_size;
-                    __blkcnt64_t st_blocks;
-                }
-            }
+                __off64_t st_size;
             __blksize_t st_blksize;
+            static if (!__USE_FILE_OFFSET64)
+                __blkcnt_t st_blocks;
+            else
+                __blkcnt64_t st_blocks;
             static if (_XOPEN_SOURCE >= 700)
             {
                 __timespec st_atim;
@@ -961,17 +964,10 @@ version (linux)
             else
                 __ino64_t st_ino;
         }
-        version (CRuntime_Musl)
-        {
-            static assert(stat_t.sizeof == 88);
-        }
+        static if (__USE_FILE_OFFSET64)
+            static assert(stat_t.sizeof == 104);
         else
-        {
-            static if (__USE_FILE_OFFSET64)
-                static assert(stat_t.sizeof == 104);
-            else
-                static assert(stat_t.sizeof == 88);
-        }
+            static assert(stat_t.sizeof == 88);
     }
     else version (SystemZ)
     {
@@ -1092,34 +1088,6 @@ version (linux)
             int[2] __glibc_reserved;
         }
         static assert(stat_t.sizeof == 128);
-    }
-    else version (Emscripten) {
-        struct stat_t {
-            dev_t st_dev;
-            int __st_dev_padding;
-            c_long __st_ino_truncated;
-            mode_t st_mode;
-            nlink_t st_nlink;
-            uid_t st_uid;
-            gid_t st_gid;
-            dev_t st_rdev;
-            int __st_rdev_padding;
-            off_t st_size;
-            blksize_t st_blksize;
-            blkcnt_t st_blocks;
-            timespec st_atim;
-            timespec st_mtim;
-            timespec st_ctim;
-            ino_t st_ino;
-
-                extern(D) @safe @property inout pure nothrow
-                {
-                    ref inout(time_t) st_atime() return { return st_atim.tv_sec; }
-                    ref inout(time_t) st_mtime() return { return st_mtim.tv_sec; }
-                    ref inout(time_t) st_ctime() return { return st_ctim.tv_sec; }
-                }
-
-        }
     }
     else
         static assert(0, "unimplemented");
@@ -1554,19 +1522,19 @@ version (CRuntime_Glibc)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 
     int utimensat(int dirfd, const char *pathname,
         ref const(timespec)[2] times, int flags);
@@ -1591,19 +1559,19 @@ else version (Darwin)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 }
 else version (FreeBSD)
 {
@@ -1624,19 +1592,19 @@ else version (FreeBSD)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 
     // Since FreeBSD 11:
     version (none)
@@ -1665,19 +1633,19 @@ else version (NetBSD)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 }
 else version (OpenBSD)
 {
@@ -1696,13 +1664,13 @@ else version (OpenBSD)
     enum S_IXOTH    = 0x1; // 0000001
     enum S_IRWXO    = 0x7; // 0000007
 
-    extern (D) bool S_ISBLK(mode_t mode)  { return (mode & S_IFMT) == S_IFBLK;  }
-    extern (D) bool S_ISCHR(mode_t mode)  { return (mode & S_IFMT) == S_IFCHR;  }
-    extern (D) bool S_ISDIR(mode_t mode)  { return (mode & S_IFMT) == S_IFDIR;  }
-    extern (D) bool S_ISFIFO(mode_t mode) { return (mode & S_IFMT) == S_IFIFO;  }
-    extern (D) bool S_ISREG(mode_t mode)  { return (mode & S_IFMT) == S_IFREG;  }
-    extern (D) bool S_ISLNK(mode_t mode)  { return (mode & S_IFMT) == S_IFLNK;  }
-    extern (D) bool S_ISSOCK(mode_t mode) { return (mode & S_IFMT) == S_IFSOCK; }
+    extern (D) bool S_ISBLK()(mode_t mode)  { return (mode & S_IFMT) == S_IFBLK;  }
+    extern (D) bool S_ISCHR()(mode_t mode)  { return (mode & S_IFMT) == S_IFCHR;  }
+    extern (D) bool S_ISDIR()(mode_t mode)  { return (mode & S_IFMT) == S_IFDIR;  }
+    extern (D) bool S_ISFIFO()(mode_t mode) { return (mode & S_IFMT) == S_IFIFO;  }
+    extern (D) bool S_ISREG()(mode_t mode)  { return (mode & S_IFMT) == S_IFREG;  }
+    extern (D) bool S_ISLNK()(mode_t mode)  { return (mode & S_IFMT) == S_IFLNK;  }
+    extern (D) bool S_ISSOCK()(mode_t mode) { return (mode & S_IFMT) == S_IFSOCK; }
 }
 else version (DragonFlyBSD)
 {
@@ -1723,19 +1691,19 @@ else version (DragonFlyBSD)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 }
 else version (Solaris)
 {
@@ -1756,21 +1724,21 @@ else version (Solaris)
 
     private
     {
-        extern (D) bool S_ISTYPE(mode_t mode, uint mask)
+        extern (D) bool S_ISTYPE()(mode_t mode, uint mask)
         {
             return (mode & S_IFMT) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK(mode_t mode) { return S_ISTYPE(mode, S_IFBLK); }
-    extern (D) bool S_ISCHR(mode_t mode) { return S_ISTYPE(mode, S_IFCHR); }
-    extern (D) bool S_ISDIR(mode_t mode) { return S_ISTYPE(mode, S_IFDIR); }
-    extern (D) bool S_ISFIFO(mode_t mode) { return S_ISTYPE(mode, S_IFIFO); }
-    extern (D) bool S_ISREG(mode_t mode) { return S_ISTYPE(mode, S_IFREG); }
-    extern (D) bool S_ISLNK(mode_t mode) { return S_ISTYPE(mode, S_IFLNK); }
-    extern (D) bool S_ISSOCK(mode_t mode) { return S_ISTYPE(mode, S_IFSOCK); }
-    extern (D) bool S_ISDOOR(mode_t mode) { return S_ISTYPE(mode, S_IFDOOR); }
-    extern (D) bool S_ISPORT(mode_t mode) { return S_ISTYPE(mode, S_IFPORT); }
+    extern (D) bool S_ISBLK()(mode_t mode) { return S_ISTYPE(mode, S_IFBLK); }
+    extern (D) bool S_ISCHR()(mode_t mode) { return S_ISTYPE(mode, S_IFCHR); }
+    extern (D) bool S_ISDIR()(mode_t mode) { return S_ISTYPE(mode, S_IFDIR); }
+    extern (D) bool S_ISFIFO()(mode_t mode) { return S_ISTYPE(mode, S_IFIFO); }
+    extern (D) bool S_ISREG()(mode_t mode) { return S_ISTYPE(mode, S_IFREG); }
+    extern (D) bool S_ISLNK()(mode_t mode) { return S_ISTYPE(mode, S_IFLNK); }
+    extern (D) bool S_ISSOCK()(mode_t mode) { return S_ISTYPE(mode, S_IFSOCK); }
+    extern (D) bool S_ISDOOR()(mode_t mode) { return S_ISTYPE(mode, S_IFDOOR); }
+    extern (D) bool S_ISPORT()(mode_t mode) { return S_ISTYPE(mode, S_IFPORT); }
 }
 else version (CRuntime_Bionic)
 {
@@ -1791,19 +1759,19 @@ else version (CRuntime_Bionic)
 
     private
     {
-        extern (D) bool S_ISTYPE( uint mode, uint mask )
+        extern (D) bool S_ISTYPE()( uint mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( uint mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( uint mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( uint mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( uint mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( uint mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( uint mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( uint mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( uint mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( uint mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( uint mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( uint mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( uint mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( uint mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( uint mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 
     // Added since Lollipop
     int utimensat(int dirfd, const char *pathname,
@@ -1830,19 +1798,19 @@ else version (CRuntime_Musl)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 
     int utimensat(int dirfd, const char *pathname,
         ref const(timespec)[2] times, int flags);
@@ -1866,19 +1834,19 @@ else version (CRuntime_UClibc)
 
     private
     {
-        extern (D) bool S_ISTYPE( mode_t mode, uint mask )
+        extern (D) bool S_ISTYPE()( mode_t mode, uint mask )
         {
             return ( mode & S_IFMT ) == mask;
         }
     }
 
-    extern (D) bool S_ISBLK( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
-    extern (D) bool S_ISCHR( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
-    extern (D) bool S_ISDIR( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
-    extern (D) bool S_ISFIFO( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
-    extern (D) bool S_ISREG( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
-    extern (D) bool S_ISLNK( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
-    extern (D) bool S_ISSOCK( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
+    extern (D) bool S_ISBLK()( mode_t mode )  { return S_ISTYPE( mode, S_IFBLK );  }
+    extern (D) bool S_ISCHR()( mode_t mode )  { return S_ISTYPE( mode, S_IFCHR );  }
+    extern (D) bool S_ISDIR()( mode_t mode )  { return S_ISTYPE( mode, S_IFDIR );  }
+    extern (D) bool S_ISFIFO()( mode_t mode ) { return S_ISTYPE( mode, S_IFIFO );  }
+    extern (D) bool S_ISREG()( mode_t mode )  { return S_ISTYPE( mode, S_IFREG );  }
+    extern (D) bool S_ISLNK()( mode_t mode )  { return S_ISTYPE( mode, S_IFLNK );  }
+    extern (D) bool S_ISSOCK()( mode_t mode ) { return S_ISTYPE( mode, S_IFSOCK ); }
 
     int utimensat(int dirfd, const char *pathname,
     ref const(timespec)[2] times, int flags);
