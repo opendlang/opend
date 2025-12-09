@@ -1140,7 +1140,7 @@ extern (C++) final class ErrorExp : Expression
               * generation. At least give a message.
               */
             .error(Loc.initial, "unknown, please file report on issues.dlang.org");
-            assert(0);
+            //assert(0);
         }
 
         return errorexp;
