@@ -1292,8 +1292,6 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                                 // Get the parameter type (for `opOpAssign` its just one!) and
                                 // try to `implicitCastTo` on it, if succeesful retry with `RETRY_MATCH`
                                 // if not do next overload.
-                                // Problem is, if more than one matches, we should error out on ambiguity,
-                                // now first one wins (and god knows what "first" means).
 
                                 // We need to check `overnext` for other opOpAssign types and try to match.
                                 if (td) {
