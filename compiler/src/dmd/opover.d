@@ -1283,28 +1283,62 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                     // NOTE(mojo): Try opImplicitCast
                     if (++retryCount < MAX_RETRY_COUNT) {
                         if (auto ad = isAggregate(e.e2.type)) {
-                            if (auto fd = search_function(ad, Id._cast_impl)) {
+                            if (auto implicitCastFd = search_function(ad, Id._cast_impl)) {
 
                                 auto td = s.isTemplateDeclaration();
 
-                                if (td && td.funcroot) {
-                                    // TODO (mojo): Handle this, it dod not triggrer on my tests.
-                                }
-                                else {
-                                    td = td.isTemplateDeclaration();
-                                    auto f = td.onemember ? td.onemember.isFuncDeclaration() : null;
-                                    if (f && f.type) {
+                                // IMPORTANT: How to approach this:
+                                // If s.isTemplateDeclaration we should probe all overloads
+                                // Get the parameter type (for `opOpAssign` its just one!) and
+                                // try to `implicitCastTo` on it, if succeesful retry with `RETRY_MATCH`
+                                // if not do next overload.
+                                // Problem is, if more than one matches, we should error out on ambiguity,
+                                // now first one wins (and god knows what "first" means).
 
-                                        auto tf = f.type.toTypeFunction();
-                                        // Expecting one parameter: a.opOpAssign(b) and try `implicitCastTo`
-                                        if (tf.parameterList.length) {
-                                            import dmd.dcast : implicitCastTo;
-                                            e.e2 = implicitCastTo(e.e2, sc, tf.parameterList[0].type);
+                                // We need to check `overnext` for other opOpAssign types and try to match.
+                                if (td) {
+                                    int implicitCastMeatchCount = 0;
+                                    Expression matched_ex = null;
+                                    if (td.overroot) td = td.overroot;
+                                    for (; td; td = td.overnext)
+                                    {
+                                        if (td.funcroot) {
+                                            // TODO (mojo): Handle this, it did not triggrer on my tests.
+                                        }
+                                        else {
+                                            auto f = td.onemember ? td.onemember.isFuncDeclaration() : null;
+                                            if (f && f.type) {
+                                                auto tf = f.type.toTypeFunction();
+                                                // Expecting one parameter: a.opOpAssign(b) and try `implicitCastTo`
+                                                if (tf.parameterList.length) {
+                                                    auto t = tf.parameterList[0].type;
 
-                                            // e.e2 is now casted, rerun the opOpAssign masching.
-                                            goto RETRY_MATCH;
+                                                    auto tiargs2 = new Objects();
+                                                    tiargs2.push(t);
+                                                    auto dti = new DotTemplateInstanceExp(e.e2.loc, e.e2, implicitCastFd.ident, tiargs2);
+                                                    auto ce = new CallExp(e.e2.loc, dti);
+
+                                                    if (sc && .trySemantic(ce, sc)) {
+                                                        matched_ex = ce.expressionSemantic(sc);
+                                                        implicitCastMeatchCount += 1;
+
+                                                        // We dont need to do this beyond 2
+                                                        if (implicitCastMeatchCount > 1) break;
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
+
+                                    if (implicitCastMeatchCount == 1) {
+                                        e.e2 = matched_ex;
+                                        goto RETRY_MATCH;
+                                    }
+                                    else if (implicitCastMeatchCount > 1) {
+                                        error(e.loc, "ambiguous `opImplicitCast` in `%s` while trying to append to `%s`", ad.toChars(), e.e1.type.toChars());
+                                        return ErrorExp.get();
+                                    }
+
                                 }
                             }
                         }
