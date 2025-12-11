@@ -1257,6 +1257,10 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
 
             if (s)
             {
+                enum MAX_RETRY_COUNT = 3;
+                int retryCount = 0;
+                RETRY_MATCH:
+
                 /* Try:
                  *      a.opOpAssign(b)
                  */
@@ -1276,6 +1280,36 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                 }
                 else if (m.last == MATCH.nomatch)
                 {
+                    // NOTE(mojo): Try opImplicitCast
+                    if (++retryCount < MAX_RETRY_COUNT) {
+                        if (auto ad = isAggregate(e.e2.type)) {
+                            if (auto fd = search_function(ad, Id._cast_impl)) {
+
+                                auto td = s.isTemplateDeclaration();
+
+                                if (td && td.funcroot) {
+                                    // TODO (mojo): Handle this, it dod not triggrer on my tests.
+                                }
+                                else {
+                                    td = td.isTemplateDeclaration();
+                                    auto f = td.onemember ? td.onemember.isFuncDeclaration() : null;
+                                    if (f && f.type) {
+
+                                        auto tf = f.type.toTypeFunction();
+                                        // Expecting one parameter: a.opOpAssign(b) and try `implicitCastTo`
+                                        if (tf.parameterList.length) {
+                                            import dmd.dcast : implicitCastTo;
+                                            e.e2 = implicitCastTo(e.e2, sc, tf.parameterList[0].type);
+
+                                            // e.e2 is now casted, rerun the opOpAssign masching.
+                                            goto RETRY_MATCH;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (tiargs)
                         goto L1;
                     m.lastf = null;
