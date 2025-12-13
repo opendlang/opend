@@ -1289,9 +1289,11 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                                 // If s.isTemplateDeclaration we should probe all overloads
                                 // We can not just probe parameter type as it can be some template param (`opOpAssign(string op: "~")(T rhs)`)
                                 // Instead we check all `implicitCastTo` of e2.type.
-                                // Cast OPs are ion style of `T : int` so we shoult be able to try match on
-                                // the `TemplateTypeParameter`, If we findf exactly one match we costruct this `opImplicitCast`
+                                // Cast OPs are done like this `(T : int)` so we shoult be able to try match on
+                                // the `TemplateTypeParameter`, If we find exactly one match we costruct this `opImplicitCast`
                                 // and re-run the matching.
+                                // TODO: we check first parameter for TemplateTypeParameter, should be good enough for `implicitCastTo`
+                                //       but better make more robust checks in th future.
 
                                 if (auto tdIc = implicitCastFd.isTemplateDeclaration()) {
 
