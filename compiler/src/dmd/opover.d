@@ -1282,48 +1282,64 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                 {
                     // NOTE(mojo): Try opImplicitCast
                     if (++retryCount < MAX_RETRY_COUNT) {
-                        if (auto ad = isAggregate(e.e2.type)) {
-                            if (auto implicitCastFd = search_function(ad, Id._cast_impl)) {
+                        if (auto ad2 = isAggregate(e.e2.type)) {
+                            if (auto implicitCastFd = search_function(ad2, Id._cast_impl)) {
 
-                                auto td = s.isTemplateDeclaration();
-
-                                // IMPORTANT: How to approach this:
+                                // IMPORTANT: How to approach this v2:
                                 // If s.isTemplateDeclaration we should probe all overloads
-                                // Get the parameter type (for `opOpAssign` its just one!) and
-                                // try to `implicitCastTo` on it, if succeesful retry with `RETRY_MATCH`
-                                // if not do next overload.
+                                // We can not just probe parameter type as it can be some template param (`opOpAssign(string op: "~")(T rhs)`)
+                                // Instead we check all `implicitCastTo` of e2.type.
+                                // Cast OPs are ion style of `T : int` so we shoult be able to try match on
+                                // the `TemplateTypeParameter`, If we findf exactly one match we costruct this `opImplicitCast`
+                                // and re-run the matching.
 
-                                // We need to check `overnext` for other opOpAssign types and try to match.
-                                if (td) {
+                                if (auto tdIc = implicitCastFd.isTemplateDeclaration()) {
+
                                     int implicitCastMeatchCount = 0;
                                     Expression matched_ex = null;
-                                    if (td.overroot) td = td.overroot;
-                                    for (; td; td = td.overnext)
+
+                                    for (; tdIc; tdIc = tdIc.overnext)
                                     {
-                                        if (td.funcroot) {
-                                            // TODO (mojo): Handle this, it did not triggrer on my tests.
-                                        }
-                                        else {
-                                            auto f = td.onemember ? td.onemember.isFuncDeclaration() : null;
-                                            if (f && f.type) {
-                                                auto tf = f.type.toTypeFunction();
-                                                // Expecting one parameter: a.opOpAssign(b) and try `implicitCastTo`
-                                                if (tf.parameterList.length) {
-                                                    auto t = tf.parameterList[0].type;
+                                        if (!tdIc.parameters) continue;
+                                        auto tp = (*tdIc.parameters)[0];
 
-                                                    auto tiargs2 = new Objects();
-                                                    tiargs2.push(t);
-                                                    auto dti = new DotTemplateInstanceExp(e.e2.loc, e.e2, implicitCastFd.ident, tiargs2);
-                                                    auto ce = new CallExp(e.e2.loc, dti);
+                                        if (auto ttp = tp.isTemplateTypeParameter()) {
+                                            auto implicitCastType = ttp.specType;
 
-                                                    if (sc && .trySemantic(ce, sc)) {
-                                                        matched_ex = ce.expressionSemantic(sc);
-                                                        implicitCastMeatchCount += 1;
+                                            // printf("Probing: %s\n", implicitCastType.toChars());
 
-                                                        // We dont need to do this beyond 2
-                                                        if (implicitCastMeatchCount > 1) break;
-                                                    }
+                                            // We try functionResolve on e1.opOpAssign(implicitCastType)
+                                            auto args3 = new Expressions();
+                                            args3.setDim(1);
+                                            (*args3)[0] = new TypeExp(e.loc, implicitCastType);
+                                            expandTuples(args3);
+
+                                            MatchAccumulator implicitOpMatch;
+                                            functionResolve(implicitOpMatch, s, e.loc, sc, tiargs, e.e1.type, ArgumentList(args3));
+
+                                            if (implicitOpMatch.count == 1) {
+                                                // If exactly one match, we rewrite e2 as e2.opImplicitCast!implicitCastType
+                                                auto tiargs2 = new Objects();
+                                                tiargs2.push(implicitCastType);
+                                                auto dti = new DotTemplateInstanceExp(e.e2.loc, e.e2, implicitCastFd.ident, tiargs2);
+                                                auto ce = new CallExp(e.e2.loc, dti);
+
+                                                // in theory we dont need`trySemantic`, as we contruct the call from implicitCastType
+                                                if (sc && .trySemantic(ce, sc)) {
+                                                    matched_ex = ce.expressionSemantic(sc);
+                                                    implicitCastMeatchCount += 1;
+
+                                                    // Here it would be nice to exit early,
+                                                    // but we still have to check if other `opImplicitCast1` dfoes not match.
+
+                                                    // We dont need to do this beyond 2. cleatly ambiguity error
+                                                    if (implicitCastMeatchCount > 1) break;
                                                 }
+                                            }
+                                            else if (implicitOpMatch.count > 1) {
+                                                // NOTE: isk how this could be more than 1, but I frer to asser.
+                                                error(e.loc, "ambiguous `opImplicitCast` in `%s` while trying to append to `%s`", ad2.toChars(), e.e1.type.toChars());
+                                                return ErrorExp.get();
                                             }
                                         }
                                     }
@@ -1333,10 +1349,9 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
                                         goto RETRY_MATCH;
                                     }
                                     else if (implicitCastMeatchCount > 1) {
-                                        error(e.loc, "ambiguous `opImplicitCast` in `%s` while trying to append to `%s`", ad.toChars(), e.e1.type.toChars());
+                                        error(e.loc, "ambiguous `opImplicitCast` in `%s` while trying to append to `%s`", ad2.toChars(), e.e1.type.toChars());
                                         return ErrorExp.get();
                                     }
-
                                 }
                             }
                         }
