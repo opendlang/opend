@@ -98,9 +98,9 @@ version (linux)
     alias slong_t   blkcnt_t;
     alias ulong_t   ino_t;
     version(Emscripten)
-    alias slong_t   off_t;
-    else
     alias long   off_t;
+    else
+    alias slong_t   off_t;
   }
     alias slong_t   blksize_t;
     alias ulong     dev_t;
