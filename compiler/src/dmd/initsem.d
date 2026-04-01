@@ -162,6 +162,10 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
                 return true; // other structs are OK
             }
 
+            /+
+                // FIXME: also search the initializer itself for and if it is all null for this type, that's ok too...
+            +/
+
             // conservatively say it is inappropriate and force the programmer to respond
             return false;
         }
@@ -182,10 +186,10 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
         if (typeHasNoRefs)
             return true;
 
-        error(init.loc, "reference to mutable data assigned in initializer");
-        errorSupplemental(init.loc, "- initialize the field in a constructor if you want a unique value per instance,");
-        errorSupplemental(init.loc, "- mark the field as `immutable` or `const` if you want a shared, unchanging reference,");
-        errorSupplemental(init.loc, "- or mark the field with `@(imported!\"core.attribute\".mutableRefInit)` to silence this error");
+        deprecation(init.loc, "reference to mutable data assigned in initializer");
+        deprecationSupplemental(init.loc, "- initialize the field in a constructor if you want a unique value per instance,");
+        deprecationSupplemental(init.loc, "- mark the field as `immutable` or `const` if you want a shared, unchanging reference,");
+        deprecationSupplemental(init.loc, "- or mark the field with `@(imported!\"core.attribute\".mutableRefInit)` to silence this error");
         // errorSupplemental(init.loc, "%d %s", fieldType.ty, fieldType.nextOf().toChars);
 
         return false;
