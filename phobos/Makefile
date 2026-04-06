@@ -112,7 +112,7 @@ endif
 
 # Set extra CFLAGS (for DMD - the zlib .c files are compiled via importC)
 NODEFAULTLIB=-defaultlib= -debuglib=
-CFLAGS=-P=-Ietc/c/zlib
+CFLAGS=-P=-Ietc/c/zlib -P="-std=c11" -P=-pedantic
 ifeq (,$(findstring win,$(OS)))
 	CFLAGS += -P=-DHAVE_UNISTD_H
 # Bundled with the system library on OSX, and doesn't work with >= MacOS 11
