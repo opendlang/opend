@@ -508,7 +508,14 @@ extern (C++) /* IN_LLVM abstract */ class Expression : ASTNode
     {
         //printf("Expression %s\n", EXPtoString(op).ptr);
         if (!type.isTypeError())
+        {
+            if (auto ide = this.isIdentifierExp())
+            {
+                if (ide.ident == Id.dollar)
+                    return 0;
+            }
             error(loc, "integer constant expression expected instead of `%s`", toChars());
+        }
         return 0;
     }
 
