@@ -287,6 +287,8 @@ immutable Msgtable[] msgtable =
     { "opOpAssign" },
     { "opIndexOpAssign" },
     { "opSliceOpAssign" },
+    { "opUDAOn" },
+    { "opChildOfUDAOn" },
     { "pow", "opPow" },
     { "pow_r", "opPow_r" },
     { "powass", "opPowAssign" },
