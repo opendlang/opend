@@ -1668,7 +1668,7 @@ void toCBuffer(Dsymbol s, ref OutBuffer buf, ref HdrGenState hgs)
                 This special case (initially just for modules) avoids some segfaults
                 and nicer -vcg-ast output.
             */
-            if (d.aliassym.isModule())
+            if (!d.aliassym.isFuncLiteralDeclaration() && d.aliassym.isModule())
             {
                 buf.writestring(d.aliassym.ident.toString());
             }
