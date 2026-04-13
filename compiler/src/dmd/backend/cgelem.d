@@ -2106,6 +2106,7 @@ private elem * elcond(elem *e, goal_t goal)
             e.EV.E2 = e1;
             e1.Eoper = OPcond;
             e1.Ety = e.Ety;
+            e1.ET = e.ET;
             return optelem(e,GOALvalue);
 
         case OPnot:
