@@ -1,11 +1,6 @@
 import std.process;
 import std.file;
 
-// **********************FIXME: when we call spawnProcess it doesn't print an error (though it does return a code) when the process segfaults.
-
-// FIXME mebbe i could make opend --src=path/to/opend/git/dir args.... pull the build versions out of there, that'd be kinda useful
-// hellit oculd even forward itself to the new opend program. hmmmmm
-
 /+
 	PACKAGE FETCHING
 
@@ -28,9 +23,8 @@ import std.file;
 	opend test
 	opend debug
 
-	--driver=dmd/ldmd2
-
-	make it work for a dev build too
+	--opend-compiler=dmd/ldmd2
+    --opend-dev=yes
 +/
 
 // rumor has it arm64 for apple can be better than aarch64 but i think they the same
@@ -39,8 +33,6 @@ import std.file;
 	BUILD OPTIONS
 +/
 
-
-// fetch external packages
 
 // edit and test by module name instead of by file name
 
@@ -51,6 +43,7 @@ string[] testRunnerBuildArgs(string[] userArgs) {
 }
 
 string preferredCompiler;
+bool devCompiler;
 
 int main(string[] args) {
 	// maybe override the normal config files
@@ -82,6 +75,9 @@ int main(string[] args) {
 				case "compiler":
 					preferredCompiler = value;
 				break;
+                case "dev":
+                    devCompiler = true;
+                break;
 				default:
 					throw new Exception("unknown opend arg: " ~ name);
 			}
@@ -95,7 +91,7 @@ int main(string[] args) {
 		} else switch(auto a = allOtherArgs[1]) {
 			foreach(memberName; __traits(allMembers, Commands))
 			static if(__traits(getProtection, __traits(getMember, Commands, memberName)) == "public")
-				case memberName: {
+				case memberName.trimLeadingUnderscore: {
 					string[] argsToSend = allOtherArgs[2 .. $];
 					if(a == "build" || a == "test" || a == "publish" || a == "testOnly" || a == "check" || a == "run")
 						argsToSend = allOtherArgs[2 .. $];
@@ -136,18 +132,19 @@ struct Commands {
 	int help(string[] args, string[] extraBuildArgs) {
 		import std.stdio, std.string;
 
-		writeln("`opend [--opend-args...] command_or_filename [args...]` where commands include:");
+		writeln("`opend [--opend-args...] command_or_filename [args...]`");
 
 		writeln("Where opend-args include:");
 		writeln("\t--opend-compiler=ldmd2     prefer the ldc-based compiler in all cases");
 		writeln("\t--opend-to-build=flag      passes the given flag to the compiler when building");
+		writeln("\t--opend-dev=yes            assumes opend source dev directory layout");
 
-		writeln("Commands include:");
+		writeln("And commands include:");
 
 		foreach(memberName; __traits(allMembers, Commands))
 		static if(__traits(getProtection, __traits(getMember, Commands, memberName)) == "public")
 			static if(memberName != "sendToCompilerDriver")
-				writefln("%9s\t%s", memberName, strip(__traits(docComment, __traits(getMember, Commands, memberName))));
+				writefln("%9s\t%s", memberName.trimLeadingUnderscore, strip(__traits(docComment, __traits(getMember, Commands, memberName))));
 
 		writefln("%9s\t%s", "anyfile.d", "Compiles the given file");
 		return 0;
@@ -187,22 +184,22 @@ struct Commands {
 				case "--help", "-h":
 					// Delegate to test runner's help system to avoid duplication
 					auto oe = getOutputExecutable(testRunnerBuildArgs([]));
-					
+
 					if(auto err = build(oe.buildArgs, extraBuildArgs))
 						return err;
-					
+
 					return spawnProcess([oe.exe, "help"], [
 						"LD_LIBRARY_PATH": getRuntimeLibPath()
 					]).wait.checkForCrash("test runner");
 				case "help":
-					// Also handle "opend test help" 
+					// Also handle "opend test help"
 					goto case "--help";
 				default:
 					// Fall through to normal test execution
 					break;
 			}
 		}
-		
+
 		// Original test behavior - run all tests
 		return run(["-g", "-unittest", "-main", "-checkaction=context"] ~ extraBuildArgs ~ args, null);
 	}
@@ -210,10 +207,10 @@ struct Commands {
 	private int testList(string[] args) {
 		// Build executable with test runner embedded (no -main since test_runner.d has its own)
 		auto oe = getOutputExecutable(testRunnerBuildArgs(args));
-		
+
 		if(auto err = build(oe.buildArgs, null))
 			return err;
-		
+
 		return spawnProcess([oe.exe, "list"] ~ oe.args, [
 			"LD_LIBRARY_PATH": getRuntimeLibPath()
 		]).wait.checkForCrash("test runner");
@@ -227,13 +224,13 @@ struct Commands {
 			stderr.writeln("Example: opend test filter \"Math*\"");
 			return 1;
 		}
-		
+
 		// Build executable with test runner embedded (no -main since test_runner.d has its own)
 		auto oe = getOutputExecutable(testRunnerBuildArgs(args[1..$]));
-		
+
 		if(auto err = build(oe.buildArgs, null))
 			return err;
-		
+
 		return spawnProcess([oe.exe, "filter", args[0]] ~ oe.args, [
 			"LD_LIBRARY_PATH": getRuntimeLibPath()
 		]).wait.checkForCrash("test runner");
@@ -246,13 +243,13 @@ struct Commands {
 			stderr.writeln("Usage: opend test run <test_name>");
 			return 1;
 		}
-		
+
 		// Build executable with test runner embedded (no -main since test_runner.d has its own)
 		auto oe = getOutputExecutable(testRunnerBuildArgs(args[1..$]));
-		
+
 		if(auto err = build(oe.buildArgs, null))
 			return err;
-		
+
 		return spawnProcess([oe.exe, "run", args[0]] ~ oe.args, [
 			"LD_LIBRARY_PATH": getRuntimeLibPath()
 		]).wait.checkForCrash("test runner");
@@ -275,7 +272,7 @@ struct Commands {
 		return sendToCompilerDriver(["-g", "-i"] ~ extraBuildArgs ~ args, "dmd");
 	}
 
-	/// Does a release build with the given arguments
+	/// Does an optimized build with the given arguments
 	int publish(string[] args, string[] extraBuildArgs) {
 		return sendToCompilerDriver(["-i", "-O2"] ~ args, "ldmd2");
 	}
@@ -481,33 +478,59 @@ struct Commands {
 		return 1;
 	}
 
-	/// Passes args to the compiler, then opens a debugger to run the generated file.
+    /// Performs a publish build then calls a user-defined deployment on the generated artifact
 	version(none)
-	int dbg(string[] args, string[] extraBuildArgs) {
+	int deploy(string[] args, string[] extraBuildArgs) {
 		// FIXME
 		return 1;
 	}
 
-	/// Allows for updating the OpenD compiler or libraries
-	version(none)
-	int update(string[] args, string[] extraBuildArgs) {
-		// FIXME
-		return 1;
+	/// Passes args to the compiler, then opens a debugger to run the generated file. -- ONLY SHELLS TO GDB RIGHT NOW
+	int _debug(string[] args, string[] extraBuildArgs) {
+		args = extraBuildArgs ~ args;
+
+		auto oe = getOutputExecutable(args);
+
+		if(auto err = build(oe.buildArgs, null))
+			return err;
+
+		return spawnProcess(["gdb", "--args", oe.exe] ~ oe.args, [
+			"LD_LIBRARY_PATH": getRuntimeLibPath()
+		]).wait.checkForCrash("generated program");
 	}
 
 	/// Forwards arguments directly to the OpenD dmd driver
 	int dmd(string[] args, string[] extraBuildArgs) {
-		return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait.checkForCrash("dmd");
+        if(devCompiler) {
+            string osFolder;
+            version(linux)
+                osFolder = "linux";
+            else version(Windows)
+                osFolder = "windows";
+            else version(OSX)
+                osFolder = "osx";
+            else version(FreeBSD)
+                osFolder = "freebsd";
+
+		    return spawnProcess([getCompilerPath("../generated/"~osFolder~"/release/64/dmd")] ~  args, null).wait.checkForCrash("dmd-dev");
+        } else
+		    return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait.checkForCrash("dmd");
 	}
 
 	/// Forwards arguments directly to the OpenD ldmd2 driver
 	int ldmd2(string[] args, string[] extraBuildArgs) {
-		return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait.checkForCrash("ldmd2");
+        if(devCompiler) {
+		    return spawnProcess([getCompilerPath("../ldc-build/bin/ldmd2")] ~  args, null).wait.checkForCrash("ldmd2-dev");
+        } else
+		    return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait.checkForCrash("ldmd2");
 	}
 
 	/// Forwards arguments directly to the OpenD ldc2 driver
 	int ldc2(string[] args, string[] extraBuildArgs) {
-		return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait.checkForCrash("ldc2");
+        if(devCompiler) {
+		    return spawnProcess([getCompilerPath("../ldc-build/bin/ldc2")] ~  args, null).wait.checkForCrash("ldc2-dev");
+        } else
+		    return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait.checkForCrash("ldc2");
 	}
 
 	/// Installs optional components or updates to opend
@@ -771,3 +794,10 @@ void downloadXpack(string which) {
         http.perform();
 
 }
+
+string trimLeadingUnderscore(string s) {
+    if(s[0] == '_')
+        return s[1..$];
+    return s;
+}
+
