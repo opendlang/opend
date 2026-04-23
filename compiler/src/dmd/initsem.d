@@ -192,7 +192,8 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
         deprecationSupplemental(init.loc, "- or mark the field with `@(imported!\"core.attribute\".mutableRefInit)` to silence this error");
         // errorSupplemental(init.loc, "%d %s", fieldType.ty, fieldType.nextOf().toChars);
 
-        return false;
+        // return false;
+        return true; // must return true or otherwise it will return err() when -d is passed
     }
 
     static Initializer err()
