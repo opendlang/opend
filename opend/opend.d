@@ -631,6 +631,7 @@ struct Commands {
                 // can make the appropriate zigcc for it
 
                 version(linux) {} else {
+                    import std.stdio;
                     stderr.writeln("Cross-compiling to linux-compat from non-linux systems not supported at this time.");
                     return 1;
                 }
