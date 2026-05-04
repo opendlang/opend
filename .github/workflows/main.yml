@@ -122,6 +122,11 @@ jobs:
         uses: ./.github/actions/5a-emscripten
         with:
           arch: ${{ matrix.arch }}
+      - name: 'Linux: Cross-compile rpi druntime+phobos'
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/5a-rpi
+        with:
+          arch: ${{ matrix.arch }}
 
       - name: Create package & upload artifact(s)
         uses: ./.github/actions/7-package

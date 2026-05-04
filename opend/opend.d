@@ -342,6 +342,18 @@ struct Commands {
 						os = "linux";
 						detail = "gnu";
 					break;
+                    case "gnu.2.17":
+                    case "compat":
+                    case "compatible":
+                        // pick a glibc that is more likely to be compatible when distributed
+                        if(auto r = warnAboutXpack("xpack-zig"))
+                            return r;
+
+						if(cpu is null)
+							cpu = "x86_64";
+						os = "linux";
+						detail = "gnu.2.17";
+                    break;
 					case "arm":
 					case "aarch64":
 						cpu = "aarch64";
@@ -351,6 +363,14 @@ struct Commands {
 					case "intel":
 						cpu = "x86_64";
 					break;
+                    case "rpi":
+                        // shortcut for raspberry pi: linux-aarch64-gnu.2.17 via zigcc
+                        if(auto r = warnAboutXpack("xpack-rpi"))
+                            return r;
+                        os = "linux";
+                        cpu = "aarch64";
+                        detail = "gnu.2.17";
+                    break;
 					case "wasm":
 					case "webassembly":
 						cpu = "wasm32";
@@ -606,6 +626,100 @@ struct Commands {
 				writeln("Installation complete, build with `opend --target=win64 <other args>`");
 
 				return 0;
+            case "xpack-zig":
+                // FIXME: need zig
+                // can make the appropriate zigcc for it
+
+                version(linux) {} else {
+                    stderr.writeln("Cross-compiling to linux-compat from non-linux systems not supported at this time.");
+                    return 1;
+                }
+
+                auto pathToZig = args.length > 1 ? args[1] : "zig";
+
+				string ext = "";
+				version(Windows)
+					ext = ".bat";
+
+                auto dir = getXpackPath() ~ "opend-latest-xpack-zig";
+                std.file.mkdir(dir);
+
+                version(Posix) {
+                    auto filename = dir ~ "/zigcc";
+                    std.file.write(filename, "#!/bin/bash\n" ~ pathToZig ~ " cc \"$@\" -target x86_64-linux-gnu.2.17");
+
+                    std.file.setAttributes(filename, 0x1ED /* 0o755 */ );
+                }
+
+				installConfig(`
+					"x86_64-.*-linux-gnu.2.17":
+					{
+					    switches = [
+                            "-defaultlib=phobos2-ldc,druntime-ldc",
+                            "-L-lunwind",
+						    "--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-zig/zigcc`~ext~`",
+					    ];
+
+                        // default switches appended after all explicit command-line switches
+                        post-switches = [
+                            "-I%%ldcbinarypath%%/../import",
+                        ];
+                        // default directories to be searched for libraries when linking
+                        lib-dirs = [
+                            "%%ldcbinarypath%%/../lib",
+                        ];
+                        // default rpath when linking against the shared default libs
+                        rpath = "%%ldcbinarypath%%/../lib";
+					};
+				`);
+
+
+				import std.stdio;
+				writeln("Installation complete, build with `opend --target=linux-compat <other args>`");
+				return 0;
+            case "xpack-rpi":
+                // FIXME: need zig
+                // can make the appropriate zigcc for it
+
+				string ext = "";
+				version(Windows)
+					ext = ".bat";
+
+				downloadXpack("xpack-rpi");
+
+                auto pathToZig = args.length > 1 ? args[1] : "zig";
+
+                version(Posix) {
+                    auto dir = getXpackPath() ~ "opend-latest-xpack-rpi";
+
+                    auto filename = dir ~ "/zigcc";
+                    std.file.write(filename, "#!/bin/bash\n" ~ pathToZig ~ " cc \"$@\" -target aarch64-linux-gnu.2.17");
+
+                    std.file.setAttributes(filename, 0x1ED /* 0o755 */ );
+                }
+
+				installConfig(`
+					"aarch64-.*-linux-gnu.2.17":
+					{
+					    lib-dirs = [
+						    "%%ldcbinarypath%%/../xpacks/opend-latest-xpack-rpi/lib",
+					    ];
+
+					    switches = [
+                            "-defaultlib=phobos2-ldc,druntime-ldc",
+                            "-L-lunwind",
+						    "--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-rpi/zigcc`~ext~`",
+					    ];
+
+                        post-switches = [
+                            "-I%%ldcbinarypath%%/../import",
+                        ];
+					};
+				`);
+
+				import std.stdio;
+				writeln("Installation complete, build with `opend --target=rpi <other args>`");
+                return 0;
 			default:
 				import std.stdio;
 				stderr.writeln("Unknown thing");

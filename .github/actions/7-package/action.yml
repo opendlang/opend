@@ -76,6 +76,7 @@ runs:
 
         mv opend-latest-xpack-emscripten.tar.xz artifacts || true
         mv opend-latest-xpack-win64.tar.xz artifacts || true
+        mv opend-latest-xpack-rpi.tar.xz artifacts || true
 
         os='${{ inputs.os }}'
         if [[ "$os" == '' ]]; then

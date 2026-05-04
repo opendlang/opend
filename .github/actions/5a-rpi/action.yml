@@ -1,0 +1,27 @@
+name: 'xpack: Cross-compile rpi libraries & copy to install dir'
+inputs:
+  arch:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -eux
+        cd ..
+
+        wget https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
+        tar Jxf zig-x86_64-linux-0.16.0.tar.xz
+
+        echo -e "#!/bin/bash\n$PWD/zig-x86_64-linux-0.16.0/zig cc "'"$@"'" -fno-sanitize=all -target aarch64-linux-gnu" > zigcc-aarch64-linux-gnu
+        chmod a+x zigcc-aarch64-linux-gnu
+
+        # use bootstrap-ldc, which is guaranteed to be native
+        CC=`pwd`/zigcc-aarch64-linux-gnu` bootstrap-ldc/bin/ldc-build-runtime --ninja \
+          --buildDir="build-libs-rpi" \
+          --targetSystem "Linux;UNIX" \
+          --dFlags="-mtriple=aarch64-unknown-linux-gnu" \
+          --ldcSrcDir="$PWD/opend/ldc"
+
+        artifactName="opend-latest-xpack-rpi"
+        tar -cJf $artifactName.tar.xz --exclude-vcs --owner=0 --group=0 --transform="s,^build-libs-rpi,$artifactName," build-libs-rpi/lib/*.a
