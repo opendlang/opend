@@ -17,7 +17,7 @@ runs:
         chmod a+x zigcc-aarch64-linux-gnu
 
         # use bootstrap-ldc, which is guaranteed to be native
-        CC=`pwd`/zigcc-aarch64-linux-gnu` bootstrap-ldc/bin/ldc-build-runtime --ninja \
+        CC=`pwd`/zigcc-aarch64-linux-gnu bootstrap-ldc/bin/ldc-build-runtime --ninja \
           --buildDir="build-libs-rpi" \
           --targetSystem "Linux;UNIX" \
           --dFlags="-mtriple=aarch64-unknown-linux-gnu" \
