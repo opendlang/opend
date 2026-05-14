@@ -631,16 +631,16 @@ struct Commands {
 				installConfig(`
 					"^wasm(32|64)-.*-emscripten":
 					{
-					    lib-dirs = [
-						"%%ldcbinarypath%%/../xpacks/opend-latest-xpack-emscripten/lib",
-					    ];
+						lib-dirs = [
+							"%%ldcbinarypath%%/../xpacks/opend-latest-xpack-emscripten/lib",
+						];
 
-					    switches = [
-						"-defaultlib=druntime-ldc",
-						"--linker=emcc`~ext~`",
-						"-i=std",
-						"-i=.",
-					    ];
+						switches = [
+							"-defaultlib=druntime-ldc",
+							"--linker=emcc`~ext~`",
+							"-i=std",
+							"-i=.",
+						];
 					};
 				`);
 
@@ -656,9 +656,9 @@ struct Commands {
 				installConfig(`
 					"x86_64-.*-windows-msvc":
 					{
-					    lib-dirs = [
-						"%%ldcbinarypath%%/../xpacks/opend-latest-xpack-win64/lib",
-					    ];
+						lib-dirs = [
+							"%%ldcbinarypath%%/../xpacks/opend-latest-xpack-win64/lib",
+						];
 					};
 				`);
 
@@ -695,22 +695,22 @@ struct Commands {
 				installConfig(`
 					"x86_64-.*-linux-gnu.2.17":
 					{
-					    switches = [
-						"-defaultlib=phobos2-ldc,druntime-ldc",
-						"-L-lunwind",
-						"--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-zig/zigcc`~ext~`",
-					    ];
+						switches = [
+							"-defaultlib=phobos2-ldc,druntime-ldc",
+							"-L-lunwind",
+							"--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-zig/zigcc`~ext~`",
+						];
 
-                        // default switches appended after all explicit command-line switches
-                        post-switches = [
-                            "-I%%ldcbinarypath%%/../import",
-                        ];
-                        // default directories to be searched for libraries when linking
-                        lib-dirs = [
-                            "%%ldcbinarypath%%/../lib",
-                        ];
-                        // default rpath when linking against the shared default libs
-                        rpath = "%%ldcbinarypath%%/../lib";
+						// default switches appended after all explicit command-line switches
+						post-switches = [
+							"-I%%ldcbinarypath%%/../import",
+						];
+						// default directories to be searched for libraries when linking
+						lib-dirs = [
+							"%%ldcbinarypath%%/../lib",
+						];
+						// default rpath when linking against the shared default libs
+						rpath = "%%ldcbinarypath%%/../lib";
 					};
 				`);
 
@@ -742,19 +742,19 @@ struct Commands {
 				installConfig(`
 					"aarch64-.*-linux-gnu.2.17":
 					{
-					    lib-dirs = [
-						    "%%ldcbinarypath%%/../xpacks/opend-latest-xpack-rpi/lib",
-					    ];
+						lib-dirs = [
+							"%%ldcbinarypath%%/../xpacks/opend-latest-xpack-rpi/lib",
+						];
 
-					    switches = [
-                            "-defaultlib=phobos2-ldc,druntime-ldc",
-                            "-L-lunwind",
-						    "--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-rpi/zigcc`~ext~`",
-					    ];
+						switches = [
+							"-defaultlib=phobos2-ldc,druntime-ldc",
+							"-L-lunwind",
+							"--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-rpi/zigcc`~ext~`",
+						];
 
-                        post-switches = [
-                            "-I%%ldcbinarypath%%/../import",
-                        ];
+						post-switches = [
+							"-I%%ldcbinarypath%%/../import",
+						];
 					};
 				`);
 
