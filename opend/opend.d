@@ -24,7 +24,7 @@ import std.file;
 	opend debug
 
 	--opend-compiler=dmd/ldmd2
-    --opend-dev=yes
+	--opend-dev=yes
 +/
 
 // rumor has it arm64 for apple can be better than aarch64 but i think they the same
@@ -37,9 +37,9 @@ import std.file;
 // edit and test by module name instead of by file name
 
 string[] testRunnerBuildArgs(string[] userArgs) {
-    auto args = ["-g", "-oftest_runner", "-unittest", "-checkaction=context", "-version=OD_TestRunner", getBundledModulePath("odc.test_runner")];
-    args ~= userArgs;
-    return args;
+	auto args = ["-g", "-oftest_runner", "-unittest", "-checkaction=context", "-version=OD_TestRunner", getBundledModulePath("odc.test_runner")];
+	args ~= userArgs;
+	return args;
 }
 
 string preferredCompiler;
@@ -75,9 +75,9 @@ int main(string[] args) {
 				case "compiler":
 					preferredCompiler = value;
 				break;
-                case "dev":
-                    devCompiler = true;
-                break;
+				case "dev":
+					devCompiler = true;
+				break;
 				default:
 					throw new Exception("unknown opend arg: " ~ name);
 			}
@@ -297,6 +297,21 @@ struct Commands {
 			return 0;
 		}
 
+		int processIcon(string filename) {
+			// FIXME: error if target is not windows prolly here instead of in the compiler
+			// gotta create a Windows resource file. this means:
+			/+
+				1) if it is a png, convert to ico. ico can be used directly. other formats not supported by simplifiying choice
+				2) concat this into a .res file (can skip if unnecessary via timestamps or something but it cheap enough tbh. user can aksi use the .res externally directly if they want)
+					2a) res file just has a header https://learn.microsoft.com/en-us/windows/win32/menurc/resourceheader
+					2b) other resource file features maybe usable later but for now just doing the one,
+				3) pass this file to the linker
+			+/
+			//
+			argsToKeep ~= filename ~ ".res";
+			return 0;
+		}
+
 		int translateTarget(string target) {
 			import std.string;
 
@@ -305,8 +320,24 @@ struct Commands {
 			string cpu;
 			string detail;
 
+			string[] moreArgs;
+
+			string implicitTarget;
+			version(Windows)
+				implicitTarget = "windows";
+
+			string currentTargetOs() {
+				return os.length ? os : implicitTarget;
+			}
+
 			foreach(part; target.toLower.split("-")) {
 				switch(part) {
+					case "gui":
+						if(currentTargetOs == "windows") {
+							moreArgs ~= "-L/subsystem:windows";
+							moreArgs ~= "-L/entry:mainCRTStartup";
+						}
+					break;
 					case "windows":
 					case "win64":
 						cpu = "x86_64";
@@ -342,18 +373,18 @@ struct Commands {
 						os = "linux";
 						detail = "gnu";
 					break;
-                    case "gnu.2.17":
-                    case "compat":
-                    case "compatible":
-                        // pick a glibc that is more likely to be compatible when distributed
-                        if(auto r = warnAboutXpack("xpack-zig"))
-                            return r;
+					case "gnu.2.17":
+					case "compat":
+					case "compatible":
+						// pick a glibc that is more likely to be compatible when distributed
+						if(auto r = warnAboutXpack("xpack-zig"))
+							return r;
 
 						if(cpu is null)
 							cpu = "x86_64";
 						os = "linux";
 						detail = "gnu.2.17";
-                    break;
+					break;
 					case "arm":
 					case "aarch64":
 						cpu = "aarch64";
@@ -363,14 +394,14 @@ struct Commands {
 					case "intel":
 						cpu = "x86_64";
 					break;
-                    case "rpi":
-                        // shortcut for raspberry pi: linux-aarch64-gnu.2.17 via zigcc
-                        if(auto r = warnAboutXpack("xpack-rpi"))
-                            return r;
-                        os = "linux";
-                        cpu = "aarch64";
-                        detail = "gnu.2.17";
-                    break;
+					case "rpi":
+						// shortcut for raspberry pi: linux-aarch64-gnu.2.17 via zigcc
+						if(auto r = warnAboutXpack("xpack-rpi"))
+							return r;
+						os = "linux";
+						cpu = "aarch64";
+						detail = "gnu.2.17";
+					break;
 					case "wasm":
 					case "webassembly":
 						cpu = "wasm32";
@@ -432,6 +463,10 @@ struct Commands {
 			addPart(detail);
 
 			argsToKeep ~= "--mtriple=" ~ triple;
+
+			if(moreArgs !is null)
+				argsToKeep ~= moreArgs;
+
 			if(preferredCompiler.length == 0 || preferredCompiler == "dmd")
 				preferredCompiler = "ldmd2";
 
@@ -450,6 +485,8 @@ struct Commands {
 				nextIsTarget = true;
 			} else if(arg.startsWith("--target=")) {
 				if(auto err = translateTarget(arg["--target=".length .. $])) return err;
+			} else if(arg.startsWith("--icon=")) {
+				if(auto err = processIcon(arg["--icon=".length .. $])) return err;
 			} else if(arg.indexOf("-mtriple") != -1) {
 				preferredCompiler = "ldmd2";
 			} else if(arg == "-v") {
@@ -498,7 +535,7 @@ struct Commands {
 		return 1;
 	}
 
-    /// Performs a publish build then calls a user-defined deployment on the generated artifact
+	/// Performs a publish build then calls a user-defined deployment on the generated artifact
 	version(none)
 	int deploy(string[] args, string[] extraBuildArgs) {
 		// FIXME
@@ -521,36 +558,39 @@ struct Commands {
 
 	/// Forwards arguments directly to the OpenD dmd driver
 	int dmd(string[] args, string[] extraBuildArgs) {
-        if(devCompiler) {
-            string osFolder;
-            version(linux)
-                osFolder = "linux";
-            else version(Windows)
-                osFolder = "windows";
-            else version(OSX)
-                osFolder = "osx";
-            else version(FreeBSD)
-                osFolder = "freebsd";
+		if(devCompiler) {
+			string osFolder;
+			version(linux)
+				osFolder = "linux";
+			else version(Windows)
+				osFolder = "windows";
+			else version(OSX)
+				osFolder = "osx";
+			else version(FreeBSD)
+				osFolder = "freebsd";
 
-		    return spawnProcess([getCompilerPath("../generated/"~osFolder~"/release/64/dmd")] ~  args, null).wait.checkForCrash("dmd-dev");
-        } else
-		    return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait.checkForCrash("dmd");
+			return spawnProcess([getCompilerPath("../generated/"~osFolder~"/release/64/dmd")] ~  args, null).wait.checkForCrash("dmd-dev");
+		} else {
+			return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait.checkForCrash("dmd");
+		}
 	}
 
 	/// Forwards arguments directly to the OpenD ldmd2 driver
 	int ldmd2(string[] args, string[] extraBuildArgs) {
-        if(devCompiler) {
-		    return spawnProcess([getCompilerPath("../ldc-build/bin/ldmd2")] ~  args, null).wait.checkForCrash("ldmd2-dev");
-        } else
-		    return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait.checkForCrash("ldmd2");
+		if(devCompiler) {
+			return spawnProcess([getCompilerPath("../ldc-build/bin/ldmd2")] ~  args, null).wait.checkForCrash("ldmd2-dev");
+		} else {
+			return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait.checkForCrash("ldmd2");
+		}
 	}
 
 	/// Forwards arguments directly to the OpenD ldc2 driver
 	int ldc2(string[] args, string[] extraBuildArgs) {
-        if(devCompiler) {
-		    return spawnProcess([getCompilerPath("../ldc-build/bin/ldc2")] ~  args, null).wait.checkForCrash("ldc2-dev");
-        } else
-		    return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait.checkForCrash("ldc2");
+		if(devCompiler) {
+			return spawnProcess([getCompilerPath("../ldc-build/bin/ldc2")] ~  args, null).wait.checkForCrash("ldc2-dev");
+		} else {
+			return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait.checkForCrash("ldc2");
+		}
 	}
 
 	/// Installs optional components or updates to opend
@@ -626,39 +666,39 @@ struct Commands {
 				writeln("Installation complete, build with `opend --target=win64 <other args>`");
 
 				return 0;
-            case "xpack-zig":
-                // FIXME: need zig
-                // can make the appropriate zigcc for it
+			case "xpack-zig":
+				// FIXME: need zig
+				// can make the appropriate zigcc for it
 
-                version(linux) {} else {
-                    import std.stdio;
-                    stderr.writeln("Cross-compiling to linux-compat from non-linux systems not supported at this time.");
-                    return 1;
-                }
+				version(linux) {} else {
+					import std.stdio;
+					stderr.writeln("Cross-compiling to linux-compat from non-linux systems not supported at this time.");
+					return 1;
+				}
 
-                auto pathToZig = args.length > 1 ? args[1] : "zig";
+				auto pathToZig = args.length > 1 ? args[1] : "zig";
 
 				string ext = "";
 				version(Windows)
 					ext = ".bat";
 
-                auto dir = getXpackPath() ~ "opend-latest-xpack-zig";
-                std.file.mkdir(dir);
+				auto dir = getXpackPath() ~ "opend-latest-xpack-zig";
+				std.file.mkdir(dir);
 
-                version(Posix) {
-                    auto filename = dir ~ "/zigcc";
-                    std.file.write(filename, "#!/bin/bash\n" ~ pathToZig ~ " cc \"$@\" -target x86_64-linux-gnu.2.17");
+				version(Posix) {
+					auto filename = dir ~ "/zigcc";
+					std.file.write(filename, "#!/bin/bash\n" ~ pathToZig ~ " cc \"$@\" -target x86_64-linux-gnu.2.17");
 
-                    std.file.setAttributes(filename, 0x1ED /* 0o755 */ );
-                }
+					std.file.setAttributes(filename, 0x1ED /* 0o755 */ );
+				}
 
 				installConfig(`
 					"x86_64-.*-linux-gnu.2.17":
 					{
 					    switches = [
-                            "-defaultlib=phobos2-ldc,druntime-ldc",
-                            "-L-lunwind",
-						    "--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-zig/zigcc`~ext~`",
+						"-defaultlib=phobos2-ldc,druntime-ldc",
+						"-L-lunwind",
+						"--gcc=%%ldcbinarypath%%/../xpacks/opend-latest-xpack-zig/zigcc`~ext~`",
 					    ];
 
                         // default switches appended after all explicit command-line switches
@@ -678,9 +718,9 @@ struct Commands {
 				import std.stdio;
 				writeln("Installation complete, build with `opend --target=linux-compat <other args>`");
 				return 0;
-            case "xpack-rpi":
-                // FIXME: need zig
-                // can make the appropriate zigcc for it
+			case "xpack-rpi":
+				// FIXME: need zig
+				// can make the appropriate zigcc for it
 
 				string ext = "";
 				version(Windows)
@@ -688,16 +728,16 @@ struct Commands {
 
 				downloadXpack("xpack-rpi");
 
-                auto pathToZig = args.length > 1 ? args[1] : "zig";
+				auto pathToZig = args.length > 1 ? args[1] : "zig";
 
-                version(Posix) {
-                    auto dir = getXpackPath() ~ "opend-latest-xpack-rpi";
+				version(Posix) {
+					auto dir = getXpackPath() ~ "opend-latest-xpack-rpi";
 
-                    auto filename = dir ~ "/zigcc";
-                    std.file.write(filename, "#!/bin/bash\n" ~ pathToZig ~ " cc \"$@\" -target aarch64-linux-gnu.2.17");
+					auto filename = dir ~ "/zigcc";
+					std.file.write(filename, "#!/bin/bash\n" ~ pathToZig ~ " cc \"$@\" -target aarch64-linux-gnu.2.17");
 
-                    std.file.setAttributes(filename, 0x1ED /* 0o755 */ );
-                }
+					std.file.setAttributes(filename, 0x1ED /* 0o755 */ );
+				}
 
 				installConfig(`
 					"aarch64-.*-linux-gnu.2.17":
@@ -720,7 +760,7 @@ struct Commands {
 
 				import std.stdio;
 				writeln("Installation complete, build with `opend --target=rpi <other args>`");
-                return 0;
+			return 0;
 			default:
 				import std.stdio;
 				stderr.writeln("Unknown thing");
@@ -830,7 +870,7 @@ OutputExecutable getOutputExecutable(string[] args) {
 void downloadXpack(string which) {
 	import arsd.archive;
 
-        import std.net.curl;
+	import std.net.curl;
 
 	import core.thread.fiber;
 
@@ -899,20 +939,20 @@ void downloadXpack(string which) {
 	import std.stdio;
 	writeln("Downloading...");
 
-        auto http = HTTP(url);
-        http.onReceive = (ubyte[] data) {
+	auto http = HTTP(url);
+	http.onReceive = (ubyte[] data) {
 		availableData = data;
 		if(!done)
 			fiber.call();
-                return data.length;
-        };
-        http.perform();
+		return data.length;
+	};
+	http.perform();
 
 }
 
 string trimLeadingUnderscore(string s) {
-    if(s[0] == '_')
-        return s[1..$];
-    return s;
+	if(s[0] == '_')
+		return s[1..$];
+	return s;
 }
 
