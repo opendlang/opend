@@ -299,6 +299,7 @@ struct Commands {
 
 		int processIcon(string filename) {
 			// FIXME: error if target is not windows prolly here instead of in the compiler
+			// https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083
 			// gotta create a Windows resource file. this means:
 			/+
 				1) if it is a png, convert to ico. ico can be used directly. other formats not supported by simplifiying choice
@@ -308,7 +309,135 @@ struct Commands {
 				3) pass this file to the linker
 			+/
 			//
-			argsToKeep ~= filename ~ ".res";
+
+			import std.string;
+			auto idx = lastIndexOf(filename, ".");
+			auto ext = idx == -1 ? null : filename[idx .. $].toLower;
+
+			static import std.file;
+			import arsd.png;
+
+			const(ubyte)[] icoBytes;
+			ubyte imageWidth;
+			ubyte imageHeight;
+			switch(ext) {
+				case ".png":
+					icoBytes = cast(ubyte[]) std.file.read(filename);
+					auto hdr = getHeader(readPng(icoBytes));
+					if(hdr.width > 256 || hdr.height > 256) {
+						import std.stdio;
+						stderr.writeln("Error: only files 256x256 or smaller supported as exe icons");
+						return 1;
+					}
+					imageWidth = cast(ubyte) hdr.width;
+					imageHeight = cast(ubyte) hdr.height;
+				break;
+				default:
+					import std.stdio;
+					stderr.writeln("Error: only .png files supported for --icon");
+					return 1;
+			}
+
+			ubyte[] resBytes;
+
+			static struct ResourceHeader {
+				align(1):
+				uint dataSize;
+				uint headerSize;
+				ushort typeFirst;
+				ushort typeSecond;
+				ushort nameFirst;
+				ushort nameSecond;
+				uint dataVersion;
+				ushort memoryFlags;
+				ushort languageId;
+				uint Version;
+				uint characteristics;
+			}
+			static assert(ResourceHeader.sizeof == 32);
+
+			ResourceHeader rh;
+			rh.dataSize = cast(int) icoBytes.length;
+			rh.headerSize = cast(int) ResourceHeader.sizeof;
+			rh.typeFirst = 0xffff; // indicating typeSecond is an integer instead of this being a 16 bit string
+			rh.typeSecond = 3; // RT_ICON
+			rh.nameFirst = 0xffff; // indicate integral
+			rh.nameSecond = 1; // arbitrary ID number
+			rh.dataVersion = 0;
+			rh.memoryFlags = 0x1010; // MOVABLE (0x10) | DISCARDABLE (0x1000)
+			rh.languageId = 0x0409; // English (United States)
+			rh.Version = 0;
+			rh.characteristics = 0;
+
+			// create the .res file header  (id #1, type 0, etc)
+			resBytes.length = 32;
+			resBytes[0 .. 32] = 0;
+			resBytes[4] = 0x20;
+			resBytes[0x08] = 0xff;
+			resBytes[0x09] = 0xff;
+			resBytes[0x0c] = 0xff;
+			resBytes[0x0d] = 0xff;
+
+			// add the rest of the data
+			resBytes ~= cast(ubyte[]) ((&rh)[0 .. 1]);
+			resBytes ~= icoBytes;
+			while(resBytes.length % 4)
+				resBytes ~= 0; // pad to DWORD boundary
+
+			// and now also need the group directory and entries
+			static struct GRPICONDIR {
+				align(1):
+				ushort idReserved;
+				ushort idType;
+				ushort idCount;
+			}
+			static struct GRPICONDIRENTRY {
+				align(1):
+				ubyte bWidth;
+				ubyte bHeight;
+				ubyte bColorCount;
+				ubyte bReserved;
+				ushort wPlanes;
+				ushort wBitCount;
+				uint dwBytesInRes;
+				ushort nId;
+			}
+			// should be 20 bytes for an icon dir with a single entry, do
+			// a GRPICONDIR immediately followed by however many GRPICONDIRENTRYs for it
+
+			// here we just support one image
+			GRPICONDIR gid;
+			gid.idType = 1; // icon
+			gid.idCount = 1;
+
+			ResourceHeader rhDir;
+			rhDir.dataSize = cast(int) GRPICONDIR.sizeof + cast(int) GRPICONDIRENTRY.sizeof * gid.idCount;
+			rhDir.headerSize = cast(int) ResourceHeader.sizeof;
+			rhDir.typeFirst = 0xffff;
+			rhDir.typeSecond = 0x0e; // RT_GROUP_ICON
+			rhDir.nameFirst = 0xffff;
+			rhDir.nameSecond = 1; // must be same ID number as the other header we put in
+			rhDir.dataVersion = 0;
+			rhDir.memoryFlags = 0x1010; // MOVABLE (0x10) | DISCARDABLE (0x1000)
+			rhDir.languageId = 0x0409; // English (United States)
+			rhDir.Version = 0;
+			rhDir.characteristics = 0;
+
+			GRPICONDIRENTRY[1] gide;
+			gide[0].bWidth = imageWidth;
+			gide[0].bHeight = imageHeight;
+			gide[0].wPlanes = 1;
+			gide[0].dwBytesInRes = cast(int) icoBytes.length;
+			gide[0].nId = 1; // again, same ID number as the other header for the img data
+
+			resBytes ~= cast(ubyte[]) ((&rhDir)[0 .. 1]);
+			resBytes ~= cast(ubyte[]) ((&gid)[0 .. 1]);
+			resBytes ~= cast(ubyte[]) gide[];
+
+
+			auto resName = filename ~ ".res";
+			std.file.write(resName, resBytes);
+			argsToKeep ~= resName;
 			return 0;
 		}
 
