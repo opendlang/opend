@@ -303,7 +303,7 @@ dmd -cov -unittest myprog.d
             $(DDSUBLINK $(ROOT_DIR)spec/attribute, deprecated, deprecated attributes).`,
         ),
         Option("de",
-            "issue an error when deprecated features or symbols are used (halt compilation)"
+            "alias for -dw"
         ),
         Option("dw",
             "issue a message when deprecated features or symbols are used (default)"
@@ -853,7 +853,7 @@ dmd -cov -unittest myprog.d
             )`,
         ),
         Option("w",
-            "warnings as errors (compilation will halt)",
+            "alias for -wi",
             `Enable $(LINK2 $(ROOT_DIR)articles/warnings.html, warnings)`
         ),
         Option("wi",

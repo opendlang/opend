@@ -44,9 +44,8 @@ static cl::opt<Diagnostic, true> useDeprecated(
                    "Issue a message when deprecated features or "
                    "symbols are used (default)"),
         clEnumValN(
-            DIAGNOSTICerror, "de",
-            "Issue an error when deprecated features or symbols are used "
-            "(halt compilation)")));
+            DIAGNOSTICinform, "de",
+            "alias for -dw")));
 
 cl::opt<bool> compileOnly("c", cl::desc("Compile only, do not link"),
                           cl::ZeroOrMore);
@@ -173,8 +172,8 @@ static cl::opt<unsigned, true>
 static cl::opt<Diagnostic, true> warnings(
     cl::desc("Warnings:"), cl::ZeroOrMore, cl::location(global.params.warnings),
     cl::values(
-        clEnumValN(DIAGNOSTICerror, "w",
-                   "Enable warnings as errors (compilation will halt)"),
+        clEnumValN(DIAGNOSTICinform, "w",
+                   "alias for -wi"),
         clEnumValN(DIAGNOSTICinform, "wi",
                    "Enable warnings as messages (compilation will continue)")),
     cl::init(DIAGNOSTICoff));

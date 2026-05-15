@@ -751,7 +751,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             }
         }
         else if (arg == "-de")               // https://dlang.org/dmd.html#switch-de
-            params.useDeprecated = DiagnosticReporting.error;
+            params.useDeprecated = DiagnosticReporting.inform;
         else if (arg == "-d")                // https://dlang.org/dmd.html#switch-d
             params.useDeprecated = DiagnosticReporting.off;
         else if (arg == "-dw")               // https://dlang.org/dmd.html#switch-dw
@@ -1327,7 +1327,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             }
         }
         else if (arg == "-w")   // https://dlang.org/dmd.html#switch-w
-            params.warnings = DiagnosticReporting.error;
+            params.warnings = DiagnosticReporting.inform;
         else if (arg == "-wi")  // https://dlang.org/dmd.html#switch-wi
             params.warnings = DiagnosticReporting.inform;
         else if (arg == "-wo")  // https://dlang.org/dmd.html#switch-wo
