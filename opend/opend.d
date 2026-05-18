@@ -274,7 +274,7 @@ struct Commands {
 
 	/// Does an optimized build with the given arguments
 	int publish(string[] args, string[] extraBuildArgs) {
-		return sendToCompilerDriver(["-i", "-O2"] ~ args, "ldmd2");
+		return sendToCompilerDriver(["-i", "-O2"] ~ extraBuildArgs ~ args, "ldmd2");
 	}
 
 	private int sendToCompilerDriver(string[] args, string preferredCompiler = null) {
@@ -308,7 +308,9 @@ struct Commands {
 					2b) other resource file features maybe usable later but for now just doing the one,
 				3) pass this file to the linker
 			+/
-			//
+			// see also https://tmpvar.com/articles/png2res/
+
+			// for mac see: https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html#//apple_ref/doc/uid/10000123i-CH101-SW16
 
 			import std.string;
 			auto idx = lastIndexOf(filename, ".");
