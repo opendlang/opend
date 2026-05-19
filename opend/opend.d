@@ -986,7 +986,8 @@ OutputExecutable getOutputExecutable(string[] args) {
 		} else {
 			import std.path;
 			if(first is null) {
-				first = arg.stripExtension;
+				// baseName just matches what dmd does even tho it kinda sux
+				first = arg.stripExtension.baseName;
 			}
 		}
 	}
