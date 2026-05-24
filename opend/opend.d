@@ -297,7 +297,7 @@ struct Commands {
 			return 0;
 		}
 
-		int processIcon(string filename) {
+		int processIcon(string filenames) {
 			// FIXME: error if target is not windows prolly here instead of in the compiler
 			// https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083
 			// gotta create a Windows resource file. this means:
@@ -313,31 +313,47 @@ struct Commands {
 			// for mac see: https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html#//apple_ref/doc/uid/10000123i-CH101-SW16
 
 			import std.string;
-			auto idx = lastIndexOf(filename, ".");
-			auto ext = idx == -1 ? null : filename[idx .. $].toLower;
 
-			static import std.file;
-			import arsd.png;
+			static struct Ico {
+				const(ubyte)[] icoBytes;
+				ubyte imageWidth;
+				ubyte imageHeight;
+			}
+			Ico[] icos;
 
-			const(ubyte)[] icoBytes;
-			ubyte imageWidth;
-			ubyte imageHeight;
-			switch(ext) {
-				case ".png":
-					icoBytes = cast(ubyte[]) std.file.read(filename);
-					auto hdr = getHeader(readPng(icoBytes));
-					if(hdr.width > 256 || hdr.height > 256) {
+			foreach(filename; filenames.split(",")) {
+				auto idx = lastIndexOf(filename, ".");
+				auto ext = idx == -1 ? null : filename[idx .. $].toLower;
+
+				static import std.file;
+				import arsd.png;
+
+				switch(ext) {
+					case ".png":
+						Ico ico;
+						ico.icoBytes = cast(ubyte[]) std.file.read(filename);
+						auto hdr = getHeader(readPng(ico.icoBytes));
+						if(hdr.width > 256 || hdr.height > 256) {
+							import std.stdio;
+							stderr.writeln("Error: only files 256x256 or smaller supported as exe icons");
+							return 1;
+						}
+						ico.imageWidth = cast(ubyte) hdr.width;
+						ico.imageHeight = cast(ubyte) hdr.height;
+
+						icos ~= ico;
+					break;
+					default:
 						import std.stdio;
-						stderr.writeln("Error: only files 256x256 or smaller supported as exe icons");
+						stderr.writeln("Error: only .png files supported for --icon");
 						return 1;
-					}
-					imageWidth = cast(ubyte) hdr.width;
-					imageHeight = cast(ubyte) hdr.height;
-				break;
-				default:
-					import std.stdio;
-					stderr.writeln("Error: only .png files supported for --icon");
-					return 1;
+				}
+			}
+
+			if(icos.length < 1 || icos.length > 255) {
+				import std.stdio;
+				stderr.writeln("Error: you need to provide a reasonable number of icon variants");
+				return 1;
 			}
 
 			ubyte[] resBytes;
@@ -358,19 +374,6 @@ struct Commands {
 			}
 			static assert(ResourceHeader.sizeof == 32);
 
-			ResourceHeader rh;
-			rh.dataSize = cast(int) icoBytes.length;
-			rh.headerSize = cast(int) ResourceHeader.sizeof;
-			rh.typeFirst = 0xffff; // indicating typeSecond is an integer instead of this being a 16 bit string
-			rh.typeSecond = 3; // RT_ICON
-			rh.nameFirst = 0xffff; // indicate integral
-			rh.nameSecond = 1; // arbitrary ID number
-			rh.dataVersion = 0;
-			rh.memoryFlags = 0x1010; // MOVABLE (0x10) | DISCARDABLE (0x1000)
-			rh.languageId = 0x0409; // English (United States)
-			rh.Version = 0;
-			rh.characteristics = 0;
-
 			// create the .res file header  (id #1, type 0, etc)
 			resBytes.length = 32;
 			resBytes[0 .. 32] = 0;
@@ -380,13 +383,28 @@ struct Commands {
 			resBytes[0x0c] = 0xff;
 			resBytes[0x0d] = 0xff;
 
-			// add the rest of the data
-			resBytes ~= cast(ubyte[]) ((&rh)[0 .. 1]);
-			resBytes ~= icoBytes;
-			while(resBytes.length % 4)
-				resBytes ~= 0; // pad to DWORD boundary
+			// add the icon data first
+			foreach(ushort icoIdx, ico; icos) {
+				ResourceHeader rh;
+				rh.dataSize = cast(int) ico.icoBytes.length;
+				rh.headerSize = cast(int) ResourceHeader.sizeof;
+				rh.typeFirst = 0xffff; // indicating typeSecond is an integer instead of this being a 16 bit string
+				rh.typeSecond = 3; // RT_ICON
+				rh.nameFirst = 0xffff; // indicate integral
+				rh.nameSecond = cast(ushort)(2 + icoIdx); // arbitrary ID number to match what we did above
+				rh.dataVersion = 0;
+				rh.memoryFlags = 0x1010; // MOVABLE (0x10) | DISCARDABLE (0x1000)
+				rh.languageId = 0x0409; // English (United States)
+				rh.Version = 0;
+				rh.characteristics = 0;
 
-			// and now also need the group directory and entries
+				resBytes ~= cast(ubyte[]) ((&rh)[0 .. 1]);
+				resBytes ~= ico.icoBytes;
+				while(resBytes.length % 4)
+					resBytes ~= 0; // pad to DWORD boundary
+			}
+
+			// and the icon group directory must follow the data
 			static struct GRPICONDIR {
 				align(1):
 				ushort idReserved;
@@ -407,10 +425,9 @@ struct Commands {
 			// should be 20 bytes for an icon dir with a single entry, do
 			// a GRPICONDIR immediately followed by however many GRPICONDIRENTRYs for it
 
-			// here we just support one image
 			GRPICONDIR gid;
 			gid.idType = 1; // icon
-			gid.idCount = 1;
+			gid.idCount = cast(ushort) icos.length;
 
 			ResourceHeader rhDir;
 			rhDir.dataSize = cast(int) GRPICONDIR.sizeof + cast(int) GRPICONDIRENTRY.sizeof * gid.idCount;
@@ -418,26 +435,32 @@ struct Commands {
 			rhDir.typeFirst = 0xffff;
 			rhDir.typeSecond = 0x0e; // RT_GROUP_ICON
 			rhDir.nameFirst = 0xffff;
-			rhDir.nameSecond = 1; // must be same ID number as the other header we put in
+			rhDir.nameSecond = 1; // want the lowest id number possible, so 1, so it becomes the main exe icon
 			rhDir.dataVersion = 0;
 			rhDir.memoryFlags = 0x1010; // MOVABLE (0x10) | DISCARDABLE (0x1000)
 			rhDir.languageId = 0x0409; // English (United States)
 			rhDir.Version = 0;
 			rhDir.characteristics = 0;
 
-			GRPICONDIRENTRY[1] gide;
-			gide[0].bWidth = imageWidth;
-			gide[0].bHeight = imageHeight;
-			gide[0].wPlanes = 1;
-			gide[0].dwBytesInRes = cast(int) icoBytes.length;
-			gide[0].nId = 1; // again, same ID number as the other header for the img data
+			GRPICONDIRENTRY[] gides;
+			foreach(ushort icoIdx, ico; icos) {
+				GRPICONDIRENTRY gide;
+				gide.bWidth = ico.imageWidth;
+				gide.bHeight = ico.imageHeight;
+				gide.wPlanes = 1;
+				gide.dwBytesInRes = cast(int) ico.icoBytes.length;
+				gide.nId = cast(ushort)(2 + icoIdx); // auto-assign some unused id numbers for each piece of icon data
+				gides ~= gide;
+			}
 
 			resBytes ~= cast(ubyte[]) ((&rhDir)[0 .. 1]);
 			resBytes ~= cast(ubyte[]) ((&gid)[0 .. 1]);
-			resBytes ~= cast(ubyte[]) gide[];
+			resBytes ~= cast(ubyte[]) gides[];
 
+			while(resBytes.length % 4)
+				resBytes ~= 0; // pad to DWORD boundary
 
-			auto resName = filename ~ ".res";
+			auto resName = filenames ~ ".res";
 			std.file.write(resName, resBytes);
 			argsToKeep ~= resName;
 			return 0;
