@@ -467,13 +467,7 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
             return ErrorExp.get();
         }
         const builtInName = seNeedle.peekString();
-
-        switch(builtInName)
-        {
-        default:
-            error(e.loc, "`%.*s` is not a retrievable built-in", cast(int) builtInName.length, builtInName.ptr);
-            return ErrorExp.get();
-        }
+        return resolveGetBuiltIn(builtInName, e.loc);
     }
     if (e.ident == Id.isArithmetic)
     {
@@ -2625,4 +2619,34 @@ private void traitNotFound(TraitsExp e) @system
         error(e.loc, "unrecognized trait `%s`, did you mean `%.*s`?", e.ident.toChars(), cast(int) sub.length, sub.ptr);
     else
         error(e.loc, "unrecognized trait `%s`", e.ident.toChars());
+}
+
+private Expression resolveGetBuiltIn(const(char)[] name, Loc loc)
+{
+    // Signed integer types
+    if (name.iequals("int8"))
+        return new TypeExp(loc, Type.tint8);
+    if (name.iequals("int16"))
+        return new TypeExp(loc, Type.tint16);
+    if (name.iequals("int32"))
+        return new TypeExp(loc, Type.tint32);
+    if (name.iequals("int64"))
+        return new TypeExp(loc, Type.tint64);
+    if (name.iequals("int128"))
+        return new TypeExp(loc, Type.tint128);
+
+    // Unsigned integer types
+    if (name.iequals("uint8"))
+        return new TypeExp(loc, Type.tuns8);
+    if (name.iequals("uint16"))
+        return new TypeExp(loc, Type.tuns16);
+    if (name.iequals("uint32"))
+        return new TypeExp(loc, Type.tuns32);
+    if (name.iequals("uint64"))
+        return new TypeExp(loc, Type.tuns64);
+    if (name.iequals("uint128"))
+        return new TypeExp(loc, Type.tuns128);
+
+    error(loc, "`%.*s` is not a retrievable built-in", cast(int) name.length, name.ptr);
+    return ErrorExp.get();
 }
