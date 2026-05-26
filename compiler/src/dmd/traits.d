@@ -440,6 +440,41 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         });
     }
 
+    if (e.ident == Id.getBuiltIn)
+    {
+        if (dim != 1)
+            return dimError(1);
+
+        auto exNeedle = isExpression((*e.args)[0]);
+        if (!exNeedle)
+        {
+            error(e.loc, "expression expected as first argument of __traits `%s`", e.ident.toChars());
+            return ErrorExp.get();
+        }
+        exNeedle = exNeedle.ctfeInterpret();
+
+        StringExp seNeedle = exNeedle.toStringExp();
+        if (!seNeedle || seNeedle.len == 0)
+        {
+            error(e.loc, "string expected as first argument of __traits `%s` instead of `%s`", e.ident.toChars(), exNeedle.toChars());
+            return ErrorExp.get();
+        }
+        seNeedle = seNeedle.toUTF8(sc);
+
+        if (seNeedle.sz != 1)
+        {
+            error(e.loc, "string must be chars");
+            return ErrorExp.get();
+        }
+        const builtInName = seNeedle.peekString();
+
+        switch(builtInName)
+        {
+        default:
+            error(e.loc, "`%.*s` is not a retrievable built-in", cast(int) builtInName.length, builtInName.ptr);
+            return ErrorExp.get();
+        }
+    }
     if (e.ident == Id.isArithmetic)
     {
         return isTypeX(t => t.isintegral() || t.isfloating());
@@ -2499,7 +2534,7 @@ private void traitNotFound(TraitsExp e) @system
         initialized = true;     // lazy initialization
 
         // All possible traits
-        __gshared Identifier*[62] idents =
+        __gshared Identifier*[63] idents =
         [
             &Id.allMembers,
             &Id.child,
@@ -2510,6 +2545,7 @@ private void traitNotFound(TraitsExp e) @system
             &Id.fullyQualifiedName,
             &Id.getAliasThis,
             &Id.getAttributes,
+            &Id.getBuiltIn,
             &Id.getFunctionAttributes,
             &Id.getFunctionVariadicStyle,
             &Id.getLinkage,

@@ -456,6 +456,7 @@ immutable Msgtable[] msgtable =
     { "outpw"},
 
     // Traits
+    { "getBuiltIn" },
     { "isAbstractClass" },
     { "isArithmetic" },
     { "isAssociativeArray" },
