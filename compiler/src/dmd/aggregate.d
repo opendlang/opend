@@ -265,10 +265,16 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
         Dsymbol funcRootEncountered;
         Dsymbol getNextOverload(Dsymbol what) {
             overloadcount++;
-            if(overloadcount > 200) {
+            if(overloadcount > 1000) { // some actually have over 200 overloads! omg. especially std.sumtype
                 import core.stdc.stdlib;
-                abort();
+                __gshared bool messagePrinted = false;
+                if(!messagePrinted) {
+                    printf("Found over 1,000 overloads of a single function, `%s`, maybe an OpenD bug, maybe some template out of control. Abandoning search for implicit constructor but otherwise carrying on. Let us know the code you saw this message on.\n", what.toPrettyChars());
+                    messagePrinted = true;
+                }
+                return null;// abort();
             }
+            //printf("get next of %s\n", what.toPrettyChars());
             if (auto fd = what.isTemplateDeclaration()) {
                 if (fd.overnext)
                     return fd.overnext;
@@ -286,6 +292,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
         while (next) {
             if (hasImplicitAttr(next))
                 return true;
+            auto before = next;
             next = getNextOverload(next);
         }
 
