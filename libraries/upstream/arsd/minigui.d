@@ -3177,6 +3177,10 @@ class FreeEntrySelection : ComboboxBase {
 		else static assert(0);
 	}
 
+	override string getSelectionString() {
+		return content;
+	}
+
 	version(custom_widgets) {
 		LineEdit lineEdit;
 
@@ -4665,7 +4669,15 @@ class DataControllerWidget(T) : WidgetContainer {
 					updaters ~= updateWidgetFromData;
 				if(updateDataFromWidget)
 				w.addEventListener(EventType.change, (Event ev) {
-					updateDataFromWidget();
+					try {
+						updateDataFromWidget();
+						ev.target.setDynamicState(DynamicState.invalid, false);
+					} catch(Exception e) {
+						// FIXME: do something a little bit cuter here... highlight validation error
+						// FIXME: also make sure the automatic dialog on error handler is something
+						ev.target.setDynamicState(DynamicState.invalid, true);
+						parent.parentWindow.messageBox(e.msg);
+					}
 				});
 			}
 			/+
@@ -4860,6 +4872,9 @@ private static auto widgetFor(alias tt, P)(P* valptr, Widget parent, out void de
 				auto le = new LabeledLineEdit(displayName, parent);
 				updateWidgetFromData = () { le.content = toInternal!string(*valptr); };
 				updateDataFromWidget = () { *valptr = to!P(le.content); };
+				le.addEventListener((FocusInEvent fe) {
+					le.selectAll();
+				});
 				updateWidgetFromData();
 				return le;
 			} else static if(is(typeof(tt) : const double)) {
@@ -4870,12 +4885,18 @@ private static auto widgetFor(alias tt, P)(P* valptr, Widget parent, out void de
 					import std.conv;
 				updateWidgetFromData = () { le.content = to!string(*valptr); };
 				updateDataFromWidget = () { *valptr = to!P(le.content); };
+				le.addEventListener((FocusInEvent fe) {
+					le.selectAll();
+				});
 				updateWidgetFromData();
 				return le;
 			} else static if(is(typeof(tt) : const string)) {
 				auto le = new LabeledLineEdit(displayName, parent);
 				updateWidgetFromData = () { le.content = *valptr; };
 				updateDataFromWidget = () { *valptr = to!P(le.content); };
+				le.addEventListener((FocusInEvent fe) {
+					le.selectAll();
+				});
 				updateWidgetFromData();
 				return le;
 			} else static if(is(typeof(tt) == E[], E)) {
@@ -6274,6 +6295,10 @@ class ScrollableWidget : Widget {
 			verticalScroll(scaleWithDpi(-16));
 		if(event.button == MouseButton.wheelDown)
 			verticalScroll(scaleWithDpi(16));
+		if(event.button == MouseButton.wheelLeft)
+			horizontalScroll(scaleWithDpi(-16));
+		if(event.button == MouseButton.wheelRight)
+			horizontalScroll(scaleWithDpi(16));
 		super.defaultEventHandler_click(event);
 	}
 
@@ -6712,6 +6737,14 @@ class ScrollableContainerWidget : ContainerWidget {
 			} else if(e.button == MouseButton.wheelDown) {
 				if(!e.defaultPrevented)
 					scrollBy(0, scaleWithDpi(16));
+				e.stopPropagation();
+			} else if(e.button == MouseButton.wheelLeft) {
+				if(!e.defaultPrevented)
+					scrollBy(scaleWithDpi(-16), 0);
+				e.stopPropagation();
+			} else if(e.button == MouseButton.wheelRight) {
+				if(!e.defaultPrevented)
+					scrollBy(scaleWithDpi(16), 0);
 				e.stopPropagation();
 			}
 		});
@@ -8049,6 +8082,7 @@ class InlineBlockLayout : Layout {
 	}
 }
 
+// ctrl+pageup/down could rotate tabs...
 /++
 	A TabMessageWidget is a clickable row of tabs followed by a content area, very similar
 	to the [TabWidget]. The difference is the TabMessageWidget only sends messages, whereas
@@ -8367,6 +8401,7 @@ class TabWidget : TabMessageWidget {
 	}
 
 	protected override void tabIndexClicked(int item) {
+		super.tabIndexClicked(item);
 		foreach(idx, child; children) {
 			child.showing(false, false); // batch the recalculates for the end
 		}
@@ -8920,6 +8955,19 @@ class ScrollMessageWidget : Widget {
 				else
 					_this.scrollUp(verticalWheelScrollAmount * (ce.shiftKey ? shiftMultiplier : 1));
 			}
+			else
+			if(ce.button == MouseButton.wheelRight) {
+				if(ce.altKey)
+					_this.scrollDown(verticalWheelScrollAmount * (ce.shiftKey ? shiftMultiplier : 1));
+				else
+					_this.scrollRight(horizontalWheelScrollAmount * (ce.shiftKey ? shiftMultiplier : 1));
+			} else if(ce.button == MouseButton.wheelLeft) {
+				if(ce.altKey)
+					_this.scrollUp(verticalWheelScrollAmount * (ce.shiftKey ? shiftMultiplier : 1));
+				else
+					_this.scrollLeft(horizontalWheelScrollAmount * (ce.shiftKey ? shiftMultiplier : 1));
+			}
+
 		});
 	}
 
@@ -9593,7 +9641,7 @@ class Window : Widget {
 
 	version(custom_widgets)
 	override void defaultEventHandler_click(ClickEvent event) {
-		if(event.button != MouseButton.wheelDown && event.button != MouseButton.wheelUp) {
+		if(!event.isMouseWheel()) {
 			if(event.target && event.target.tabStop)
 				event.target.focus();
 		}
@@ -9909,7 +9957,7 @@ class Window : Widget {
 				event.dispatch();
 			}
 
-			if(ev.button != MouseButton.wheelDown && ev.button != MouseButton.wheelUp && mouseLastDownOn is ele && ev.doubleClick) {
+			if(!ev.isMouseWheel && mouseLastDownOn is ele && ev.doubleClick) {
 				auto event = new DoubleClickEvent(captureEle);
 				populateMouseEventBase(event);
 				event.dispatch();
@@ -11375,14 +11423,23 @@ private void delegate() makeAutomaticHandler(alias fn, T)(Window window, T t) {
 				});
 			}
 			return () {
-				dialog(window, (S s) {
+				S initial;
+				import arsd.core;
+				static foreach(idx, ignore; Params) {
+					static if(idx >= firstDefaultParam!(fn))
+						initial.tupleof[idx] = defaultParam!(fn, idx)();
+				}
+				dialog(window, initial, (S s) {
 					try {
 						static if(is(typeof(t) Ret == return)) {
 							static if(is(Ret == void)) {
 								t(s.tupleof);
 							} else {
 								auto ret = t(s.tupleof);
-								import std.conv;
+								version(D_OpenD)
+									import arsd.conv;
+								else
+									import std.conv;
 								messageBox(to!string(ret), "Returned Value");
 							}
 						}
@@ -12596,6 +12653,8 @@ private void extractWindowsStyleLabel(scope const char[] label, out string thisL
 
 	History:
 		The ampersand behavior was always the case on Windows, but it wasn't until June 15, 2021 when Linux was changed to match it and the documentation updated to reflect it.
+
+		The FieldSet alias was added on May 25, 2026
 +/
 class Fieldset : Widget {
 	// FIXME: on Windows,it doesn't draw the background on the label
@@ -12686,6 +12745,9 @@ class Fieldset : Widget {
 		return 6 + cast(int) this.legend.length * 7;
 	}
 }
+
+/// ditto
+alias FieldSet = Fieldset;
 
 /++
 	$(IMG //arsdnet.net/minigui-screenshots/windows/Fieldset.png, A box saying "baby will" with three round buttons inside it for the options of "eat", "cry", and "sleep")
@@ -13348,6 +13410,8 @@ struct ImageLabel {
 
 	History:
 		The ampersand behavior was always the case on Windows, but it wasn't until June 15, 2021 when Linux was changed to match it and the documentation updated to reflect it.
+
+		The CheckBox alias was added May 25, 2026
 +/
 class Checkbox : MouseActivatedWidget {
 	version(win32_widgets) {
@@ -13482,6 +13546,9 @@ class Checkbox : MouseActivatedWidget {
 	mixin Emits!(ChangeEvent!bool);
 }
 
+/// ditto
+alias CheckBox = Checkbox;
+
 /// Adds empty space to a layout.
 class VerticalSpacer : Widget {
 	private int mh;
@@ -13542,6 +13609,8 @@ class HorizontalSpacer : Widget {
 
 	History:
 		The ampersand behavior was always the case on Windows, but it wasn't until June 15, 2021 when Linux was changed to match it and the documentation updated to reflect it.
+
+		The RadioButton and RadioBox aliases were added on May 25, 2026.
 +/
 class Radiobox : MouseActivatedWidget {
 
@@ -13630,6 +13699,11 @@ class Radiobox : MouseActivatedWidget {
 	/// Emits a change event with if it is checked. Note that when you select one in a group, that one will emit changed with value == true, and the previous one will emit changed with value == false right before. A button group may catch this and change the event.
 	mixin Emits!(ChangeEvent!bool);
 }
+
+/// ditto
+alias RadioBox = Radiobox;
+/// ditto
+alias RadioButton = Radiobox;
 
 
 /++
@@ -14225,7 +14299,8 @@ class TextDisplayHelper : Widget {
 	override void defaultEventHandler_blur(BlurEvent ev) {
 		super.defaultEventHandler_blur(ev);
 		if(l.wasMutated()) {
-			auto evt = new ChangeEvent!string(this, &this.content);
+			// event target changed May 27, 2026
+			auto evt = new ChangeEvent!string(this.smw.parent, &this.content);
 			evt.dispatch();
 			l.clearWasMutatedFlag();
 		}
@@ -14513,6 +14588,9 @@ class TextDisplayHelper : Widget {
 					l.selection.replaceContent(preservedPrimaryText);
 				else
 					l.selection.replaceContent(txt);
+
+				adjustScrollbarSizes();
+				scrollForCaret();
 				redraw();
 			});
 		}
@@ -14521,7 +14599,7 @@ class TextDisplayHelper : Widget {
 	}
 
 	final const(char)[] wordSplitHelper(scope return const(char)[] ch) {
-		if(ch == " " || ch == "\t" || ch == "\n" || ch == "\r")
+		if(ch == " " || ch == "\t" || ch == "\n" || ch == "\r" || ch == "\"" || ch == ",")
 			return ch;
 		return null;
 	}
@@ -15151,7 +15229,11 @@ abstract class EditableTextWidget : Widget {
 
 	static class Style : Widget.Style {
 		override WidgetBackground background() {
-			return WidgetBackground(WidgetPainter.visualTheme.widgetBackgroundColor);
+			if(widget.dynamicState & DynamicState.invalid) {
+				return WidgetBackground(Color(0xff, 0xcc, 0xcc));
+			} else {
+				return WidgetBackground(WidgetPainter.visualTheme.widgetBackgroundColor);
+			}
 		}
 
 		override Color foregroundColor() {
@@ -15164,6 +15246,10 @@ abstract class EditableTextWidget : Widget {
 
 		override MouseCursor cursor() {
 			return GenericCursor.Text;
+		}
+
+		override bool variesWithState(ulong dynamicStateFlags) {
+			return super.variesWithState(dynamicStateFlags) || (dynamicStateFlags & (DynamicState.invalid));
 		}
 	}
 	mixin OverrideStyle!Style;
@@ -15846,8 +15932,14 @@ class MessageBox : Dialog {
 	this(string message, string[] buttons = ["OK"], MessageBoxButton[] buttonIds = [MessageBoxButton.OK]) {
 		this(null, message, buttons, buttonIds);
 	}
-	/// ditto
+
+	///ditto
 	this(Window originator, string message, string[] buttons = ["OK"], MessageBoxButton[] buttonIds = [MessageBoxButton.OK]) {
+		this(originator, null, message, buttons, buttonIds);
+	}
+
+	/// ditto
+	this(Window originator, string title, string message, string[] buttons = ["OK"], MessageBoxButton[] buttonIds = [MessageBoxButton.OK]) {
 		message = message.stripRightInternal;
 		int mainWidth;
 
@@ -15868,7 +15960,7 @@ class MessageBox : Dialog {
 		if(mainWidth > 600)
 			mainWidth = 600;
 
-		super(originator, mainWidth, 100);
+		super(originator, mainWidth, 100, title);
 
 		assert(buttons.length);
 		assert(buttons.length ==  buttonIds.length);
@@ -16020,7 +16112,7 @@ MessageBoxButton messageBox(Window originator, string title, string message, Mes
 				buttonIds = [MessageBoxButton.Retry, MessageBoxButton.Cancel, MessageBoxButton.Continue];
 			break;
 		}
-		auto mb = new MessageBox(originator, message, buttons, buttonIds);
+		auto mb = new MessageBox(originator, title, message, buttons, buttonIds);
 		EventLoop el = EventLoop.get;
 		el.run(() { return !mb.win.closed; });
 		return mb.buttonPressed;
@@ -16389,7 +16481,7 @@ class Event : ReflectableProperties {
 	/// Prevents the default event handler (if there is one) from being called
 	void preventDefault() {
 		lastDefaultPrevented = true;
-		defaultPrevented = true;
+		defaultPrevented_ = true;
 	}
 
 	/// Stops the event propagation immediately.
@@ -16397,7 +16489,10 @@ class Event : ReflectableProperties {
 		propagationStopped = true;
 	}
 
-	private bool defaultPrevented;
+	private bool defaultPrevented_;
+	public bool defaultPrevented() {
+		return defaultPrevented_;
+	}
 	private bool propagationStopped;
 	private string eventName;
 
@@ -16974,7 +17069,7 @@ abstract class MouseEventBase : Event {
 			Added May 15, 2021
 	+/
 	bool isMouseWheel() {
-		return button == MouseButton.wheelUp || button == MouseButton.wheelDown;
+		return button == MouseButton.wheelUp || button == MouseButton.wheelDown || button == MouseButton.wheelLeft || button == MouseButton.wheelRight;
 	}
 
 	// private
@@ -17460,8 +17555,8 @@ void getSaveFileName(
 	return getFileName(owner, false, onOK, prefilledName, filters, onCancel, initialDirectory);
 }
 
-// deprecated("Pass an explicit owner window as the first argument, even if `null`. You can usually pass the `parentWindow` member of the widget that prompted this interaction.")
 /// ditto
+deprecated("Pass an explicit owner window as the first argument, even if `null`. You can usually pass the `parentWindow` member of the widget that prompted this interaction.")
 void getOpenFileName(
 	void delegate(string) onOK,
 	string prefilledName = null,
@@ -17474,6 +17569,7 @@ void getOpenFileName(
 }
 
 /// ditto
+deprecated("Pass an explicit owner window as the first argument, even if `null`. You can usually pass the `parentWindow` member of the widget that prompted this interaction.")
 void getSaveFileName(
 	void delegate(string) onOK,
 	string prefilledName = null,
@@ -17583,13 +17679,12 @@ class FileDialogDelegate {
 			}
 		} else version(custom_widgets) {
 			filters ~= ["All Files\0*.*"];
-			auto picker = new FilePicker(openOrSave, prefilledName, filters, initialDirectory, owner);
+			auto picker = new FilePicker(false, openOrSave, prefilledName, filters, initialDirectory, owner);
 			picker.onOK = onOK;
 			picker.onCancel = onCancel;
 			picker.show();
 		}
 	}
-
 }
 
 /// ditto
@@ -17702,6 +17797,7 @@ class FilePicker : Dialog {
 	void delegate() onCancel;
 	LabeledLineEdit lineEdit;
 	bool isOpenDialogInsteadOfSave;
+	bool requireExistingFile;
 
 	static struct HistoryItem {
 		string cwd;
@@ -17862,69 +17958,8 @@ class FilePicker : Dialog {
 			+/
 		}
 
-		extern(C) static int comparator(scope const void* a, scope const void* b) {
-			auto sa = *cast(string*) a;
-			auto sb = *cast(string*) b;
-
-			/+
-				Goal here:
-
-				Dot first. This puts `foo.d` before `foo2.d`
-				Then numbers , natural sort order (so 9 comes before 10) for positive numbers
-				Then letters, in order Aa, Bb, Cc
-				Then other symbols in ascii order
-			+/
-			static int nextPiece(ref string whole) {
-				if(whole.length == 0)
-					return -1;
-
-				enum specialZoneSize = 1;
-
-				char current = whole[0];
-				if(current >= '0' && current <= '9') {
-					int accumulator;
-					do {
-						whole = whole[1 .. $];
-						accumulator *= 10;
-						accumulator += current - '0';
-						current = whole.length ? whole[0] : 0;
-					} while (current >= '0' && current <= '9');
-
-					return accumulator + specialZoneSize + cast(int) char.max; // leave room for symbols
-				} else {
-					whole = whole[1 .. $];
-
-					if(current == '.')
-						return 0; // the special case to put it before numbers
-
-					// anything above should be < specialZoneSize
-
-					int letterZoneSize = 26 * 2;
-					int base = int.max - letterZoneSize - char.max; // leaves space at end for symbols too if we want them after chars
-
-					if(current >= 'A' && current <= 'Z')
-						return base + (current - 'A') * 2;
-					if(current >= 'a' && current <= 'z')
-						return base + (current - 'a') * 2 + 1;
-					// return base + letterZoneSize + current; // would put symbols after numbers and letters
-					return specialZoneSize + current; // puts symbols before numbers and letters, but after the special zone
-				}
-			}
-
-			while(sa.length || sb.length) {
-				auto pa = nextPiece(sa);
-				auto pb = nextPiece(sb);
-
-				auto diff = pa - pb;
-				if(diff)
-					return diff;
-			}
-
-			return 0;
-		}
-
-		nonPhobosSort(files, &comparator);
-		nonPhobosSort(dirs, &comparator);
+		filenameStringSort(files);
+		filenameStringSort(dirs);
 
 		listWidget.clear();
 		dirWidget.clear();
@@ -17975,9 +18010,10 @@ class FilePicker : Dialog {
 	// FIXME: allow many files to be picked too sometimes
 
 	//string[] filters = null, // format here is like ["Text files\0*.txt;*.text", "Image files\0*.png;*.jpg"]
-	this(bool isOpenDialogInsteadOfSave, string prefilledName, string[] filtersInWindowsFormat, string initialDirectory, Window owner = null) {
+	this(bool requireExistingFile, bool isOpenDialogInsteadOfSave, string prefilledName, string[] filtersInWindowsFormat, string initialDirectory, Window owner = null) {
 		this.filterOptions = FileNameFilterSet.fromWindowsFileNameFilterDescription(filtersInWindowsFormat);
 		this.isOpenDialogInsteadOfSave = isOpenDialogInsteadOfSave;
+		this.requireExistingFile = requireExistingFile;
 		super(owner, 500, 400, "Choose File..."); // owner);
 
 		{
@@ -18222,7 +18258,7 @@ class FilePicker : Dialog {
 
 			auto ft = getFileType(accepted.toString);
 
-			if(ft == FileType.error && isOpenDialogInsteadOfSave) {
+			if(ft == FileType.error && requireExistingFile) {
 				// FIXME: tell the user why
 				messageBox("Cannot open file: " ~ accepted.toString ~ "\nTry another or cancel.");
 				lineEdit.focus();
@@ -18256,29 +18292,6 @@ class FilePicker : Dialog {
 			onCancel();
 		close();
 	}
-}
-
-private enum FileType {
-	error,
-	dir,
-	other
-}
-
-private FileType getFileType(string name) {
-	version(Windows) {
-		auto ws = WCharzBuffer(name);
-		auto ret = GetFileAttributesW(ws.ptr);
-		if(ret == INVALID_FILE_ATTRIBUTES)
-			return FileType.error;
-		return ((ret & FILE_ATTRIBUTE_DIRECTORY) != 0) ? FileType.dir : FileType.other;
-	} else version(Posix) {
-		import core.sys.posix.sys.stat;
-		stat_t buf;
-		auto ret = stat((name ~ '\0').ptr, &buf);
-		if(ret == -1)
-			return FileType.error;
-		return ((buf.st_mode & S_IFMT) == S_IFDIR) ? FileType.dir : FileType.other;
-	} else assert(0, "Not implemented");
 }
 
 /*
@@ -18427,10 +18440,12 @@ class ObjectInspectionWindowImpl(T) : ObjectInspectionWindow {
 		be deprecated soon.
 +/
 /// Group: generating_from_code
+deprecated("Pass an explicit owner window as the first argument, even if `null`. You can usually pass the `parentWindow` member of the widget that prompted this interaction.")
 void dialog(T)(void delegate(T) onOK, void delegate() onCancel = null, string title = T.stringof) {
 	dialog(null, T.init, onOK, onCancel, title);
 }
 /// ditto
+deprecated("Pass an explicit owner window as the first argument, even if `null`. You can usually pass the `parentWindow` member of the widget that prompted this interaction.")
 void dialog(T)(T initialData, void delegate(T) onOK, void delegate() onCancel = null, string title = T.stringof) {
 	dialog(null, T.init, onOK, onCancel, title);
 }
@@ -18439,6 +18454,7 @@ void dialog(T)(Window parent, void delegate(T) onOK, void delegate() onCancel = 
 	dialog(parent, T.init, onOK, onCancel, title);
 }
 /// ditto
+deprecated("Pass an explicit owner window as the first argument, even if `null`. You can usually pass the `parentWindow` member of the widget that prompted this interaction.")
 void dialog(T)(T initialData, Window parent, void delegate(T) onOK, void delegate() onCancel = null, string title = T.stringof) {
 	dialog(parent, initialData, onOK, onCancel, title);
 }
