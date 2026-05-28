@@ -115,7 +115,7 @@ int blockExit(Statement s, FuncDeclaration func, ErrorSink eSink)
 
         void visitCompound(CompoundStatement cs)
         {
-            //printf("CompoundStatement.blockExit(%p) %d result = x%X\n", cs, cs.statements.length, result);
+            // printf("CompoundStatement.blockExit(%p) %d result = x%X\n", cs, cast(int) cs.statements.length, result);
             result = BE.fallthru;
             Statement slast = null;
             foreach (s; *cs.statements)

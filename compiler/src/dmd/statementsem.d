@@ -3623,6 +3623,10 @@ version (IN_LLVM)
         /* If the try body never throws, we can eliminate any catches
          * of recoverable exceptions.
          */
+        // adr note: we can't just delete this because there's a kind of circular dependency
+        // on nothrow... consider `try X(); catch(Exception e) throw e;`. if X is nothrow, it
+        // elides the rethrow, allowing the function to still infer as nothrow, but if it does
+        // throw it keeps the rethrow.
         if (!(tcs._body.blockExit(sc.func, null) & BE.throw_) && ClassDeclaration.exception)
         {
             foreach_reverse (i; 0 .. tcs.catches.length)
