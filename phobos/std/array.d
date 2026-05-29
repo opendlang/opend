@@ -3557,6 +3557,9 @@ if (isDynamicArray!A)
         return _data ? _data.capacity : 0;
     }
 
+    /// Returns: The number of elements appended.
+    @property size_t length() const { return _data ? _data.arr.length : 0; }
+
     /**
      * Use opSlice() from now on.
      * Returns: The managed array.
