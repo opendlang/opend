@@ -666,7 +666,7 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
             if (m == MATCH.nomatch) {
                 AggregateDeclaration ad = isAggregate(arg.type);
                 // still no match...
-                if (ad) {
+                if (ad && sc) {
                     // Try opImplicitCast
                     Dsymbol fd = null;
                     fd = search_function(ad, Id._cast_impl);
