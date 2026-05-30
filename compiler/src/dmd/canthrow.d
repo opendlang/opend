@@ -132,44 +132,8 @@ CT canThrow(Expression e, FuncDeclaration func, ErrorSink eSink)
              * then this expression cannot throw.
              * Note that pure functions can throw.
              */
-
-            /+
-                ADR NOTES
-
-                deleting this whole if/return clause feels more accurate but it breaks nested recursive functions, not marking them nothrow when they otherwise could be
-
-                if i add `(&& ce.f.inferScope /* inferScope is set in initInferAttributes and stays set */)` to this following if, i can make it more accurate for recursive plain functions and it fixes the nested functions since they're inferred but it still doesn't match the template case
-
-                make it just plain foo(bool) instead of foo()(bool) and that inferScope hack works but it doesn't w/ the template
-                ---
-                void foo()(bool shouldthrow)
-                {
-                    if(shouldthrow) {
-                        throw new Exception("here");
-                    }
-                    try {
-                        foo(true);
-                    }
-                    catch(Exception e) {
-                        // happy
-                    }
-                    catch(Throwable t) {
-                        assert(0, "should not reach here");
-                    }
-                }
-
-                void main()
-                {
-                    foo(false);
-                }
-                ---
-
-                so what ima try to do instead is leave this alone and remove the code in statementsem.d around `cs._body.blockExit(sc.func, null) & BE.throw_) && ClassDeclaration.exception)` instead. so this function still kinda returns the wrong thing, but its incorrect thing doesn't harm that ast modification anymore.
-
-            +/
-            if (ce.f && ce.f == func && ce.f.inferScope /* inferScope is set in initInferAttributes and stays set */)
+            if (ce.f && ce.f == func)
                 return;
-            //import core.stdc.stdio; printf("af %s\n", ce.toChars());
             const tf = ce.calledFunctionType();
             if (tf && tf.isnothrow)
                 return;
