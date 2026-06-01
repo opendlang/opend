@@ -3623,7 +3623,7 @@ version (IN_LLVM)
         /* If the try body never throws, we can eliminate any catches
          * of recoverable exceptions.
          */
-        if (!(tcs._body.blockExit(sc.func, null) & BE.throw_) && ClassDeclaration.exception)
+        if (!(tcs._body.blockExit(null, null) & BE.throw_) && ClassDeclaration.exception)
         {
             foreach_reverse (i; 0 .. tcs.catches.length)
             {
