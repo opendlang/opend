@@ -298,6 +298,9 @@ struct Commands {
 		}
 
 		int processIcon(string filenames) {
+			// see hipreme's things for mac: https://github.com/MrcSnm/redub/blob/main/source/redub/extensions/bundle.d
+			// and linux is an appimage thing somewhere in rebub too
+
 			// FIXME: error if target is not windows prolly here instead of in the compiler
 			// https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083
 			// gotta create a Windows resource file. this means:
