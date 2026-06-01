@@ -863,6 +863,7 @@ void registerPredefinedTargetVersions() {
     VersionCondition::addPredefinedGlobalIdent("OSX");
     VersionCondition::addPredefinedGlobalIdent(
         "darwin"); // For backwards compatibility.
+    VersionCondition::addPredefinedGlobalIdent("Darwin");
     VersionCondition::addPredefinedGlobalIdent("Posix");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
@@ -907,18 +908,21 @@ void registerPredefinedTargetVersions() {
   case llvm::Triple::IOS:
     VersionCondition::addPredefinedGlobalIdent("iOS");
     VersionCondition::addPredefinedGlobalIdent("Posix");
+    VersionCondition::addPredefinedGlobalIdent("Darwin");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::TvOS:
     VersionCondition::addPredefinedGlobalIdent("TVOS");
     VersionCondition::addPredefinedGlobalIdent("Posix");
+    VersionCondition::addPredefinedGlobalIdent("Darwin");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;
   case llvm::Triple::WatchOS:
     VersionCondition::addPredefinedGlobalIdent("WatchOS");
     VersionCondition::addPredefinedGlobalIdent("Posix");
+    VersionCondition::addPredefinedGlobalIdent("Darwin");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_LLVM");
     VersionCondition::addPredefinedGlobalIdent("CppRuntime_Clang"); // legacy
     break;

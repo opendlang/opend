@@ -675,6 +675,7 @@ extern (C++) final class VersionCondition : DVCondition
             case "CRuntime_UClibc":
             case "CRuntime_WASI":
             case "Cygwin":
+            case "Darwin":
             case "DigitalMars":
             case "DragonFlyBSD":
             case "Emscripten":
@@ -768,7 +769,7 @@ extern (C++) final class VersionCondition : DVCondition
      */
     extern(D) static void checkReserved(const ref Loc loc, const(char)[] ident)
     {
-        if (isReserved(ident))
+        if (isReserved(ident) && (global.versionids is null || !findCondition(global.versionids, Identifier.idPool(ident))))
             error(loc, "version identifier `%s` is reserved and cannot be set",
                   ident.ptr);
     }

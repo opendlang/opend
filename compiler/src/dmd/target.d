@@ -205,6 +205,7 @@ void addPredefinedGlobalIdentifiers(const ref Target tgt)
             case OS.OSX:
             {
                 predef("OSX");
+                predef("Darwin");
                 // For legacy compatibility
                 predef("darwin");
                 break;

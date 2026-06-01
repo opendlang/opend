@@ -2568,8 +2568,6 @@ version (CoreDdoc)
         ulong size;
     }
 }
-else
-    version = Darwin;
 
 version (Darwin):
 extern (C):
