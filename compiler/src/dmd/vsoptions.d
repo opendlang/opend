@@ -291,7 +291,7 @@ version (IN_LLVM) { /* not needed */ } else
      */
     const(char)* defaultRuntimeLibrary(bool x64)
     {
-        return "vcruntime140";
+        return "vcruntime140"; // the one that comes with Windows as part of the ucrt thing
     }
 
     /**
@@ -358,6 +358,7 @@ version (IN_LLVM) { /* not needed */ } else
     const(char)* linkerPath(bool x64) @system
     {
         const(char)* addpath;
+        if(getenv("OPEND_USE_MSVC_LINK"w))
         if (auto p = getVCBinDir(x64, addpath))
         {
             OutBuffer cmdbuf;
