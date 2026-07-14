@@ -1745,8 +1745,10 @@ in (fn)
             //
             // Spilling has to be done somehow else.
 
-            import ldc.intrinsics : llvm_stackaddress;
-            sp = llvm_stackaddress();
+            import ldc.intrinsics;
+
+            static if (LLVM_atleast!22) sp = llvm_stackaddress();
+            else sp = llvm_stacksave();
         }
     else version (FreeStanding) {
             assert(0);
@@ -1860,7 +1862,9 @@ version (LDC)
         private extern(D) void* getStackTop() nothrow @nogc
         {
             import ldc.intrinsics;
-            return llvm_stackaddress();
+
+            static if (LLVM_atleast!22) return llvm_stackaddress();
+            else return llvm_stacksave();
         }
     }
     else
