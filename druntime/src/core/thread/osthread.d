@@ -1745,10 +1745,7 @@ in (fn)
             //
             // Spilling has to be done somehow else.
 
-            import ldc.intrinsics;
-
-            static if (LLVM_atleast!22) sp = llvm_stackaddress();
-            else sp = llvm_stacksave();
+            sp = getStackTop();
         }
     else version (FreeStanding) {
             assert(0);
@@ -1864,7 +1861,22 @@ version (LDC)
             import ldc.intrinsics;
 
             static if (LLVM_atleast!22) return llvm_stackaddress();
-            else return llvm_stacksave();
+            else static if (LLVM_atleast!18) return llvm_stacksave();
+            else {
+                // Inline assembly to workaround issue solved by
+                // https://github.com/llvm/llvm-project/pull/68133
+                //
+                // Which wasn't merged/fixed until LLVM 18
+
+                import ldc.llvmasm;
+
+                enum string isize = size_t.sizeof == 8 ? "i64" : "i32";
+                return __asm!(void*)(`
+                    .globaltype __stack_pointer, `~isize~`
+                    global.get __stack_pointer
+                    local.set $0
+                `, "=r");
+            }
         }
     }
     else
