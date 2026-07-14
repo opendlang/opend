@@ -110,19 +110,22 @@ fail_compilation/reserved_version.d(211): Error: version identifier `AsmJS` is r
 fail_compilation/reserved_version.d(212): Error: version identifier `Emscripten` is reserved and cannot be set
 fail_compilation/reserved_version.d(213): Error: version identifier `WebAssembly` is reserved and cannot be set
 fail_compilation/reserved_version.d(214): Error: version identifier `WASI` is reserved and cannot be set
-fail_compilation/reserved_version.d(215): Error: version identifier `CppRuntime_Clang` is reserved and cannot be set
-fail_compilation/reserved_version.d(216): Error: version identifier `CppRuntime_DigitalMars` is reserved and cannot be set
-fail_compilation/reserved_version.d(217): Error: version identifier `CppRuntime_Gcc` is reserved and cannot be set
-fail_compilation/reserved_version.d(218): Error: version identifier `CppRuntime_Microsoft` is reserved and cannot be set
-fail_compilation/reserved_version.d(219): Error: version identifier `CppRuntime_Sun` is reserved and cannot be set
-fail_compilation/reserved_version.d(220): Error: version identifier `D_PIE` is reserved and cannot be set
-fail_compilation/reserved_version.d(221): Error: version identifier `AVR` is reserved and cannot be set
-fail_compilation/reserved_version.d(222): Error: version identifier `D_PreConditions` is reserved and cannot be set
-fail_compilation/reserved_version.d(223): Error: version identifier `D_PostConditions` is reserved and cannot be set
-fail_compilation/reserved_version.d(224): Error: version identifier `D_ProfileGC` is reserved and cannot be set
-fail_compilation/reserved_version.d(225): Error: version identifier `D_Invariants` is reserved and cannot be set
-fail_compilation/reserved_version.d(226): Error: version identifier `D_Optimized` is reserved and cannot be set
-fail_compilation/reserved_version.d(227): Error: version identifier `VisionOS` is reserved and cannot be set
+fail_compilation/reserved_version.d(215): Error: version identifier `WASIp1` is reserved and cannot be set
+fail_compilation/reserved_version.d(216): Error: version identifier `WASIp2` is reserved and cannot be set
+fail_compilation/reserved_version.d(217): Error: version identifier `WASIp3` is reserved and cannot be set
+fail_compilation/reserved_version.d(218): Error: version identifier `CppRuntime_Clang` is reserved and cannot be set
+fail_compilation/reserved_version.d(219): Error: version identifier `CppRuntime_DigitalMars` is reserved and cannot be set
+fail_compilation/reserved_version.d(220): Error: version identifier `CppRuntime_Gcc` is reserved and cannot be set
+fail_compilation/reserved_version.d(221): Error: version identifier `CppRuntime_Microsoft` is reserved and cannot be set
+fail_compilation/reserved_version.d(222): Error: version identifier `CppRuntime_Sun` is reserved and cannot be set
+fail_compilation/reserved_version.d(223): Error: version identifier `D_PIE` is reserved and cannot be set
+fail_compilation/reserved_version.d(224): Error: version identifier `AVR` is reserved and cannot be set
+fail_compilation/reserved_version.d(225): Error: version identifier `D_PreConditions` is reserved and cannot be set
+fail_compilation/reserved_version.d(226): Error: version identifier `D_PostConditions` is reserved and cannot be set
+fail_compilation/reserved_version.d(227): Error: version identifier `D_ProfileGC` is reserved and cannot be set
+fail_compilation/reserved_version.d(228): Error: version identifier `D_Invariants` is reserved and cannot be set
+fail_compilation/reserved_version.d(229): Error: version identifier `D_Optimized` is reserved and cannot be set
+fail_compilation/reserved_version.d(230): Error: version identifier `VisionOS` is reserved and cannot be set
 ---
 */
 
@@ -239,6 +242,9 @@ version = AsmJS;
 version = Emscripten;
 version = WebAssembly;
 version = WASI;
+version = WASIp1;
+version = WASIp2;
+version = WASIp3;
 version = CppRuntime_Clang;
 version = CppRuntime_DigitalMars;
 version = CppRuntime_Gcc;
@@ -320,6 +326,9 @@ debug = HPPA64;
 debug = SH;
 debug = WebAssembly;
 debug = WASI;
+debug = WASIp1;
+debug = WASIp2;
+debug = WASIp3;
 debug = Alpha;
 debug = Alpha_SoftFloat;
 debug = Alpha_HardFloat;

@@ -40,6 +40,10 @@ else version (Posix)
     import core.sys.posix.pthread;
     import core.sys.posix.time;
 }
+else version (WASI)
+{
+    // Dummy no-ops
+}
 else version (FreeStanding)
 {
 }
@@ -248,6 +252,10 @@ class Condition
             if ( rc )
                 throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
         }
+        else version (WASI)
+        {
+            throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
+        }
     }
 
     /**
@@ -313,7 +321,11 @@ class Condition
                 return false;
             throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
         }
-	else version (FreeStanding) assert(0);
+        else version (WASI)
+        {
+            throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
+        }
+        else version (FreeStanding) assert(0);
     }
 
     /**
@@ -362,6 +374,10 @@ class Condition
             if ( rc )
                 throw staticError!AssertError("Unable to notify condition", __FILE__, __LINE__);
         }
+        else version (WASI)
+        {
+            throw staticError!AssertError("Unable to notify condition", __FILE__, __LINE__);
+        }
     }
 
     /**
@@ -409,6 +425,10 @@ class Condition
             } while ( rc == EAGAIN );
             if ( rc )
                 throw staticError!AssertError("Unable to notify condition", __FILE__, __LINE__);
+        }
+        else version (WASI)
+        {
+            throw staticError!AssertError("Unable to notify condition", __FILE__, __LINE__);
         }
     }
 
@@ -614,6 +634,10 @@ private:
     {
         Mutex               m_assocMutex;
         pthread_cond_t      m_hndl;
+    }
+    else version (WASI)
+    {
+        Mutex               m_assocMutex;
     }
     else version (FreeStanding)
     {

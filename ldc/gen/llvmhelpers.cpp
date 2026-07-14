@@ -72,6 +72,9 @@ llvm::cl::opt<llvm::GlobalVariable::ThreadLocalMode> clThreadModel(
 bool isTargetWindowsMSVC() {
   return global.params.targetTriple->isWindowsMSVCEnvironment();
 }
+bool isTargetWasm() {
+  return global.params.targetTriple->isWasm();
+}
 
 /******************************************************************************
  * Global context
@@ -290,7 +293,7 @@ void DtoCAssert(Module *M, const Loc &loc, LLValue *msg) {
     args.push_back(file);
     args.push_back(line);
     args.push_back(msg);
-  } else if (triple.isOSSolaris() || triple.isMusl() ||
+  } else if (triple.isOSSolaris() || triple.isMusl() || triple.isOSWASI() ||
              global.params.isUClibcEnvironment ||
              triple.isGNUEnvironment()) {
     const auto irFunc = gIR->func();

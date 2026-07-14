@@ -15,7 +15,8 @@
 
 module rt.tracegc;
 
-version (FreeStanding) {} else:
+version (WASI) {}
+else version (FreeStanding) {} else:
 
 // version = tracegc;
 

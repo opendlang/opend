@@ -11,7 +11,9 @@
 
 module rt.trace;
 
-version(FreeStanding) {} else:
+// TODO(?): support this on Wasm at some point
+version (WASI) {}
+else version(FreeStanding) {} else:
 
 import core.demangle;
 import core.stdc.ctype;

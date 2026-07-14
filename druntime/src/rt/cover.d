@@ -11,7 +11,8 @@
 
 module rt.cover;
 
-version(FreeStanding) {} else :
+version (WASI) {}
+else version(FreeStanding) {} else :
 
 import core.internal.util.math : min, max;
 

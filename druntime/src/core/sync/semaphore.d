@@ -49,6 +49,10 @@ else version (Posix)
     import core.sys.posix.pthread;
     import core.sys.posix.semaphore;
 }
+else version (WASI)
+{
+    // Dummy no-op
+}
 else version (FreeStanding)
 {
 }
@@ -108,6 +112,10 @@ class Semaphore
             int rc = sem_init( &m_hndl, 0, count );
             if ( rc )
                 throw new SyncError( "Unable to create semaphore" );
+        }
+        else version (WASI)
+        {
+            m_hndl = count;
         }
     }
 
@@ -173,6 +181,12 @@ class Semaphore
                 if ( errno != EINTR )
                     throw new SyncError( "Unable to wait for semaphore" );
             }
+        }
+        else version (WASI)
+        {
+            if (m_hndl == 0) throw new SyncError( "Unable to wait for semaphore" );
+
+            m_hndl -= 1;
         }
     }
 
@@ -272,7 +286,12 @@ class Semaphore
                     throw new SyncError( "Unable to wait for semaphore" );
             }
         }
-	else version (FreeStanding) assert(0);
+        else version (WASI)
+        {
+            wait();
+            return true;
+        }
+    else version (FreeStanding) assert(0);
     }
 
 
@@ -300,6 +319,13 @@ class Semaphore
         {
             int rc = sem_post( &m_hndl );
             if ( rc )
+                throw new SyncError( "Unable to notify semaphore" );
+        }
+        else version (WASI)
+        {
+            if (m_hndl < typeof(m_hndl).max)
+                m_hndl += 1;
+            else
                 throw new SyncError( "Unable to notify semaphore" );
         }
     }
@@ -345,7 +371,12 @@ class Semaphore
                     throw new SyncError( "Unable to wait for semaphore" );
             }
         }
-	else version (FreeStanding) assert(0);
+        else version (WASI)
+        {
+            wait();
+            return true;
+        }
+    else version (FreeStanding) assert(0);
     }
 
 
@@ -357,6 +388,7 @@ protected:
     else version (Darwin)    alias Handle = semaphore_t;
     /// ditto
     else version (Posix)     alias Handle = sem_t;
+    else version (WASI)      alias Handle = uint;
     else version (FreeStanding) alias Handle = void*;
 
     /// Handle to the system-specific semaphore.

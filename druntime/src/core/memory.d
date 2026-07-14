@@ -219,6 +219,10 @@ private extern (C) void _initialize() @system
         GetSystemInfo(&si);
         (cast() pageSize) = cast(size_t) si.dwPageSize;
     }
+    else version (WebAssembly)
+    {
+        (cast() pageSize) = cast(size_t) 65536;
+    }
     else version (FreeStanding)
     {
 

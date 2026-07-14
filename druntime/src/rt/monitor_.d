@@ -215,6 +215,26 @@ else version (Posix)
         pthread_mutex_unlock(mtx) && assert(0);
     }
 }
+else version (WASI) {
+@nogc:
+    alias Mutex = ubyte;
+
+    void initMutex(Mutex* mtx)
+    {
+    }
+
+    void destroyMutex(Mutex* mtx)
+    {
+    }
+
+    void lockMutex(Mutex* mtx)
+    {
+    }
+
+    void unlockMutex(Mutex* mtx)
+    {
+    }
+}
 else version(FreeStanding) {
 	import core.sync.mutex;
 
