@@ -11,7 +11,7 @@ concurrency:
 
 env:
   CLANG_VERSION: 15.0.6
-  LLVM_VERSION: 17.0.6
+  LLVM_VERSION: 19.1.76
 
 jobs:
   build-native:
@@ -62,7 +62,7 @@ jobs:
               -DD_COMPILER_FLAGS="-gcc=/usr/bin/c++ -O -flto=full -defaultlib=phobos2-ldc-lto,druntime-ldc-lto -L-exported_symbol '-L__*' -L-w"
               -DEXTRA_CXXFLAGS=-flto=full
             with_pgo: true
-            llvm_version: 17.0.6
+            llvm_version: 19.1.7
           - job_name: Windows x64
             os: windows-2022
             arch: x64
@@ -87,7 +87,7 @@ jobs:
       - name: Install prerequisites
         uses: ./.github/actions/1-setup
         with:
-          clang_version: ${{ runner.os == 'Windows' && '17.0.6' || env.CLANG_VERSION }}
+          clang_version: ${{ runner.os == 'Windows' && '19.1.7' || env.CLANG_VERSION }}
           llvm_version: ${{ matrix.llvm_version || env.LLVM_VERSION }}
           arch: ${{ matrix.arch }}
       - name: Build bootstrap LDC
