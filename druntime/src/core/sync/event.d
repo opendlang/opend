@@ -24,6 +24,10 @@ else version (Posix)
     import core.sys.posix.sys.types;
     import core.sys.posix.time;
 }
+else version (WASI)
+{
+    // Dummy no-op
+}
 else version (FreeStanding)
 {
 
@@ -130,6 +134,10 @@ nothrow @nogc:
             m_manualReset = manualReset;
             m_initalized = true;
         }
+        else version (WASI)
+        {
+            abort("Error: Cannot initialize Event on WASI.");
+        }
     }
 
     // copying not allowed, can produce resource leaks
@@ -163,6 +171,10 @@ nothrow @nogc:
                     abort("Error: pthread_cond_destroy failed.");
                 m_initalized = false;
             }
+        }
+        else version (WASI)
+        {
+            abort("Error: Cannot deinitialize Event on WASI.");
         }
     }
 
@@ -226,7 +238,12 @@ nothrow @nogc:
         {
             return wait(Duration.max);
         }
-	else version (FreeStanding) assert(0);
+        else version (WASI)
+        {
+            abort("Error: Cannot wait for Event on WASI.");
+            return false;
+        }
+    else version (FreeStanding) assert(0);
     }
 
     /**
@@ -288,7 +305,12 @@ nothrow @nogc:
 
             return result == 0;
         }
-	else version (FreeStanding) assert(0);
+        else version (WASI)
+        {
+            abort("Error: Cannot wait for Event on WASI.");
+            return false;
+        }
+    else version (FreeStanding) assert(0);
     }
 
 private:

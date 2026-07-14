@@ -18,6 +18,8 @@ import core.thread.context;
 
 import core.memory : pageSize;
 
+// No Fiber support on WebAssembly (arch issue)
+// TODO: Investigate Wasm `stack-switching` proposal as solution
 version(WebAssembly) {} else:
 
 ///////////////////////////////////////////////////////////////////////////////

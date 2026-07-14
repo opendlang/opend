@@ -179,6 +179,12 @@ else version (Posix)
         import core.sys.darwin.pthread : pthread_mach_thread_np;
     }
 }
+else version (WASI)
+{
+    import core.stdc.errno : EINTR, errno;
+    import core.stdc.stdlib : free, malloc, realloc;
+    import core.sys.wasi.posix.time : nanosleep, timespec;
+}
 
 version (Solaris)
 {
@@ -499,6 +505,9 @@ class Thread : ThreadBase
                 multiThreadedFlag = false;
         }
 
+        version (WASI)
+        onThreadError("cannot start new threads on WASI");
+
         version (Windows) {} else
         version (Posix)
         {
@@ -654,6 +663,10 @@ class Thread : ThreadBase
             //       on object destruction.
             m_addr = m_addr.init;
         }
+        else version (WASI)
+        {
+            throw new ThreadException( "Unable to join thread" );
+        }
         if ( m_unhandled )
         {
             if ( rethrow )
@@ -683,6 +696,23 @@ class Thread : ThreadBase
         @property static int PRIORITY_DEFAULT() @nogc nothrow pure @safe
         {
             return THREAD_PRIORITY_NORMAL;
+        }
+    }
+    else version (WASI)
+    {
+        @property static int PRIORITY_MIN() @nogc nothrow pure @safe
+        {
+            return 0;
+        }
+
+        @property static const(int) PRIORITY_MAX() @nogc nothrow pure @safe
+        {
+            return 0;
+        }
+
+        @property static int PRIORITY_DEFAULT() @nogc nothrow pure @safe
+        {
+            return 0;
         }
     }
     else
@@ -871,6 +901,10 @@ class Thread : ThreadBase
             }
             return param.sched_priority;
         }
+        else version (WASI)
+        {
+            return 0;
+        }
     	else version (FreeStanding) { assert(0); }
     }
 
@@ -1010,6 +1044,10 @@ class Thread : ThreadBase
         {
             return atomicLoad(m_isRunning);
         }
+        else version (WASI)
+        {
+            return true; // the "main thread" is the only that will pass super.isRunning(), and is always running
+        }
     	else version (FreeStanding) { assert(0); }
     }
 
@@ -1069,6 +1107,23 @@ class Thread : ThreadBase
             Sleep( cast(uint) val.total!"msecs" );
         }
         else version (Posix)
+        {
+            timespec tin  = void;
+            timespec tout = void;
+
+            val.split!("seconds", "nsecs")(tin.tv_sec, tin.tv_nsec);
+            if ( val.total!"seconds" > tin.tv_sec.max )
+                tin.tv_sec  = tin.tv_sec.max;
+            while ( true )
+            {
+                if ( !nanosleep( &tin, &tout ) )
+                    return;
+                if ( errno != EINTR )
+                    assert(0, "Unable to sleep for the specified duration");
+                tin = tout;
+            }
+        }
+        else version (WASI)
         {
             timespec tin  = void;
             timespec tout = void;
@@ -1374,6 +1429,13 @@ private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc nothrow
 
         atomicStore!(MemoryOrder.raw)(thisThread.toThread.m_isRunning, true);
     }
+    else version (WASI)
+    {
+        thisThread.m_addr  = 1; // assumes this is done only once
+        thisContext.bstack = getStackBottom();
+        thisContext.tstack = thisContext.bstack;
+    }
+
     thisThread.m_isDaemon = true;
     thisThread.tlsGCdataInit();
     Thread.setThis( thisThread );
@@ -1675,9 +1737,22 @@ in (fn)
         else version (Emscripten) {
             sp = emscripten_stack_get_current();
         }
-	else version (FreeStanding) {
+        else version (WebAssembly)
+        {
+            // Wasm is special in that this isn't really possible
+            // to dump "registers" (Wasm locals & value stack) onto
+            // the linear-memory "C" stack easily.
+            //
+            // Spilling has to be done somehow else.
+
+            import ldc.intrinsics;
+
+            static if (LLVM_atleast!22) sp = llvm_stackaddress();
+            else sp = llvm_stacksave();
+        }
+    else version (FreeStanding) {
             assert(0);
-	}
+    }
         else
         {
             static assert(false, "Architecture not supported.");
@@ -1718,6 +1793,10 @@ version (Posix)
 else version (Windows)
 {
     alias getpid = core.sys.windows.winbase.GetCurrentProcessId;
+}
+else version (WASI)
+{
+    int getpid() @nogc nothrow @safe => 1;
 }
 
 extern (C) @nogc nothrow
@@ -1768,6 +1847,26 @@ version (LDC)
                 static assert(0);
         }
     }
+    else version (WebAssembly)
+    {
+        /* Must NOT be naked, but is safe to inline.
+         *
+         * The function prologue is what loads the `__stack_pointer` global
+         * into a fake "physical" register (which becomes a Wasm local).
+         * Manipulation of the stack is done with the local, and only synced
+         * back out to `__stack_pointer` across function boundaries.
+         *
+         * `llvm_stackaddress` gives us access to this fake register
+         * and allows for better optimization than inline asm would.
+         */
+        private extern(D) void* getStackTop() nothrow @nogc
+        {
+            import ldc.intrinsics;
+
+            static if (LLVM_atleast!22) return llvm_stackaddress();
+            else return llvm_stacksave();
+        }
+    }
     else
     {
         /* The use of intrinsic llvm_frameaddress is a reasonable default for
@@ -1807,6 +1906,14 @@ version (LDC_Windows)
             return __asm!(void*)("mov %gs:0($1), $0", "=r,r", 8);
         else
             static assert(false, "Architecture not supported.");
+    }
+}
+else version (WebAssembly)
+{
+    private extern(C) extern ubyte __stack_high;
+    private extern(D) void* getStackBottom() nothrow @nogc
+    {
+        return &__stack_high;
     }
 }
 else
@@ -2113,6 +2220,10 @@ private extern (D) bool suspend( Thread t ) nothrow @nogc
             t.m_curr.tstack = getStackTop();
         }
     }
+    else version (WASI)
+    {
+        onThreadError( "Unable to suspend thread" );
+    }
     return true;
 }
 
@@ -2269,6 +2380,10 @@ private extern (D) void resume(ThreadBase _t) nothrow @nogc
         {
             t.m_curr.tstack = t.m_curr.bstack;
         }
+    }
+    else version (WASI)
+    {
+        onThreadError( "Unable to resume thread" );
     }
 }
 
@@ -2692,6 +2807,17 @@ else version (Posix)
         {
 
         }
+    }
+}
+else version (WASI)
+{
+    //
+    // Entry point for WASI threads
+    //
+    extern (C) void* thread_entryPoint( void* arg ) nothrow
+    {
+        onThreadError("Cannot enter new WASI threads.");
+        return null;
     }
 }
 else version (FreeStanding)
