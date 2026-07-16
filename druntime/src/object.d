@@ -4930,6 +4930,23 @@ template _arrayOp(Args...)
 
 public import core.builtins : __ctfeWrite;
 
+// printf debugging helper: print location
+void __ploc(string file = __FILE__, size_t line = __LINE__)(string message = null) @safe pure nothrow @nogc
+{
+    pragma(inline, true);
+    debug
+    {
+        import core.stdc.stdio : printf;
+
+        if (message is null || message.length > int.max) {
+            printf("%.*s(%zu)\n", int(file.length), file.ptr, line);
+            return;
+        }
+
+        printf("%.*s(%zu): %.*s\n", int(file.length), file.ptr, line, cast(int) message.length, message.ptr);
+    }
+}
+
 /**
 
 Provides an "inline import", i.e. an `import` that is only available for a
