@@ -684,13 +684,13 @@ version (CRuntime_Glibc)
 
     alias int pthread_once_t;
 
-    struct pthread_rwlock_t
+    union pthread_rwlock_t
     {
         byte[__SIZEOF_PTHREAD_RWLOCK_T] __size;
         c_long __align;
     }
 
-    struct pthread_rwlockattr_t
+    union pthread_rwlockattr_t
     {
         byte[__SIZEOF_PTHREAD_RWLOCKATTR_T] __size;
         c_long __align;
@@ -1303,13 +1303,13 @@ pthread_barrierattr_t
 
 version (CRuntime_Glibc)
 {
-    struct pthread_barrier_t
+    union pthread_barrier_t
     {
         byte[__SIZEOF_PTHREAD_BARRIER_T] __size;
         c_long __align;
     }
 
-    struct pthread_barrierattr_t
+    union pthread_barrierattr_t
     {
         byte[__SIZEOF_PTHREAD_BARRIERATTR_T] __size;
         int __align;
