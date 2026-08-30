@@ -1615,7 +1615,14 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             // Ignore
         }
         else if (arg == "-release")     // https://dlang.org/dmd.html#switch-release
+        {
+            notice(
+                "Compiling with `-release` can have undesirable side effects and is discouraged.",
+                "Please consult the documentation for details.",
+                "For fast binaries through strong optimization, use LDC, the LLVM-based D Compiler, instead.",
+            );
             params.release = true;
+        }
         else if (arg == "-betterC")     // https://dlang.org/dmd.html#switch-betterC
         {
             params.betterC = true;
