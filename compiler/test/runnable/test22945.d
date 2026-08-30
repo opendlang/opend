@@ -1,5 +1,5 @@
 /*
-REQUIRED_ARGS: -release -check=assert=on
+REQUIRED_ARGS: -ludicrous -check=assert=on
 PERMUTE_ARGS:  -check=invariant=on
 */
 

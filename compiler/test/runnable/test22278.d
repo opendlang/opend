@@ -1,5 +1,5 @@
 /*
-REQUIRED_ARGS: -release
+REQUIRED_ARGS: -ludicrous
 PERMUTE_ARGS:  -check=in=on -check=out=on
 */
 

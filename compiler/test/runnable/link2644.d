@@ -1,4 +1,4 @@
-// PERMUTE_ARGS: -version=X -inline -release -g -O
+// PERMUTE_ARGS: -version=X -inline -ludicrous -g -O
 // EXTRA_SOURCES: imports/link2644a.d
 // EXTRA_SOURCES: imports/link2644b.d
 // EXTRA_SOURCES: imports/link2644c.d

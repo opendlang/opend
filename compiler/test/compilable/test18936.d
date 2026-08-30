@@ -1,4 +1,4 @@
-// REQUIRED_ARGS: -fPIC -O -release -inline -m64 -betterC
+// REQUIRED_ARGS: -fPIC -O -ludicrous -inline -m64 -betterC
 // DISABLED: win32 win64
 
 // https://issues.dlang.org/show_bug.cgi?id=18936

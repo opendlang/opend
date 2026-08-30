@@ -4,7 +4,7 @@
 Exclude -O due to a codegen bug on OSX:
 https://issues.dlang.org/show_bug.cgi?id=22556
 
-PERMUTE_ARGS(osx): -inline -release -g
+PERMUTE_ARGS(osx): -inline -ludicrous -g
 */
 
 import core.vararg;
