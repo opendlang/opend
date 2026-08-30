@@ -1732,6 +1732,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
         }
         else if (startsWith(p + 1, "version")) // https://dlang.org/dmd.html#switch-version
         {
+        Ldversion:
             // Parse:
             //      -version=number
             //      -version=identifier
@@ -1755,6 +1756,12 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             }
             else
                 goto Lerror;
+        }
+        else if (startsWith(p + 1, "d-version") || startsWith(p + 1, "-d-version")) // CLI compatibility with `ldc2`
+        {
+            const offset = (p[1] == '-') ? 3 : 2;
+            p += offset;
+            goto Ldversion;
         }
         else if (arg == "--b")
             driverParams.debugb = true;
