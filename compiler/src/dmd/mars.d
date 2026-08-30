@@ -604,6 +604,20 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             errorSupplemental(Loc.initial, "%.*s", cast(int)availableOptions.length, availableOptions.ptr);
     }
 
+    /**
+     * Emit an informational-only warning.
+     */
+    void notice(Supplementals...)(string msg, Supplementals supplementals)
+    {
+        const backup = global.params.warnings;
+        scope (exit) global.params.warnings = backup;
+
+        global.params.warnings = DiagnosticReporting.inform;
+        dmd.errors.warning(Loc.initial, "%.*s".ptr, cast(int) msg.length, msg.ptr);
+        foreach(suppl; supplementals)
+            dmd.errors.warningSupplemental(Loc.initial, "%.*s".ptr, cast(int) suppl.length, suppl.ptr);
+    }
+
     enum CheckOptions { success, error, help }
 
     /*
@@ -1336,8 +1350,59 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             // has been drafted and ratified in the language spec.
             // Rather, these old features will just be accepted without warning.
         }
-        else if (arg == "-O")   // https://dlang.org/dmd.html#switch-O
-            driverParams.optimize = true;
+        else if (startsWith(p + 1, "O")) // https://dlang.org/dmd.html#switch-O
+        {
+            static immutable msgSupplementalCompat =
+                "Optimization-level switches are solely accepted for command-line compatibility with other compilers.";
+            bool enableOptimize = true;
+
+            if (arg.length >= 3)
+            {
+                const optLevel = arg[2 .. $];
+                if (optLevel == "s" || optLevel == "z")
+                    notice(
+                        "This compiler does not support optimization for size.",
+                        "Will optimize for speed instead.",
+                        msgSupplementalCompat,
+                    );
+                else if (optLevel == "fast")
+                    notice(
+                        "This compiler does not support optimization for non-strict standards compliance.",
+                        "Will optimize for speed instead.",
+                        msgSupplementalCompat,
+                    );
+                else if (optLevel == "g")
+                {
+                    enableOptimize = false;
+                    notice(
+                        "This compiler does not support optimization for debugging experience.",
+                        "Will disable non-mandatory optimizations instead.",
+                        msgSupplementalCompat,
+                    );
+                }
+                else if (optLevel.ptr[0].isdigit)
+                {
+                    uint optLevelNum;
+                    if (!parseDigits(optLevelNum, optLevel))
+                        goto Lerror;
+                    if (optLevelNum == 0)
+                        enableOptimize = false;
+                    version (none) if (optLevelNum > 1)
+                        notice(
+                            "This compiler does not support optimization levels.",
+                            msgSupplementalCompat,
+                        );
+                }
+                else
+                    goto Lerror;
+            }
+
+            if (driverParams.optimizeHasBeenSet && (driverParams.optimize != enableOptimize))
+                error("Switch `%s` effectively contradicts a previously encountered optimization-level switch.", p);
+
+            driverParams.optimize = enableOptimize;
+            driverParams.optimizeHasBeenSet = true;
+        }
         else if (arg == "-o-")  // https://dlang.org/dmd.html#switch-o-
             params.obj = false;
         else if (p[1] == 'o')
@@ -1638,6 +1703,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
         }
         else if (startsWith(p + 1, "debug") && p[6] != 'l') // https://dlang.org/dmd.html#switch-debug
         {
+        Lddebug:
             // Parse:
             //      -debug
             //      -debug=number
@@ -1665,8 +1731,15 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             else
                 params.debuglevel = 1;
         }
+        else if (startsWith(p + 1, "d-debug") || startsWith(p + 1, "-d-debug"))
+        {
+            const offset = (p[1] == '-') ? 3 : 2;
+            p += offset;
+            goto Lddebug;
+        }
         else if (startsWith(p + 1, "version")) // https://dlang.org/dmd.html#switch-version
         {
+        Ldversion:
             // Parse:
             //      -version=number
             //      -version=identifier
@@ -1690,6 +1763,12 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
             }
             else
                 goto Lerror;
+        }
+        else if (startsWith(p + 1, "d-version") || startsWith(p + 1, "-d-version")) // CLI compatibility with `ldc2`
+        {
+            const offset = (p[1] == '-') ? 3 : 2;
+            p += offset;
+            goto Ldversion;
         }
         else if (arg == "--b")
             driverParams.debugb = true;
