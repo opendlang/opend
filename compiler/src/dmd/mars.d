@@ -1620,7 +1620,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
         {
             params.betterC = true;
             params.allInst = true;
-	    params.fieldwise = FeatureState.disabled; // cuz of some bug and idc about betterC so just hacking it
+            params.fieldwise = FeatureState.disabled; // cuz of some bug and idc about betterC so just hacking it
         }
         else if (arg == "-noboundscheck") // https://dlang.org/dmd.html#switch-noboundscheck
         {
