@@ -1703,6 +1703,7 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
         }
         else if (startsWith(p + 1, "debug") && p[6] != 'l') // https://dlang.org/dmd.html#switch-debug
         {
+        Lddebug:
             // Parse:
             //      -debug
             //      -debug=number
@@ -1729,6 +1730,12 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
                 goto Lerror;
             else
                 params.debuglevel = 1;
+        }
+        else if (startsWith(p + 1, "d-debug") || startsWith(p + 1, "-d-debug"))
+        {
+            const offset = (p[1] == '-') ? 3 : 2;
+            p += offset;
+            goto Lddebug;
         }
         else if (startsWith(p + 1, "version")) // https://dlang.org/dmd.html#switch-version
         {
