@@ -1,8 +1,8 @@
 module core.internal.abort;
 
 /*
- * Use instead of assert(0, msg), since this does not print a message for -release compiled
- * code, and druntime is -release compiled.
+ * Use instead of assert(0, msg), since this does not print a message for -ludicrous compiled
+ * code, and druntime is -ludicrous compiled.
  */
 void abort(scope string msg, scope string filename = __FILE__, size_t line = __LINE__) @nogc nothrow @safe
 {

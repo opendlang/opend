@@ -155,7 +155,7 @@ version (CppRuntime_Microsoft)
             static if (__CXXLIB__.length > 0)
                 pragma(msg, "Unrecognised C++ runtime library '" ~ __CXXLIB__ ~ "'");
 
-            // No runtime specified; as a best-guess, -release will produce code that matches the MSVC release CRT
+            // No runtime specified; as a best-guess, -ludicrous will produce code that matches the MSVC release CRT
             version (_DEBUG)
                 enum _ITERATOR_DEBUG_LEVEL = 2;
             else
