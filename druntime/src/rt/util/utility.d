@@ -13,7 +13,7 @@ module rt.util.utility;
 /**
  * Asserts that the given condition is `true`.
  *
- * The assertion is independent from -release, by abort()ing. Regular assertions
+ * The assertion is independent from -ludicrous, by abort()ing. Regular assertions
  * throw an AssertError and thus require an initialized GC, which might not be
  * the case (yet or anymore) for the startup/shutdown code in this package
  * (called by CRT ctors/dtors etc.).

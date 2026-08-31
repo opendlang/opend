@@ -1,4 +1,4 @@
-// PERMUTE_ARGS: -release -g
+// PERMUTE_ARGS: -ludicrous -g
 
 version(Windows) {}
 else version(X86_64)

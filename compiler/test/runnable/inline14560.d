@@ -1,4 +1,4 @@
-// PERMUTE_ARGS: -inline -release -g -O
+// PERMUTE_ARGS: -inline -ludicrous -g -O
 
 auto serialize(T)(T value)
 {

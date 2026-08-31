@@ -106,7 +106,7 @@ ifeq ($(BUILD),debug)
 	UDFLAGS += -g -debug
 	DFLAGS:=$(UDFLAGS)
 else
-	UDFLAGS += -O -release
+	UDFLAGS += -O -ludicrous
 	DFLAGS:=$(UDFLAGS) -inline # unittests don't compile with -inline
 endif
 
@@ -451,7 +451,7 @@ else
 unittest : $(UT_MODULES) $(addsuffix /.run,$(ADDITIONAL_TESTS))
 endif
 else
-unittest : unittest-debug unittest-release
+unittest : unittest-debug unittest-ludicrous
 unittest-%: target
 	$(MAKE) -f $(MAKEFILE) unittest OS=$(OS) MODEL=$(MODEL) DMD=$(DMD) BUILD=$*
 endif

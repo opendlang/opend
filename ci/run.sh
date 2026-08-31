@@ -109,10 +109,10 @@ test_dmd() {
     if [ "$FULL_BUILD" == "true" ] && [ "$OS_NAME" == "linux" ]; then
         local args=() # use all default ARGS
     else
-        local args=(ARGS="-O -inline -release")
+        local args=(ARGS="-O -inline -ludicrous")
     fi
 
-    $build_path/dmd -g -i -Icompiler/test -release compiler/test/run.d -ofgenerated/run
+    $build_path/dmd -g -i -Icompiler/test -ludicrous compiler/test/run.d -ofgenerated/run
     generated/run -j$N --environment MODEL=$MODEL HOST_DMD=$build_path/dmd "${args[@]}"
 }
 

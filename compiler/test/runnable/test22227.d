@@ -1,4 +1,4 @@
-// REQUIRED_ARGS: -debug -O -release
+// REQUIRED_ARGS: -debug -O -ludicrous
 // https://issues.dlang.org/show_bug.cgi?id=22277
 
 bool secret = false;

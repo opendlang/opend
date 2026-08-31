@@ -1,6 +1,6 @@
 /*
 REQUIRED_ARGS: -mcpu=native
-PERMUTE_ARGS: -O -inline -release
+PERMUTE_ARGS: -O -inline -ludicrous
 */
 
 /***

@@ -10971,7 +10971,7 @@ pure @safe unittest
         bool empty() { return true; }
     }
     RangePayload thePayload;
-    //Assertion won't happen when contracts are disabled for -release.
+    //Assertion won't happen when contracts are disabled for -ludicrous.
     debug assertThrown!AssertError(enumerate(thePayload, -10));
 }
 // https://issues.dlang.org/show_bug.cgi?id=10939
