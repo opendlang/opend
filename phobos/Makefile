@@ -132,7 +132,7 @@ override DFLAGS+=-conf= -I$(DRUNTIME_PATH)/import $(DMDEXTRAFLAGS) -w -de -previ
 ifeq ($(BUILD),debug)
 override DFLAGS += -g -debug
 else
-override DFLAGS += -O # -release
+override DFLAGS += -O # -ludicrous
 endif
 
 ifdef ENABLE_COVERAGE
@@ -310,7 +310,7 @@ endif
 ifeq (1,$(BUILD_WAS_SPECIFIED))
 unittest : $(addsuffix .run,$(addprefix unittest/,$(D_MODULES)))
 else
-unittest : unittest-debug unittest-release
+unittest : unittest-debug unittest-ludicrous
 unittest-%:
 	$(MAKE) unittest OS=$(OS) MODEL=$(MODEL) DMD=$(DMD) BUILD=$*
 endif
