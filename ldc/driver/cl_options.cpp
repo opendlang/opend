@@ -518,7 +518,7 @@ static cl::opt<bool, true>
             cl::ValueDisallowed);
 
 static cl::opt<bool, true>
-    release("ludicrous", cl::ZeroOrMore, cl::location(global.params.release),
+    ludicrous("ludicrous", cl::ZeroOrMore, cl::location(global.params.ludicrous),
             cl::desc("Compile ludicrous version, defaulting to disabled "
                      "asserts/contracts/invariants, and bounds checks in @safe "
                      "functions only"),
