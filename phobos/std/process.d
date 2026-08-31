@@ -722,7 +722,7 @@ scope(exit) wait(pid);
 ...
 
 // Run DMD on the file "myprog.d", specifying a few compiler switches:
-auto dmdPid = spawnProcess(["dmd", "-O", "-release", "-inline", "myprog.d" ]);
+auto dmdPid = spawnProcess(["dmd", "-O", "-ludicrous", "-inline", "myprog.d" ]);
 if (wait(dmdPid) != 0)
     writeln("Compilation failed!");
 ---

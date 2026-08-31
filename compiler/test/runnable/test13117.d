@@ -1,4 +1,4 @@
-// PERMUTE_ARGS: -O -release -g
+// PERMUTE_ARGS: -O -ludicrous -g
 import std.file, std.stdio;
 
 int main()

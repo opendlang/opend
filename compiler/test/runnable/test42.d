@@ -671,7 +671,7 @@ int foo45(int i)
 
 void test45()
 {
-   version (Win32)  // this test fails in -release because asserts will be removed
+   version (Win32)  // this test fails in -ludicrous because asserts will be removed
    {
    assert(foo45(0)==2);
    try{
@@ -3492,7 +3492,7 @@ void test215()
     class C {}
     enum assocarrayliteral = Q!( [1:2] ).q.stringof;
     //enum dottype = Q!( C.Object.toString ).q.stringof;
-    enum halt = 0.stringof;    // ICE w/ -release
+    enum halt = 0.stringof;    // ICE w/ -ludicrous
     //enum remove = Q!( [1:2].remove(1) ).q.stringof;
     enum templat = Q!( Q ).q.stringof;
 }

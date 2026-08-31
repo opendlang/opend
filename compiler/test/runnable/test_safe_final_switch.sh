@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # tests various @safe behavior for final switches in
-# -release and non-release builds
+# -ludicrous and non-ludicrous builds
 
 src_file=runnable/extra-files/test11051.d
 
@@ -18,12 +18,12 @@ ulimit -c 0
 $DMD -run ${src_file} 2> /dev/null && die 1
 
 # returns 1 (failure)
-$DMD -release -run ${src_file} 2> /dev/null && die 2
+$DMD -ludicrous -run ${src_file} 2> /dev/null && die 2
 
 # returns 1 (failure)
 $DMD -version=Safe -run ${src_file} 2> /dev/null && die 3
 
 # returns 1 (failure)
-$DMD -release -version=Safe -run ${src_file} 2> /dev/null && die 4
+$DMD -ludicrous -version=Safe -run ${src_file} 2> /dev/null && die 4
 
 exit 0

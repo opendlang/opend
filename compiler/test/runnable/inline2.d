@@ -1,6 +1,6 @@
 // EXTRA_SOURCES: imports/inline2a.d
 // PERMUTE_ARGS:
-// REQUIRED_ARGS: -O -release -inline
+// REQUIRED_ARGS: -O -ludicrous -inline
 
 import imports.inline2a;
 

@@ -512,7 +512,14 @@ static cl::opt<CHECKACTION, true> checkAction(
 
 static cl::opt<bool, true>
     release("release", cl::ZeroOrMore, cl::location(global.params.release),
-            cl::desc("Compile release version, defaulting to disabled "
+            cl::desc("Compile ludicrous version, defaulting to disabled "
+                     "asserts/contracts/invariants, and bounds checks in @safe "
+                     "functions only"),
+            cl::ValueDisallowed);
+
+static cl::opt<bool, true>
+    release("ludicrous", cl::ZeroOrMore, cl::location(global.params.release),
+            cl::desc("Compile ludicrous version, defaulting to disabled "
                      "asserts/contracts/invariants, and bounds checks in @safe "
                      "functions only"),
             cl::ValueDisallowed);

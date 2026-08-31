@@ -1,4 +1,4 @@
-// PERMUTE_ARGS: -unittest -O -release -inline -fPIC -g
+// PERMUTE_ARGS: -unittest -O -ludicrous -inline -fPIC -g
 // REQUIRED_ARGS: -preview=dtorfields
 /*
 TEST_OUTPUT:

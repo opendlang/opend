@@ -1,4 +1,4 @@
-// PERMUTE_ARGS: -inline -release -g -O -version=X
+// PERMUTE_ARGS: -inline -ludicrous -g -O -version=X
 
 version(X)
     alias M = real;

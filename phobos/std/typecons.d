@@ -4529,7 +4529,7 @@ Returns:
 
     Nullable!(int, -1) ni;
     //`get` is implicitly called. Will throw
-    //an error in non-release mode
+    //an error in non-ludicrous mode
     assertThrown!Throwable(ni == 0);
 
     ni = 0;
@@ -5001,7 +5001,7 @@ Params:
     value = A value of type `T` to assign to this `NullableRef`.
             If the internal state of this `NullableRef` has not
             been initialized, an error will be thrown in
-            non-release mode.
+            non-ludicrous mode.
  */
     void opAssign()(T value)
         if (isAssignable!T) //@@@9416@@@
@@ -5044,7 +5044,7 @@ This function is also called for the implicit conversion to `T`.
 
         NullableRef!int nr;
         //`get` is implicitly called. Will throw
-        //an error in non-release mode
+        //an error in non-ludicrous mode
         assertThrown!Throwable(nr == 0);
 
         nr.bind(new int(0));

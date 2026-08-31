@@ -2,7 +2,7 @@
 
 /*
 PERMUTE_ARGS:
-REQUIRED_ARGS: -O -release
+REQUIRED_ARGS: -O -ludicrous
 */
 
 

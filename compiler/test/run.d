@@ -546,7 +546,7 @@ string[string] getEnvironment()
 
     version(Windows)
     {
-        env.setDefault("ARGS", "-inline -release -g -O");
+        env.setDefault("ARGS", "-inline -ludicrous -g -O");
         env["OBJ"] = ".obj";
         env["DSEP"] = `\\`;
         env["SEP"] = `\`;
@@ -557,7 +557,7 @@ string[string] getEnvironment()
     }
     else
     {
-        env.setDefault("ARGS", "-inline -release -g -O -fPIC");
+        env.setDefault("ARGS", "-inline -ludicrous -g -O -fPIC");
         env["OBJ"] = ".o";
         env["DSEP"] = "/";
         env["SEP"] = "/";

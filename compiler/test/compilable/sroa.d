@@ -1,4 +1,4 @@
-/* REQUIRED_ARGS: -O -release -inline
+/* REQUIRED_ARGS: -O -ludicrous -inline
 This compares two different ways to do a for loop. The range
 version should SROA the VecRange struct into two register variables.
 */
