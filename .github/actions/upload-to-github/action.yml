@@ -9,7 +9,7 @@ runs:
         path: artifacts/
         merge-multiple: true # place all files into artifacts/ directly
 
-    - name: Set GITHUB_RELEASE_TAG & ARTIFACT_ID
+    - name: Set GITHUB_RELEASE_TAG, VERSIONED_RELEASE_TAG & ARTIFACT_ID
       shell: bash
       run: |
         set -eux
@@ -17,12 +17,15 @@ runs:
           tag='${{ github.ref }}'
           tag="${tag:10}"
           artifactID="${tag:1}"
+          versionedTag=''
         else
           tag=CI
           artifactID='${{ github.sha }}'
+          versionedTag="CI-${artifactID}"
           artifactID="${artifactID:0:8}"
         fi
         echo "GITHUB_RELEASE_TAG=$tag" >> $GITHUB_ENV
+        echo "VERSIONED_RELEASE_TAG=$versionedTag" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$artifactID" >> $GITHUB_ENV
 
     - name: Download existing artifacts from GitHub release
@@ -69,3 +72,20 @@ runs:
         omitDraftDuringUpdate: true
         # master builds: remove existing artifacts for 'CI' release
         removeArtifacts: ${{ env.GITHUB_RELEASE_TAG == 'CI' }}
+
+    - name: Upload to versioned GitHub release
+      if: env.VERSIONED_RELEASE_TAG != ''
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ env.VERSIONED_RELEASE_TAG }}
+        commit: ${{ github.sha }}
+        artifacts: artifacts/*
+        allowUpdates: true
+        artifactErrorsFailBuild: true
+        prerelease: true
+        omitPrereleaseDuringUpdate: true
+        omitName: true
+        omitBody: true
+        omitDraftDuringUpdate: true
+        # re-running CI for the same commit should refresh that commit's artifacts
+        removeArtifacts: true
