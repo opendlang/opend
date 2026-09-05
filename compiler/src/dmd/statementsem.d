@@ -1605,7 +1605,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
         bool needsClosure = foreachBodyNeedsClosure(fs.forceClosureRewrite, fs.prm, fs._body);
         if(needsClosure)
         {
-            auto s = rewriteForeachIntoOpApply(fs);
+            auto s = rewriteForeachIntoOpApply(fs, sc.func);
             if (LabelStatement ls = checkLabeledLoop(sc, fs))
                 ls.gotoTarget = s;
             result = s.statementSemantic(sc);
@@ -5651,17 +5651,17 @@ private bool foreachBodyNeedsClosure(int forceClosureRewrite, Parameters* parame
     return !finder.foundDealbreaker && finder.mightCapture && finder.foundIdentifier;
 }
 
-private Statement rewriteForeachIntoOpApply(ForeachRangeStatement fs) {
+private Statement rewriteForeachIntoOpApply(ForeachRangeStatement fs, FuncDeclaration func) {
     auto params = new Parameters();
     params.push(fs.prm);
-    return rewriteForeachIntoOpApply(fs.loc, fs.endloc, fs.op, params, fs._body, null, fs.upr, fs.lwr);
+    return rewriteForeachIntoOpApply(fs.loc, fs.endloc, fs.op, func, params, fs._body, null, fs.upr, fs.lwr);
 }
 
 private Statement rewriteForeachIntoOpApply(ForeachStatement fs) {
-    return rewriteForeachIntoOpApply(fs.loc, fs.endloc, fs.op, fs.parameters, fs._body, fs.aggr, null, null);
+    return rewriteForeachIntoOpApply(fs.loc, fs.endloc, fs.op, fs.func, fs.parameters, fs._body, fs.aggr, null, null);
 }
 
-private Statement rewriteForeachIntoOpApply(const Loc loc, Loc endloc, TOK op, Parameters* fsParameters, Statement fsBody, Expression fsAggr /* only for regular foreach */, Expression fsUpr, Expression fsLwr /* upr/lower only for foreach range */) {
+private Statement rewriteForeachIntoOpApply(const Loc loc, Loc endloc, TOK op, FuncDeclaration func, Parameters* fsParameters, Statement fsBody, Expression fsAggr /* only for regular foreach */, Expression fsUpr, Expression fsLwr /* upr/lower only for foreach range */) {
     // put the original loop params into a delegate, then foreach over that her
     // so we turn `foreach(i; x .. y) { stuff; }` into `foreach(i; &helper) { stuff; }` where `helper` is the original foreach params in opApply format.
 
@@ -5675,12 +5675,14 @@ private Statement rewriteForeachIntoOpApply(const Loc loc, Loc endloc, TOK op, P
         dgArgs.push(new IdentifierExp(loc, prm.ident));
     }
 
+    StorageClass stc = mergeFuncAttrs(STC.safe | STC.pure_ | STC.nogc, func);
     // int delegate(int delegate(PARAMS))
-    auto tfInner = new TypeFunction(ParameterList(paramsOpApply), Type.tint32, LINK.d, 0/*STC.safe | STC.nothrow_ | STC.pure_*/);
+    auto tfInner = new TypeFunction(ParameterList(paramsOpApply), Type.tint32, LINK.d, stc);
     auto paramsOuter = new Parameters();
     auto idDg = Identifier.generateId("__dg");
     paramsOuter.push(new Parameter(Loc.initial, 0, new TypeDelegate(tfInner), idDg, null, null, null));
-    auto tf = new TypeFunction(ParameterList(paramsOuter), Type.tint32, LINK.d, 0);
+
+    auto tf = new TypeFunction(ParameterList(paramsOuter), Type.tint32, LINK.d, stc);
 
     auto helperDecl = new FuncLiteralDeclaration(loc, loc, tf /* type */, TOK.delegate_, null /* fs */);
 
