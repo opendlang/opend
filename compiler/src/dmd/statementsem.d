@@ -733,6 +733,8 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
         if (fs.func.fes)
             fs.func = fs.func.fes.func;
 
+        const bool needsClosure = foreachBodyNeedsClosure(fs.forceClosureRewrite, fs.parameters, fs._body);
+
         VarDeclaration vinit = null;
         fs.aggr = fs.aggr.expressionSemantic(sc);
         fs.aggr = resolveProperties(sc, fs.aggr);
@@ -1018,6 +1020,18 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     p.type = p.type.addStorageClass(p.storageClass);
                 }
 
+
+                if(needsClosure)
+                {
+                    auto s = rewriteForeachIntoOpApply(fs);
+
+                    if (auto ls = checkLabeledLoop(sc, fs))
+                        ls.gotoTarget = s;
+                    return retStmt(s);
+                }
+
+
+
                 tn = tab.nextOf().toBasetype();
 
                 if (dim == 2)
@@ -1263,6 +1277,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 fs._body = new CompoundStatement(loc, ds, fs._body);
 
                 Statement s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
+
                 if (auto ls = checkLabeledLoop(sc, fs))   // https://issues.dlang.org/show_bug.cgi?id=15450
                                                           // don't use sc2
                     ls.gotoTarget = s;
@@ -1287,6 +1302,19 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
              */
             if (sapply)
                 return retStmt(apply());
+
+
+                if(needsClosure)
+                {
+                    auto s = rewriteForeachIntoOpApply(fs);
+
+                    if (auto ls = checkLabeledLoop(sc, fs))
+                        ls.gotoTarget = s;
+                    return retStmt(s);
+                }
+
+
+
             {
                 /* Look for range iteration, i.e. the properties
                  * .empty, .popFront, .popBack, .front and .back
@@ -1573,6 +1601,19 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             return setError();
         }
 
+
+        bool needsClosure = foreachBodyNeedsClosure(fs.forceClosureRewrite, fs.prm, fs._body);
+        if(needsClosure)
+        {
+            auto s = rewriteForeachIntoOpApply(fs, sc.func);
+            if (LabelStatement ls = checkLabeledLoop(sc, fs))
+                ls.gotoTarget = s;
+            result = s.statementSemantic(sc);
+
+            return;
+        }
+
+
         /* Convert to a for loop:
          *  foreach (key; lwr .. upr) =>
          *  for (auto key = lwr, auto tmp = upr; key < tmp; ++key)
@@ -1680,7 +1721,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             }
         }
 
-        auto s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
+        Statement s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
 
         if (LabelStatement ls = checkLabeledLoop(sc, fs))
             ls.gotoTarget = s;
@@ -1955,6 +1996,22 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             const cnt = setMangleOverride(de.declaration, cast(const(char)[])se.peekData());
             if (cnt != 1)
                 assert(0);
+        }
+        else if (ps.ident == Id.forceClosureRewrite)
+        {
+            auto fes = ps._body ? ps._body.isForeachStatement() : null;
+            auto fers = (!fes && ps._body) ? ps._body.isForeachRangeStatement() : null;
+            if (!fes && !fers)
+            {
+                error(ps.loc, "`pragma(forceClosureRewrite)` must be attached to a `foreach` statement");
+                return setError();
+            }
+            auto isSet = evalPragmaForceForeachRewrite(ps.loc, sc, ps.args);
+            auto result = isSet ? 1 /* force yes */ : 2 /* force no */; /* 0 == automatic */
+            if(fes)
+                fes.forceClosureRewrite = result;
+            else
+                fers.forceClosureRewrite = result;
         }
         else if (!global.params.ignoreUnsupportedPragmas)
         {
@@ -5492,4 +5549,195 @@ bool checkLabel(GotoStatement gs)
         return true;
     }
     return false;
+}
+
+private bool foreachBodyNeedsClosure(int forceClosureRewrite, Parameter parameter, Statement fsBody) {
+    if(forceClosureRewrite == 1)
+        return true;
+    if(forceClosureRewrite == 2)
+        return false;
+    scope p = new Parameters();
+    p.push(parameter);
+    return foreachBodyNeedsClosure(forceClosureRewrite, p, fsBody);
+}
+
+private bool foreachBodyNeedsClosure(int forceClosureRewrite, Parameters* parameters, Statement fsBody)
+{
+    if(forceClosureRewrite == 1)
+        return true;
+    if(forceClosureRewrite == 2)
+        return false;
+
+    static extern(C++) final class ClosureVisitor : SemanticTimeTransitiveVisitor
+    {
+        // FIXME: we just looking for any ident that MIGHT match by a rough name check
+        // but this could perhaps be more intelligent
+        // like if the delegate we detect is passed as `scope` there's no need for this.
+
+        bool foundIdentifier = false;
+        bool foundDealbreaker = false;
+        bool mightCapture = false;
+        Identifier[] identsToLookFor;
+        int depth = 0;
+        extern(D)
+        this(Identifier[] identsToLookFor) {
+            this.identsToLookFor = identsToLookFor;
+        }
+
+        alias visit = SemanticTimeTransitiveVisitor.visit;
+        override void visit(FuncDeclaration fd) {
+            // note that there is a fd.needsClosure but that is on the outer function, if it needs to allocate one when called, not on the inner function we are looking at here so it isn't actually helpful
+            // but we want to check if there's a func param with the same name that's actually gonna refer to a different variable so that's not important to us
+            bool hasShadowingIdent;
+            if(auto tf = fd.type.toTypeFunction()) {
+                if(tf.parameterList.parameters)
+                foreach(param; *tf.parameterList.parameters) {
+                    foreach(ident; this.identsToLookFor) {
+                        if(param.ident == ident) {
+                            hasShadowingIdent = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if(hasShadowingIdent) // FIXME should just remove the shadowing ident from the idents to look for tbh
+                return;
+            depth++;
+            super.visit(fd);
+            depth--;
+        }
+
+        // FIXME: if it is passed by scope we don't actually need it
+        // what we would really like is to skip the rewrite if the loop's
+        // containing function doesn't need a closure but idk if it knows that yet...
+        override void visit(FuncLiteralDeclaration fd) {
+            this.mightCapture = true;
+            this.visit(cast(FuncDeclaration) fd);
+        }
+        override void visit(IdentifierExp ie) {
+            // this check does NOT capture aliases to the thing like ref vars either!
+            if(!foundIdentifier && depth != 0)
+            foreach(ident; identsToLookFor) {
+                if(ident == ie.ident) {
+                    foundIdentifier = true;
+                    break;
+                }
+            }
+        }
+        // these don't work rn so keep the old behavior to limit breakage (while also limiting bug fix)
+        // technically it only fails if it is top-level tho, if we are inside another SwitchStatement at the time, it is ok, so we could
+        // allow those still....
+        override void visit(GotoCaseStatement s) {
+            foundDealbreaker = true;
+        }
+        override void visit(GotoDefaultStatement s) {
+            foundDealbreaker = true;
+        }
+        //override void visit(MixinExp) { found = true; }
+        //override void visit(MixinStatement) { found = true; }
+        //override void visit(TemplateMixin) { found = true; }
+    }
+
+    Identifier[16] idents;
+    int identsSize;
+    foreach(param; *parameters) {
+        idents[identsSize++] = param.ident;
+        if(identsSize >= idents.length)
+            break;
+    }
+
+    scope finder = new ClosureVisitor(idents[0 .. identsSize]);
+    fsBody.accept(finder);
+    return !finder.foundDealbreaker && finder.mightCapture && finder.foundIdentifier;
+}
+
+private Statement rewriteForeachIntoOpApply(ForeachRangeStatement fs, FuncDeclaration func) {
+    auto params = new Parameters();
+    params.push(fs.prm);
+    return rewriteForeachIntoOpApply(fs.loc, fs.endloc, fs.op, func, params, fs._body, null, fs.upr, fs.lwr);
+}
+
+private Statement rewriteForeachIntoOpApply(ForeachStatement fs) {
+    return rewriteForeachIntoOpApply(fs.loc, fs.endloc, fs.op, fs.func, fs.parameters, fs._body, fs.aggr, null, null);
+}
+
+private Statement rewriteForeachIntoOpApply(const Loc loc, Loc endloc, TOK op, FuncDeclaration func, Parameters* fsParameters, Statement fsBody, Expression fsAggr /* only for regular foreach */, Expression fsUpr, Expression fsLwr /* upr/lower only for foreach range */) {
+    // put the original loop params into a delegate, then foreach over that her
+    // so we turn `foreach(i; x .. y) { stuff; }` into `foreach(i; &helper) { stuff; }` where `helper` is the original foreach params in opApply format.
+
+    auto paramsOpApply = new Parameters();
+    auto paramsForEach = new Parameters();
+    Expressions* dgArgs = new Expressions();
+
+    foreach (prm; *fsParameters) {
+        paramsOpApply.push(new Parameter(Loc.initial, STC.ref_, prm.type, prm.ident, null /* default */, null /* uda */, null /* unpack */));
+        paramsForEach.push(new Parameter(Loc.initial, 0, prm.type, prm.ident, null /* default */, null /* uda */, null /* unpack */));
+        dgArgs.push(new IdentifierExp(loc, prm.ident));
+    }
+
+    StorageClass stc = mergeFuncAttrs(STC.safe | STC.pure_ | STC.nogc, func);
+    // int delegate(int delegate(PARAMS))
+    auto tfInner = new TypeFunction(ParameterList(paramsOpApply), Type.tint32, LINK.d, stc);
+    auto paramsOuter = new Parameters();
+    auto idDg = Identifier.generateId("__dg");
+    paramsOuter.push(new Parameter(Loc.initial, 0, new TypeDelegate(tfInner), idDg, null, null, null));
+
+    auto tf = new TypeFunction(ParameterList(paramsOuter), Type.tint32, LINK.d, stc);
+
+    auto helperDecl = new FuncLiteralDeclaration(loc, loc, tf /* type */, TOK.delegate_, null /* fs */);
+
+    // want to declare `int __ret = dg(args);`, we will actually add this later to the ast
+    auto retVar = new VarDeclaration(
+        loc,
+        Type.tint32,
+        Identifier.generateId("__ret"),
+        new ExpInitializer(loc,
+            new CallExp(loc,
+                new IdentifierExp(loc, idDg),
+                dgArgs
+            )
+        )
+    );
+    retVar.storage_class |= STC.temp;
+
+    // body of the loop is declare the variable; if it is not equal to zero, return it
+    auto helperLoopBody = new CompoundStatement(loc,
+        new ExpStatement(loc, retVar),
+        new IfStatement(
+            loc,
+            null,
+            new EqualExp(EXP.notEqual, Loc.initial, new VarExp(loc, retVar), IntegerExp.literal!0),
+            new ReturnStatement(loc, new VarExp(loc, retVar)),
+            null,
+            loc
+        )
+    );
+
+    // the helper function's body is `original_foreach(...) { declare retVar; if(retVar != 0) return retVar; } return 0;`
+    helperDecl.fbody = new CompoundStatement(loc,
+        // want to copy the original loop, but with a different body. also changing the name to avoid any potential conflict
+        fsAggr is null ?
+            // foreach range must have one and only one parameter so this should be ok
+            new ForeachRangeStatement(loc, op, (*fsParameters)[0], fsLwr, fsUpr, helperLoopBody, endloc)
+            :
+            new ForeachStatement(loc, op, fsParameters, fsAggr, helperLoopBody, endloc)
+        ,
+        // and return 0 after the loop, if we reach there
+        new ReturnStatement(loc, IntegerExp.literal!0)
+    );
+    auto helper = new FuncExp(loc, helperDecl);
+
+    Statement s = new ForeachStatement(
+        loc,
+        TOK.foreach_ /* or TOK.foreach_reverse_ */,
+        paramsForEach,
+        helper /* aggregate */,
+        fsBody,
+        endloc
+    );
+    deprecation(loc, "gg");
+
+    //import dmd.hdrgen; printf("%s\n", dmd.hdrgen.toChars(s));
+
+    return s;
 }
