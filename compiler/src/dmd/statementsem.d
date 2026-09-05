@@ -732,6 +732,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
         fs.func = sc.func;
         if (fs.func.fes)
             fs.func = fs.func.fes.func;
+        const isClosure = isForeachBodyClosure(fs._body);
 
         VarDeclaration vinit = null;
         fs.aggr = fs.aggr.expressionSemantic(sc);
@@ -957,17 +958,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             if (!flde)
                 return null;
 
-            // Resolve any forward referenced goto's
-            foreach (ScopeStatement ss; *fs.gotos)
-            {
-                GotoStatement gs = ss.statement.isGotoStatement();
-                if (!gs.label.statement)
-                {
-                    // 'Promote' it to this scope, and replace with a return
-                    fs.cases.push(gs);
-                    ss.statement = new ReturnStatement(Loc.initial, new IntegerExp(fs.cases.length + 1));
-                }
-            }
+            resolveForeachGotos(fs);
 
             Expression e = null;
             if (vinit)
@@ -1248,7 +1239,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     }
                     else
                     {
-                        auto ei = new ExpInitializer(loc, new IdentifierExp(loc, fs.key.ident));
+                        auto ei = new ExpInitializer(loc, new VarExp(loc, fs.key));
                         auto v = new VarDeclaration(loc, p.type, p.ident, ei);
                         v.storage_class |= STC.foreach_ | (p.storageClass & STC.ref_);
                         fs._body = new CompoundStatement(loc, new ExpStatement(loc, v), fs._body);
@@ -1261,6 +1252,17 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     }
                 }
                 fs._body = new CompoundStatement(loc, ds, fs._body);
+
+                if (isClosure)
+                {
+                    // declare the foreach variables inside the callback
+                    tmp.dsymbolSemantic(sc2);
+                    fs.key.dsymbolSemantic(sc2);
+                    fs.parameters = new Parameters();
+                    fs._body = callForeachBody(sc2, fs);
+                    if (!fs._body)
+                        return retError();
+                }
 
                 Statement s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
                 if (auto ls = checkLabeledLoop(sc, fs))   // https://issues.dlang.org/show_bug.cgi?id=15450
@@ -1401,6 +1403,15 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 {
                     auto vd = copyToTemp(STC.ref_, "__front", einit);
                     vd.dsymbolSemantic(sc);
+                    if (isClosure)
+                    {
+                        // the first temporary is used to infer the tuple type
+                        // before the callback is constructed
+
+                        // since the callback is in a different scope, we need
+                        // to construct a new variable to insert into the callback
+                        vd = copyToTemp(STC.ref_, "__front", einit);
+                    }
                     makeargs = new ExpStatement(loc, vd);
 
                     // Resolve inout qualifier of front type
@@ -1450,13 +1461,26 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                         }
 
                         auto var = new VarDeclaration(loc, p.type, p.ident, new ExpInitializer(loc, exp));
-                        var.storage_class |= STC.ctfe | STC.ref_ | STC.foreach_;
+                        var.storage_class |= STC.ctfe | STC.foreach_;
+                        if (!isClosure || (p.storageClass & STC.ref_) || !p.type.baseElemOf().isCopyable())
+                            var.storage_class |= STC.ref_;
                         makeargs = new CompoundStatement(loc, makeargs, new ExpStatement(loc, var));
                     }
                 }
 
                 fs._body = unpackVariables(fs._body);
-                forbody = new CompoundStatement(loc, makeargs, fs._body);
+                if (isClosure)
+                {
+                    fs._body = new CompoundStatement(loc, makeargs, fs._body);
+                    fs.parameters = new Parameters();
+                    forbody = callForeachBody(sc2, fs);
+                    if (!forbody)
+                        return retError();
+                }
+                else
+                {
+                    forbody = new CompoundStatement(loc, makeargs, fs._body);
+                }
 
                 Statement s = new ForStatement(loc, _init, condition, increment, forbody, fs.endloc);
                 if (auto ls = checkLabeledLoop(sc, fs))
@@ -1487,6 +1511,8 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
     {
         /* https://dlang.org/spec/statement.html#foreach-range-statement
          */
+
+        const isClosure = isForeachBodyClosure(fs._body);
 
         //printf("ForeachRangeStatement::semantic() %p\n", fs);
 
@@ -1671,6 +1697,23 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 v.range = new IntRange(fs.key.range.imin, fs.key.range.imax - SignExtendedNumber(1));
             }
         }
+
+        if (isClosure)
+        {
+            fs.key.dsymbolSemantic(sc);
+            tmp.dsymbolSemantic(sc);
+            auto parameters = new Parameters();
+            auto foreachBody = new ForeachStatement(loc, fs.op, parameters, null,
+                fs._body, fs.endloc);
+            foreachBody.func = sc.func;
+            if (foreachBody.func.fes)
+                foreachBody.func = foreachBody.func.fes.func;
+
+            fs._body = callForeachBody(sc, foreachBody);
+            if (!fs._body)
+                return setError();
+        }
+
         if (fs.prm.storageClass & STC.ref_)
         {
             if (fs.key.type.constConv(fs.prm.type) == MATCH.nomatch)
@@ -2630,6 +2673,12 @@ version (IN_LLVM)
         gds.sw = sc.sw;
         if (!gds.sw)
         {
+            if (sc.fes && !sc.fes.parameters.length)
+            {
+                sc.fes.cases.push(gds);
+                result = new ReturnStatement(Loc.initial, new IntegerExp(sc.fes.cases.length + 1));
+                return;
+            }
             error(gds.loc, "`goto default` not in `switch` statement");
             return setError();
         }
@@ -2654,6 +2703,18 @@ version (IN_LLVM)
 
         if (!sc.sw)
         {
+            if (sc.fes && !sc.fes.parameters.length)
+            {
+                if (gcs.exp)
+                {
+                    gcs.exp = gcs.exp.expressionSemantic(sc);
+                    if (gcs.exp.op == EXP.error)
+                        return setError();
+                }
+                sc.fes.cases.push(gcs);
+                result = new ReturnStatement(Loc.initial, new IntegerExp(sc.fes.cases.length + 1));
+                return;
+            }
             error(gcs.loc, "`goto case` not in `switch` statement");
             return setError();
         }
@@ -4252,6 +4313,67 @@ private extern(D) Statement loopReturn(Expression e, Statements* cases, const re
 
     s = new CompoundStatement(loc, a);
     return new SwitchStatement(loc, null, e, s, false, loc);
+}
+
+private bool isForeachBodyClosure(Statement body)
+{
+    extern(C++) final class ClosureVisitor : SemanticTimeTransitiveVisitor
+    {
+        alias visit = SemanticTimeTransitiveVisitor.visit;
+        bool found = false;
+        override void visit(FuncExp) { found = true; }
+        override void visit(FuncDeclaration) { found = true; }
+        override void visit(MixinExp) { found = true; }
+        override void visit(MixinStatement) { found = true; }
+        override void visit(TemplateMixin) { found = true; }
+    }
+    scope finder = new ClosureVisitor();
+    body.accept(finder);
+    return finder.found;
+}
+
+private void resolveForeachGotos(ForeachStatement fs)
+{
+    // Resolve any forward referenced goto's
+    foreach (ScopeStatement ss; *fs.gotos)
+    {
+        GotoStatement gs = ss.statement.isGotoStatement();
+        if (!gs.label.statement)
+        {
+            // 'Promote' it to this scope, and replace with a return
+            fs.cases.push(gs);
+            ss.statement = new ReturnStatement(Loc.initial, new IntegerExp(fs.cases.length + 1));
+        }
+    }
+}
+
+private Statement callForeachBody(Scope* sc, ForeachStatement fs)
+{
+    FuncExp flde = foreachBodyToFunction(sc, fs, null, false);
+    if (!flde)
+        return null;
+
+    resolveForeachGotos(fs);
+
+    const loc = fs.loc;
+    auto call = new CallExp(loc, flde);
+    auto result = new VarDeclaration(loc, Type.tint32, Identifier.generateId("__foreachResult"),
+        new ExpInitializer(loc, call));
+    result.storage_class |= STC.temp;
+
+    auto statements = new Statements();
+    statements.push(new ExpStatement(loc, result));
+
+    Expression isBreak = new EqualExp(EXP.equal, loc, new VarExp(loc, result), IntegerExp.literal!1);
+    statements.push(new IfStatement(loc, null, isBreak, new BreakStatement(loc, null), null, loc));
+
+    foreach (i, statement; *fs.cases)
+    {
+        Expression condition = new EqualExp(EXP.equal, loc, new VarExp(loc, result), new IntegerExp(i + 2));
+        statements.push(new IfStatement(loc, null, condition, statement, null, loc));
+    }
+
+    return new CompoundStatement(loc, statements);
 }
 
 /*************************************
