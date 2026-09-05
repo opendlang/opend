@@ -352,6 +352,8 @@ public:
     Statements *cases;          // put breaks, continues, gotos and returns here
     ScopeStatements *gotos;     // forward referenced goto's go here
 
+    int forceClosureRewrite;
+
     ForeachStatement *syntaxCopy() override;
     bool hasBreak() const override;
     bool hasContinue() const override;
@@ -370,6 +372,8 @@ public:
     Loc endloc;                 // location of closing curly bracket
 
     VarDeclaration *key;
+
+    int forceClosureRewrite;
 
     ForeachRangeStatement *syntaxCopy() override;
     bool hasBreak() const override;
