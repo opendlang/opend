@@ -352,6 +352,12 @@ static cl::list<std::string, StringsAdapter> stringImportPaths(
     "J", cl::desc("Look for string imports also in <directory>"),
     cl::value_desc("directory"), cl::location(strImpPathStore), cl::Prefix);
 
+static StringsAdapter verboseTagsStore("p", global.params.verboseTags);
+static cl::list<std::string, StringsAdapter> verboseTags(
+    "p", cl::desc("Print verbose compile time info tagged <tag>"),
+    cl::value_desc("tag"), cl::location(verboseTagsStore), cl::Prefix);
+
+
 static cl::opt<bool, true> addMain(
     "main", cl::ZeroOrMore, cl::location(global.params.addMain),
     cl::desc(
