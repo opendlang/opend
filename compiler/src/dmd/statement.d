@@ -869,6 +869,8 @@ extern (C++) final class ForeachStatement : Statement
     Statements* cases;          // put breaks, continues, gotos and returns here
     ScopeStatements* gotos;     // forward referenced goto's go here
 
+    int forceClosureRewrite = 0;
+
     extern (D) this(const ref Loc loc, TOK op, Parameters* parameters, Expression aggr, Statement _body, Loc endloc) @safe
     {
         super(loc, STMT.Foreach);
@@ -917,6 +919,8 @@ extern (C++) final class ForeachRangeStatement : Statement
     Loc endloc;             // location of closing curly bracket
 
     VarDeclaration key;
+
+    int forceClosureRewrite = 0;
 
     extern (D) this(const ref Loc loc, TOK op, Parameter prm, Expression lwr, Expression upr, Statement _body, Loc endloc) @safe
     {

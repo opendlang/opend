@@ -173,7 +173,7 @@ enum class UnittestFilter : uint8_t
     explicitOnly = 1u,
 };
 
-// Put command line switches in here 
+// Put command line switches in here
 struct Param
 {
     d_bool obj;           // write object file
@@ -244,6 +244,7 @@ struct Param
     Array<const char *> modFileAliasStrings; // array of char*'s of -I module filename alias strings
     Array<const char *> *imppath;     // array of char*'s of where to look for import modules
     Array<const char *> *fileImppath; // array of char*'s of where to look for file import modules
+    Array<const char *> *verboseTags; // array of char*'s of tagged messages to print verbosely
     DString objdir;    // .obj/.lib file output directory
     DString objname;   // .obj file output name
     DString libname;   // .lib file output name
@@ -400,7 +401,7 @@ struct Global
     FileManager* fileManager;
     ErrorSink* errorSink;       // where the error messages go
     ErrorSink* errorSinkNull;   // where the error messages disappear
- 
+
 #if IN_LLVM
     DString ldc_version;
     DString llvm_version;
