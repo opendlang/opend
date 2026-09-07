@@ -1258,9 +1258,11 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
 
                 if (needsClosure)
                 {
-                    // declare the foreach variables inside the callback
+                    // the scope will change with the callback, so declare the
+                    // variables here before that happens to avoid forward ref errors
                     tmp.dsymbolSemantic(sc2);
                     fs.key.dsymbolSemantic(sc2);
+                    // then clear out the params since that is part of the for() loop now and we just want the fes.func magic available here for the body
                     fs.parameters = new Parameters();
                     fs._body = callForeachBody(sc2, fs);
                     if (!fs._body)
@@ -1268,7 +1270,6 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 }
 
                 Statement s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
-
                 if (auto ls = checkLabeledLoop(sc, fs))   // https://issues.dlang.org/show_bug.cgi?id=15450
                                                           // don't use sc2
                     ls.gotoTarget = s;
@@ -1293,7 +1294,6 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
              */
             if (sapply)
                 return retStmt(apply());
-
             {
                 /* Look for range iteration, i.e. the properties
                  * .empty, .popFront, .popBack, .front and .back
@@ -1462,11 +1462,18 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                         }
 
                         auto var = new VarDeclaration(loc, p.type, p.ident, new ExpInitializer(loc, exp));
-                        var.storage_class |= STC.ctfe /*| STC.ref_*/ | STC.foreach_;
-                        // if it is a closure we do NOT want to capture the original var by ref, since that'd
-                        // be a use-after-free when it ends up in the closure and defeats the point of the rewrite
-                        if (!needsClosure || (p.storageClass & STC.ref_) || !p.type.baseElemOf().isCopyable())
-                            var.storage_class |= STC.ref_;
+                        if(needsClosure) {
+                            // if it is a closure we do NOT want to capture the original var by ref, since that'd
+                            // be a use-after-free when it ends up in the closure and defeats the point of the rewrite
+                            // UNLESS it is explicitly requested by the user, in which case trust they know what they're doing
+                            var.storage_class |= STC.ctfe | STC.foreach_ | (p.storageClass & STC.ref_);
+                            // if the type is non-copyable it will fail with a build
+                            // error, but i think that's ok tbh but the test there is `!p.type.baseElemOf().isCopyable()` and ref would allow it to continue
+                        } else {
+                            // if not a closure, the ref is always ok
+                            var.storage_class |= STC.ctfe | STC.ref_ | STC.foreach_;
+
+                        }
                         makeargs = new CompoundStatement(loc, makeargs, new ExpStatement(loc, var));
                     }
                 }
@@ -1476,7 +1483,11 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
 
                 if (needsClosure) {
                     fs._body = forbody;
+                    // the parameters were already defined above, so emptying that
+                    // to avoid "is already defined" errors
                     fs.parameters = new Parameters();
+                    // call the body as if it were opApply delegate, which gets
+                    // the right closure treatment
                     forbody = callForeachBody(sc2, fs);
                     if (!forbody)
                         return retError();
@@ -1700,15 +1711,20 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
         }
 
         if (needsClosure) {
+
+            // gotta evaluate the variables now since the scope will change later
             fs.key.dsymbolSemantic(sc);
             tmp.dsymbolSemantic(sc);
-            auto parameters = new Parameters();
-            auto foreachBody = new ForeachStatement(loc, fs.op, parameters, null, fs._body, fs.endloc);
-            foreachBody.func = sc.func;
-            if (foreachBody.func.fes)
-                foreachBody.func = foreachBody.func.fes.func;
 
-            fs._body = callForeachBody(sc, foreachBody);
+            // this dummy foreach object is there so the func.fes has something
+            // valid to point to. that is used as part of attribute inference magic
+            auto dummyFes = new ForeachStatement(loc, fs.op, new Parameters(), null, fs._body, fs.endloc);
+            dummyFes.func = sc.func;
+            if (dummyFes.func.fes)
+                dummyFes.func = dummyFes.func.fes.func;
+
+            // now the original foreach body range is replaced with the call to the opApply-style body instead
+            fs._body = callForeachBody(sc, dummyFes);
             if (!fs._body)
                 return setError();
         }
