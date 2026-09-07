@@ -1905,6 +1905,13 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
                 goto Lnoarg;
             }
         }
+        else if (p[1] == 'p')
+        {
+            if (!params.verboseTags)
+                params.verboseTags = new Strings();
+            params.verboseTags.push(p + 2 + (p[2] == '='));
+        }
+
         else if (p[1] == '\0')
             files.push("__stdin.d");
         else

@@ -267,6 +267,7 @@ extern (C++) struct Param
     Array!(const(char)*) modFileAliasStrings; // array of char*'s of -I module filename alias strings
     Array!(const(char)*)* imppath;      // array of char*'s of where to look for import modules
     Array!(const(char)*)* fileImppath;  // array of char*'s of where to look for file import modules
+    Array!(const(char)*)* verboseTags;  // array of char*'s of tagged messages to print verbosely
     const(char)[] objdir;                // .obj/.lib file output directory
     const(char)[] objname;               // .obj file output name
     const(char)[] libname;               // .lib file output name
@@ -418,7 +419,7 @@ extern (C++) struct Global
 
     ErrorSink errorSink;       /// where the error messages go
     ErrorSink errorSinkNull;   /// where the error messages are ignored
- 
+
 version (IN_LLVM)
 {
     const(char)[] ldc_version;

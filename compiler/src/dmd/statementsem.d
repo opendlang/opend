@@ -1738,7 +1738,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             }
         }
 
-        Statement s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
+        auto s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
 
         if (LabelStatement ls = checkLabeledLoop(sc, fs))
             ls.gotoTarget = s;
@@ -5623,6 +5623,8 @@ private Statement callForeachBody(Scope* sc, ForeachStatement fs)
     // delegate all other cases to the same `switch(result) { cases... }` opApply uses.
     // the cases are set up by `resolveForeachGotos`
     statements.push(loopReturn(new VarExp(loc, result), fs.cases, loc));
+
+    verboseWithTag("closureRewrite", loc, "closure rewrite triggered");
 
     return new CompoundStatement(loc, statements);
 }
