@@ -376,6 +376,48 @@ else
         va_end(ap);
     }
 
+static if (__VERSION__ < 2092)
+    extern (C++) void verboseWithTag(const(char)* tag, const ref Loc loc, const(char)* format, ...)
+    {
+        if(global.params.verboseTags is null)
+            return;
+        bool shouldPrint = false;
+        foreach(tagCheck; *global.params.verboseTags) {
+            if(strcmp(tag, tagCheck) == 0) {
+                shouldPrint = true;
+                break;
+            }
+        }
+        if(!shouldPrint)
+            return;
+
+        va_list ap;
+        va_start(ap, format);
+        verrorReport(Loc.initial, format, ap, ErrorKind.message);
+        va_end(ap);
+    }
+else
+    pragma(printf) extern (C++) void verboseWithTag(const(char)* tag, const ref Loc loc, const(char)* format, ...) @system
+    {
+        if(global.params.verboseTags is null)
+            return;
+        bool shouldPrint = false;
+        foreach(tagCheck; *global.params.verboseTags) {
+            if(strcmp(tag, tagCheck) == 0) {
+                shouldPrint = true;
+                break;
+            }
+        }
+        if(!shouldPrint)
+            return;
+        va_list ap;
+        va_start(ap, format);
+        verrorReport(loc, format, ap, ErrorKind.message);
+        va_end(ap);
+    }
+
+
+
 /**
  * The type of the diagnostic handler
  * see verrorReport for arguments

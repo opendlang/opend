@@ -11,7 +11,7 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # File type specific settings:
-[*.{asm,S,c,cpp,m,h,d,di,dd,ddoc,dt,json,sdl,R,bat,bash,fish,sh,zsh}]
+[*.{asm,S,c,cpp,m,h,dd,ddoc,dt,json,sdl,R,bat,bash,fish,sh,zsh}]
 indent_style = space
 indent_size = 4
 

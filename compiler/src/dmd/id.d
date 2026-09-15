@@ -355,6 +355,7 @@ immutable Msgtable[] msgtable =
     { "crt_constructor" },
     { "crt_destructor" },
     { "explicit_gc" },
+    { "forceClosureRewrite" },
 
     // For special functions
     { "tohash", "toHash" },
