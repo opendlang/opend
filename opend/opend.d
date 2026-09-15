@@ -25,6 +25,7 @@ import std.file;
 
 	--opend-compiler=dmd/ldmd2
 	--opend-dev=yes
+	--opend-time=yes|no
 +/
 
 // rumor has it arm64 for apple can be better than aarch64 but i think they the same
@@ -44,6 +45,7 @@ string[] testRunnerBuildArgs(string[] userArgs) {
 
 string preferredCompiler;
 bool devCompiler;
+bool timeBuilds;
 
 int main(string[] args) {
 	// maybe override the normal config files
@@ -77,6 +79,9 @@ int main(string[] args) {
 				break;
 				case "dev":
 					devCompiler = true;
+				break;
+				case "time":
+					timeBuilds = value == "yes";
 				break;
 				default:
 					throw new Exception("unknown opend arg: " ~ name);
@@ -269,7 +274,16 @@ struct Commands {
 	int build(string[] args, string[] extraBuildArgs) {
 		// FIXME: support -gnone?
 		// FIXME: pull info out of the cache to get the right libs and -i modifiers out
-		return sendToCompilerDriver(["-g", "-i"] ~ extraBuildArgs ~ args, "dmd");
+		import core.time;
+		auto start = MonoTime.currTime;
+		int ret = sendToCompilerDriver(["-g", "-i"] ~ extraBuildArgs ~ args, "dmd");
+		if(timeBuilds && ret == 0) {
+			// FIXME: ideally would see a breakdown via a split at the beginning of codegen
+			// FIXME: would also like to know the peak memory use of the compiler
+			import std.stdio;
+			stderr.writeln("Build complete in ", (MonoTime.currTime - start).total!"msecs", "ms");
+		}
+		return ret;
 	}
 
 	/// Does an optimized build with the given arguments
