@@ -43,8 +43,72 @@ bool checkMustUse(Expression e, Scope* sc)
                 Id.udaMustUse.toChars(), e.type.toPrettyChars(true));
             return true;
         }
+    } else if(auto ce = e.isCallExp()) {
+        if(ce.f && hasMustUseAttribute(ce.f, sc) && !isAssignment(e) && !isIncrementOrDecrement(e))
+        {
+            error(e.loc, "ignored value of `@%s` function call `%s`; prepend a `cast(void)` if intentional",
+                Id.udaMustUse.toChars(), ce.f.toPrettyChars(true));
+            return true;
+        }
     }
     return false;
+}
+
+void checkMustUseInheritance(Dsymbol sym)
+{
+    import dmd.attrib : foreachUdaNoSemantic;
+    import dmd.errors : error;
+    import dmd.id : Id;
+
+    bool had;
+    // Can't use foreachUda (and by extension hasMustUseAttribute) while
+    // semantic analysis of `sym` is still in progress
+    foreachUdaNoSemantic(sym, (exp) {
+        if (isMustUseAttribute(exp))
+        {
+            had = true;
+            return 1;
+        }
+        return 0; // continue
+    });
+
+    if (!had)
+        return;
+
+    bool hasParentWithout;
+    if (auto fd = sym.isFuncDeclaration())
+    {
+        foreach(base; fd.foverrides) {
+            hasParentWithout = true;
+            foreachUdaNoSemantic(base, (exp) {
+                if (isMustUseAttribute(exp))
+                {
+                    hasParentWithout = false;
+                    return 1;
+                }
+                return 0;
+            });
+            if(hasParentWithout)
+                break;
+        }
+    }
+
+    if(hasParentWithout)
+    {
+        error(sym.loc, "method `%s` cannot be `@%s` unless all methods it overrides are `@%s`",
+            sym.toPrettyChars(),
+            Id.udaMustUse.toChars(),
+            Id.udaMustUse.toChars()
+        );
+
+        if (auto fd = sym.isFuncDeclaration())
+        {
+            foreach(base; fd.foverrides) {
+                errorSupplemental(base.loc, "base method here: `%s`", base.toPrettyChars());
+            }
+        }
+        sym.errors = true;
+    }
 }
 
 /**
@@ -66,13 +130,7 @@ void checkMustUseReserved(Dsymbol sym)
     foreachUdaNoSemantic(sym, (exp) {
         if (isMustUseAttribute(exp))
         {
-            if (sym.isFuncDeclaration())
-            {
-                error(sym.loc, "`@%s` on functions is reserved for future use",
-                    Id.udaMustUse.toChars());
-                sym.errors = true;
-            }
-            else if (sym.isClassDeclaration() || sym.isEnumDeclaration())
+            if (sym.isClassDeclaration() || sym.isEnumDeclaration())
             {
                 error(sym.loc, "`@%s` on `%s` types is reserved for future use",
                     Id.udaMustUse.toChars(), sym.kind());

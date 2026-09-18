@@ -121,6 +121,7 @@ void addDefaultVersionIdentifiers(const ref Param params, const ref Target tgt)
     VersionCondition.addPredefinedGlobalIdent("D_Version2");
     VersionCondition.addPredefinedGlobalIdent("all");
     VersionCondition.addPredefinedGlobalIdent("D_OpenD");
+    VersionCondition.addPredefinedGlobalIdent("D_mustuse_on_functions");
 
     addPredefinedGlobalIdentifiers(tgt);
 

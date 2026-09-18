@@ -989,6 +989,7 @@ void registerPredefinedVersions() {
   VersionCondition::addPredefinedGlobalIdent("all");
   VersionCondition::addPredefinedGlobalIdent("D_Version2");
   VersionCondition::addPredefinedGlobalIdent("D_OpenD");
+  VersionCondition::addPredefinedGlobalIdent("D_mustuse_on_functions");
 
 #if LDC_LLVM_SUPPORTED_TARGET_SPIRV || LDC_LLVM_SUPPORTED_TARGET_NVPTX
   if (dcomputeTargets.size() != 0) {

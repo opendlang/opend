@@ -3658,7 +3658,6 @@ version (IN_LLVM)
         funcdecl.visibility = sc.visibility;
         funcdecl.userAttribDecl = sc.userAttribDecl;
         UserAttributeDeclaration.checkGNUABITag(funcdecl, funcdecl._linkage);
-        checkMustUseReserved(funcdecl);
 
 version (IN_LLVM)
 {
@@ -4446,6 +4445,8 @@ version (IN_LLVM)
             objc.setSelector(funcdecl, sc);
             objc.setAsOptional(funcdecl, sc);
         }
+
+        checkMustUseInheritance(funcdecl);
 
         objc.validateSelector(funcdecl);
         objc.validateOptional(funcdecl);
