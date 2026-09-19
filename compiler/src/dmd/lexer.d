@@ -527,6 +527,13 @@ class Lexer
                     tokenStringConstant(t, true);
                     return;
                 }
+                else if (p[1] == 'q' && p[2] == '"')
+		{
+                    p += 2; // skip the i and q
+                    delimitedStringConstant(t, true);
+                    return;
+		}
+
                 else
                     goto case_ident;
             case '"':
@@ -1672,9 +1679,18 @@ class Lexer
     Params:
         result = pointer to the token that accepts the result
     */
-    private void delimitedStringConstant(Token* result) @system
+    private void delimitedStringConstant(Token* result, bool supportInterpolation = false) @system
     {
-        result.value = TOK.string_;
+        if (supportInterpolation)
+        {
+            result.value = TOK.interpolated;
+            result.interpolatedSet = null;
+        }
+        else
+        {
+            result.value = TOK.string_;
+        }
+
         Loc start = loc();
         dchar delimleft = 0;
         dchar delimright = 0;
@@ -1715,6 +1731,13 @@ class Lexer
                     continue; // ignore
                 c = '\n'; // treat EndOfLine as \n character
                 goto Lnextline;
+            case '$':
+                if (!supportInterpolation)
+                    goto default;
+
+                if (!handleInterpolatedSegment(result, start))
+                    goto default;
+                continue;
             case 0:
             case 0x1A:
                 error("unterminated delimited string constant starting at %s", start.toChars());
@@ -1811,26 +1834,28 @@ class Lexer
                             size_t lineStart = 0;
                             string keep;
 
-                            void processOutdentingLine(const(char)[] line, bool isEnd) {
-                                if(line.length && line[0] != '\n') {
+                            void processOutdentingLine(const(char)[] line, bool isEnd, bool atInterpolationBoundary) {
+                                if((line.length && line[0] != '\n') || atInterpolationBoundary) {
                                     // it should have the same leading whitespace which we can now strip
-                                    if(line[0 .. leadingWhitespace.length] != leadingWhitespace)
+                                    // FIXME: for interpolations it might now and the rror isn't triggered because line.length == 0
+                                    if(line.length < leadingWhitespace.length || line[0 .. leadingWhitespace.length] != leadingWhitespace)
                                         error("Indented heredoc lines must all start with the same whitespace as the closing tag");
                                     else
                                         line = line[leadingWhitespace.length .. $];
                                 }
                                 keep ~= line;
-                                if(!isEnd)
+                                if(!isEnd && !atInterpolationBoundary)
                                     keep ~= "\n";
                             }
 
                             foreach(idx, ch; str) {
                                 // these should never have a \r in them due to the case above
                                 if(ch == '\n') {
-                                    processOutdentingLine(str[lineStart .. idx], false);
+                                    processOutdentingLine(str[lineStart .. idx], false, false);
                                     lineStart = idx + 1;
                                 }
                             }
+
                             // the last line must be leading whitespace, by definition
                             assert(str[lineStart .. $] == leadingWhitespace);
                             if(keep.length) {
@@ -1841,6 +1866,39 @@ class Lexer
 
                             stringbuffer.reset();
                             stringbuffer.writestring(keep);
+
+                            if (supportInterpolation && result.interpolatedSet) {
+                                // interpolation also commits string fragments earlier,
+                                // if so, we also need to go back and fix those for outdenting too
+                                lineStart = 0;
+                                keep = "";
+                                bool atStartOfLine = true;
+                                foreach(partIndex, part; result.interpolatedSet.parts) {
+                                    if(partIndex % 2 != 0) {
+                                        // this is one of the interpolated segments to be mixed in
+                                        // we don't want to change this part, but it might be mid-line
+                                        // and thus need the previous part to be modified for outdenting
+                                        if(atStartOfLine)
+                                            processOutdentingLine(result.interpolatedSet.parts[partIndex - 1][lineStart .. $], false, true);
+                                        else
+                                            keep ~= result.interpolatedSet.parts[partIndex - 1][lineStart .. $];
+                                        result.interpolatedSet.parts[partIndex - 1] = keep ~ "\0";
+                                        lineStart = 0;
+                                        atStartOfLine = false;
+                                        keep = "";
+                                    } else {
+                                        lineStart = 0;
+                                        keep = "";
+                                        foreach(idx, ch; part) {
+                                            if(ch == '\n') {
+                                                processOutdentingLine(part[lineStart .. idx], false, false);
+                                                lineStart = idx + 1;
+                                                atStartOfLine = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         goto Ldone;
@@ -1864,7 +1922,11 @@ class Lexer
             error("delimited string must end in `\"`");
         else
             error(token.loc, "delimited string must end in `%c\"`", delimright);
-        result.setString(stringbuffer);
+
+        if (supportInterpolation)
+            result.appendInterpolatedPart(stringbuffer);
+        else
+            result.setString(stringbuffer);
         stringPostfix(result);
     }
 
