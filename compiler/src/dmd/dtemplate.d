@@ -3562,7 +3562,7 @@ __gshared Expression emptyArrayElement = null;
  */
 MATCH deduceType(RootObject o, Scope* sc, Type tparam, TemplateParameters* parameters, Objects* dedtypes, uint* wm = null, size_t inferStart = 0, bool ignoreAliasThis = false)
 {
-    extern (C++) final class DeduceType : Visitor
+    extern (C++) final static class DeduceType : Visitor
     {
         alias visit = Visitor.visit;
     public:
@@ -5152,7 +5152,7 @@ private bool reliesOnTemplateParameters(Type t, TemplateParameter[] tparams)
  */
 private bool reliesOnTemplateParameters(Expression e, TemplateParameter[] tparams)
 {
-    extern (C++) final class ReliesOnTemplateParameters : Visitor
+    extern (C++) final static class ReliesOnTemplateParameters : Visitor
     {
         alias visit = Visitor.visit;
     public:

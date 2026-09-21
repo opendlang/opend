@@ -4115,7 +4115,7 @@ extern (C++) final class FuncLiteralDeclaration : FuncDeclaration
     {
         import dmd.statement_rewrite_walker;
 
-        extern (C++) final class RetWalker : StatementRewriteWalker
+        extern (C++) final static class RetWalker : StatementRewriteWalker
         {
             alias visit = typeof(super).visit;
         public:

@@ -294,17 +294,17 @@ void toObjFile(Dsymbol ds, bool multiobj)
 {
     //printf("toObjFile(%s %s)\n", ds.kind(), ds.toChars());
 
-    bool isCfile = ds.isCsymbol();
-
-    extern (C++) final class ToObjFile : Visitor
+    extern (C++) final static class ToObjFile : Visitor
     {
         alias visit = Visitor.visit;
     public:
         bool multiobj;
+        bool isCfile;
 
-        this(bool multiobj) scope @safe
+        this(bool multiobj, bool isCfile) scope @safe
         {
             this.multiobj = multiobj;
+            this.isCfile = isCfile;
         }
 
         void visitNoMultiObj(Dsymbol ds)
@@ -652,7 +652,7 @@ void toObjFile(Dsymbol ds, bool multiobj)
                     );
                 break;
                 default:
-	    }
+            }
 
 
             /* Make C static functions SCstatic
@@ -1094,7 +1094,7 @@ void toObjFile(Dsymbol ds, bool multiobj)
         }
     }
 
-    scope v = new ToObjFile(multiobj);
+    scope v = new ToObjFile(multiobj, ds.isCsymbol());
     ds.accept(v);
 }
 

@@ -1342,7 +1342,7 @@ void genKill(ref ObState obstate, ObNode* ob)
 
     void foreachExp(ObNode* ob, Expression e)
     {
-        extern (C++) final class ExpWalker : Visitor
+        extern (C++) final static class ExpWalker : Visitor
         {
             alias visit = typeof(super).visit;
             extern (D) void delegate(ObNode*, VarDeclaration, Expression, bool) dgWriteVar;
@@ -2046,7 +2046,7 @@ void checkObErrors(ref ObState obstate)
 
     void foreachExp(ObNode* ob, Expression e, PtrVarState[] cpvs)
     {
-        extern (C++) final class ExpWalker : Visitor
+        extern (C++) final static class ExpWalker : Visitor
         {
             alias visit = typeof(super).visit;
             extern (D) void delegate(ObNode*, PtrVarState[], VarDeclaration, Expression) dgWriteVar;

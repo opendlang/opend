@@ -51,7 +51,7 @@ void foreachVar(Expression e, void delegate(VarDeclaration) dgVar)
     if (!e)
         return;
 
-    extern (C++) final class VarWalker : StoppableVisitor
+    extern (C++) final static class VarWalker : StoppableVisitor
     {
         alias visit = typeof(super).visit;
         extern (D) void delegate(VarDeclaration) dgVar;

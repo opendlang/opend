@@ -83,7 +83,7 @@ Expression toDelegate(Expression e, Type t, Scope* sc)
  */
 private void lambdaSetParent(Expression e, FuncDeclaration fd)
 {
-    extern (C++) final class LambdaSetParent : StoppableVisitor
+    extern (C++) final static class LambdaSetParent : StoppableVisitor
     {
         alias visit = typeof(super).visit;
         FuncDeclaration fd;
@@ -197,7 +197,7 @@ private void lambdaSetParent(Expression e, FuncDeclaration fd)
  */
 bool lambdaCheckForNestedRef(Expression e, Scope* sc)
 {
-    extern (C++) final class LambdaCheckForNestedRef : StoppableVisitor
+    extern (C++) final static class LambdaCheckForNestedRef : StoppableVisitor
     {
         alias visit = typeof(super).visit;
     public:

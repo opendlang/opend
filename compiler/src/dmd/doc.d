@@ -930,7 +930,7 @@ void emitVisibility(ref OutBuffer buf, Visibility vis)
 
 void emitComment(Dsymbol s, ref OutBuffer buf, Scope* sc)
 {
-    extern (C++) final class EmitComment : Visitor
+    extern (C++) final static class EmitComment : Visitor
     {
         alias visit = Visitor.visit;
     public:
@@ -1214,7 +1214,7 @@ void emitComment(Dsymbol s, ref OutBuffer buf, Scope* sc)
 
 void toDocBuffer(Dsymbol s, ref OutBuffer buf, Scope* sc)
 {
-    extern (C++) final class ToDocBuffer : Visitor
+    extern (C++) final static class ToDocBuffer : Visitor
     {
         alias visit = Visitor.visit;
     public:

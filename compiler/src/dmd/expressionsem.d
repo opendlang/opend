@@ -975,7 +975,7 @@ private bool isDotOpDispatch(Expression e)
 
 private void hookDtors(CondExp ce, Scope* sc)
 {
-    extern (C++) final class DtorVisitor : StoppableVisitor
+    extern (C++) final static class DtorVisitor : StoppableVisitor
     {
         alias visit = typeof(super).visit;
     public:

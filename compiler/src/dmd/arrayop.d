@@ -185,7 +185,7 @@ Expression arrayOp(BinAssignExp e, Scope* sc)
  */
 private Expressions* buildArrayOp(Scope* sc, Expression e, Objects* tiargs)
 {
-    extern (C++) final class BuildArrayOpVisitor : Visitor
+    extern (C++) final static class BuildArrayOpVisitor : Visitor
     {
         alias visit = Visitor.visit;
         Scope* sc;
