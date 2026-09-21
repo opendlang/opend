@@ -440,6 +440,35 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         });
     }
 
+    if (e.ident == Id.getBuiltIn)
+    {
+        if (dim != 1)
+            return dimError(1);
+
+        auto exNeedle = isExpression((*e.args)[0]);
+        if (!exNeedle)
+        {
+            error(e.loc, "expression expected as first argument of __traits `%s`", e.ident.toChars());
+            return ErrorExp.get();
+        }
+        exNeedle = exNeedle.ctfeInterpret();
+
+        StringExp seNeedle = exNeedle.toStringExp();
+        if (!seNeedle || seNeedle.len == 0)
+        {
+            error(e.loc, "string expected as first argument of __traits `%s` instead of `%s`", e.ident.toChars(), exNeedle.toChars());
+            return ErrorExp.get();
+        }
+        seNeedle = seNeedle.toUTF8(sc);
+
+        if (seNeedle.sz != 1)
+        {
+            error(e.loc, "string must be chars");
+            return ErrorExp.get();
+        }
+        const builtInName = seNeedle.peekString();
+        return resolveGetBuiltIn(builtInName, e.loc);
+    }
     if (e.ident == Id.isArithmetic)
     {
         return isTypeX(t => t.isintegral() || t.isfloating());
@@ -2499,7 +2528,7 @@ private void traitNotFound(TraitsExp e) @system
         initialized = true;     // lazy initialization
 
         // All possible traits
-        __gshared Identifier*[62] idents =
+        __gshared Identifier*[63] idents =
         [
             &Id.allMembers,
             &Id.child,
@@ -2510,6 +2539,7 @@ private void traitNotFound(TraitsExp e) @system
             &Id.fullyQualifiedName,
             &Id.getAliasThis,
             &Id.getAttributes,
+            &Id.getBuiltIn,
             &Id.getFunctionAttributes,
             &Id.getFunctionVariadicStyle,
             &Id.getLinkage,
@@ -2589,4 +2619,34 @@ private void traitNotFound(TraitsExp e) @system
         error(e.loc, "unrecognized trait `%s`, did you mean `%.*s`?", e.ident.toChars(), cast(int) sub.length, sub.ptr);
     else
         error(e.loc, "unrecognized trait `%s`", e.ident.toChars());
+}
+
+private Expression resolveGetBuiltIn(const(char)[] name, Loc loc)
+{
+    // Signed integer types
+    if (name.iequals("int8"))
+        return new TypeExp(loc, Type.tint8);
+    if (name.iequals("int16"))
+        return new TypeExp(loc, Type.tint16);
+    if (name.iequals("int32"))
+        return new TypeExp(loc, Type.tint32);
+    if (name.iequals("int64"))
+        return new TypeExp(loc, Type.tint64);
+    if (name.iequals("int128"))
+        return new TypeExp(loc, Type.tint128);
+
+    // Unsigned integer types
+    if (name.iequals("uint8"))
+        return new TypeExp(loc, Type.tuns8);
+    if (name.iequals("uint16"))
+        return new TypeExp(loc, Type.tuns16);
+    if (name.iequals("uint32"))
+        return new TypeExp(loc, Type.tuns32);
+    if (name.iequals("uint64"))
+        return new TypeExp(loc, Type.tuns64);
+    if (name.iequals("uint128"))
+        return new TypeExp(loc, Type.tuns128);
+
+    error(loc, "`%.*s` is not a retrievable built-in", cast(int) name.length, name.ptr);
+    return ErrorExp.get();
 }
