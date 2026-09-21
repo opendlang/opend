@@ -3797,6 +3797,38 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
             Expression e;
 
+            /* See if the symbol is a member of the function enclosing the nested class */
+            // PLEASE NOTE: `with(other_class_shadowing) shadowing = x` can still shadow and avoid both these checks!
+            // but i think nested class with a with is enough to let the user deal with it themselves.
+            if(auto p = s.parent)
+            if(auto ad = sc.getClassScope())
+            if(ad.isNested())
+            if(auto symbolClass = p.isClassDeclaration) // the class itself is a nested class and the parent of the symbol came out of a class
+            if(!(symbolClass.parent && symbolClass.parent.isClassDeclaration)) // skip nested classes inside other classes since they have `this.outer` to disambiguate
+            if(symbolClass is ad || symbolClass.isBaseOf(ad, null))
+            {
+                /* Disallow shadowing
+                 */
+                // First find the scope of the enclosing function
+                Scope* scFunc = sc;
+                while(scFunc.scopesym != ad) {
+                    scFunc = scFunc.enclosing;
+                    assert(scFunc);
+                }
+
+                // Look at enclosing scopes for symbols with the same name in the same function
+                for (Scope* scx = scFunc; scx && scx.func == scFunc.func; scx = scx.enclosing)
+                {
+                    Dsymbol s2;
+                    if (scx.scopesym && scx.scopesym.symtab && (s2 = scx.scopesym.symtab.lookup(s.ident)) !is null && s != s2)
+                    {
+                        error(exp.loc, "nested class symbol `%s` is shadowing local symbol `%s`", s.toPrettyChars(), s2.toPrettyChars());
+                        errorSupplemental(exp.loc, "use `this.%s` if you want the class one, or else rename the local symbol so it is accessible", s.toChars());
+                        return setError();
+                    }
+                }
+            }
+
             /* See if the symbol was a member of an enclosing 'with'
              */
             WithScopeSymbol withsym = scopesym.isWithScopeSymbol();
