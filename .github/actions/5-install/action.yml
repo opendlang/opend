@@ -51,7 +51,7 @@ runs:
         cp opend/generated/*/release/64/*.dll install/lib
         cp opend/generated/*/release/64/dmd install/bin
         cp opend/generated/*/release/64/dmd.exe install/bin
-        wget https://github.com/opendlang/linker/releases/download/lld_14.0/64bit-lld-link.exe
+        curl -LO https://github.com/opendlang/linker/releases/download/lld_14.0/64bit-lld-link.exe
         cp 64bit-lld-link.exe install/bin/lld-link.exe
         echo -e '[Environment64]\nDFLAGS=-I%@P%/../import -L-L%@P%/../lib -L--export-dynamic -fPIC' > install/bin/dmd.conf
         if [[ '${{ runner.os }}' == Windows ]]; then
