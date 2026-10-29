@@ -571,7 +571,7 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         return isCopyable(t) ? True() : False();
     }
 
-    if (e.ident == Id.isEnabledVersion)
+    if (e.ident == Id.isVersionEnabled)
     {
         if (dim != 1)
             return dimError(1);
@@ -2570,7 +2570,7 @@ private void traitNotFound(TraitsExp e) @system
             &Id.isCopyable,
             &Id.isDeprecated,
             &Id.isDisabled,
-            &Id.isEnabledVersion,
+            &Id.isVersionEnabled,
             &Id.isFinalClass,
             &Id.isFinalFunction,
             &Id.isFloating,

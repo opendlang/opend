@@ -8906,7 +8906,7 @@ struct Id final
     static Identifier* hasPostblit;
     static Identifier* hasCopyConstructor;
     static Identifier* isCopyable;
-    static Identifier* isEnabledVersion;
+    static Identifier* isVersionEnabled;
     static Identifier* toType;
     static Identifier* parameters;
     static Identifier* docComment;
