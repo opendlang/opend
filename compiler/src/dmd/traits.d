@@ -21,6 +21,7 @@ import dmd.astcodegen;
 import dmd.astenums;
 import dmd.attrib;
 import dmd.canthrow;
+import dmd.cond : VersionCondition;
 import dmd.dclass;
 import dmd.declaration;
 import dmd.dimport;
@@ -568,6 +569,38 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         }
 
         return isCopyable(t) ? True() : False();
+    }
+
+    if (e.ident == Id.isVersionEnabled)
+    {
+        if (dim != 1)
+            return dimError(1);
+
+        auto expNeedle = isExpression((*e.args)[0]);
+        if (!expNeedle)
+        {
+            error(e.loc, "expression expected as first argument of __traits `%s`", e.ident.toChars());
+            return ErrorExp.get();
+        }
+        expNeedle = expNeedle.ctfeInterpret();
+        if (expNeedle.op == EXP.error)
+            return expNeedle;
+
+        StringExp strExpNeedle = expNeedle.toStringExp();
+        if (strExpNeedle is null || strExpNeedle.len == 0)
+        {
+            error(e.loc, "string expected as first argument of __traits `%s` instead of `%s`", e.ident.toChars(), expNeedle.toChars());
+            return ErrorExp.get();
+        }
+
+        strExpNeedle = strExpNeedle.toUTF8(sc);
+        auto idNeedle = Identifier.idPool(strExpNeedle.peekString);
+
+        const isAnEnabledVersion = cast(bool) (
+            (new VersionCondition(e.loc, sc.scopesym.getModule(), 1, idNeedle)).include(sc)
+        );
+
+        return isAnEnabledVersion ? True() : False();
     }
 
     if (e.ident == Id.hasAliasing)
@@ -2499,7 +2532,7 @@ private void traitNotFound(TraitsExp e) @system
         initialized = true;     // lazy initialization
 
         // All possible traits
-        __gshared Identifier*[62] idents =
+        __gshared Identifier*[63] idents =
         [
             &Id.allMembers,
             &Id.child,
@@ -2537,6 +2570,7 @@ private void traitNotFound(TraitsExp e) @system
             &Id.isCopyable,
             &Id.isDeprecated,
             &Id.isDisabled,
+            &Id.isVersionEnabled,
             &Id.isFinalClass,
             &Id.isFinalFunction,
             &Id.isFloating,

@@ -519,6 +519,7 @@ immutable Msgtable[] msgtable =
     { "hasPostblit" },
     { "hasCopyConstructor" },
     { "isCopyable" },
+    { "isVersionEnabled" },
     { "toType" },
     { "parameters" },
     { "docComment" },
