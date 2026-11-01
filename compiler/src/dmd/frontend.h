@@ -8844,6 +8844,7 @@ struct Id final
     static Identifier* outp;
     static Identifier* outpl;
     static Identifier* outpw;
+    static Identifier* getBuiltIn;
     static Identifier* isAbstractClass;
     static Identifier* isArithmetic;
     static Identifier* isAssociativeArray;
