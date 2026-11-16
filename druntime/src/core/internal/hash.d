@@ -156,16 +156,16 @@ if (!is(T == enum) && __traits(isStaticArray, T) && canBitwiseHash!T)
     // hashOf(val).
     static if (T.length == 0)
     {
-        return bytesHashAlignedBy!size_t((ubyte[]).init, seed);
+        return bytesHash((ubyte[]).init, seed);
     }
     static if (is(typeof(toUbyte(val)) == const(ubyte)[]))
     {
-        return bytesHashAlignedBy!T(toUbyte(val), seed);
+        return bytesHash(toUbyte(val), seed);
     }
     else //Other types. CTFE unsupported
     {
         assert(!__ctfe, "unable to compute hash of "~T.stringof~" at compile time");
-        return bytesHashAlignedBy!T((cast(const(ubyte)*) &val)[0 .. T.sizeof], seed);
+        return bytesHash((cast(const(ubyte)*) &val)[0 .. T.sizeof], seed);
     }
 }
 
@@ -207,12 +207,12 @@ if (is(T == S[], S) && (__traits(isScalar, S) || canBitwiseHash!S)) // excludes 
     else static if (is(typeof(toUbyte(val)) == const(ubyte)[]))
     //ubyteble array (arithmetic types and structs without toHash) CTFE ready for arithmetic types and structs without reference fields
     {
-        return bytesHashAlignedBy!ElementType(toUbyte(val), seed);
+        return bytesHash(toUbyte(val), seed);
     }
     else //Other types. CTFE unsupported
     {
         assert(!__ctfe, "unable to compute hash of "~T.stringof~" at compile time");
-        return bytesHashAlignedBy!ElementType((cast(const(ubyte)*) val.ptr)[0 .. ElementType.sizeof*val.length], seed);
+        return bytesHash((cast(const(ubyte)*) val.ptr)[0 .. ElementType.sizeof*val.length], seed);
     }
 }
 
@@ -282,7 +282,7 @@ size_t hashOf(T)(scope const T val) if (__traits(isScalar, T) && !is(T == __vect
         else
         {
             import core.internal.convert : floatSize, toUbyte;
-            return bytesHashWithExactSizeAndAlignment!T(toUbyte(data)[0 .. floatSize!T], 0);
+            return bytesHash(toUbyte(data)[0 .. floatSize!T], 0);
         }
     }
 }
@@ -352,7 +352,7 @@ size_t hashOf(T)(scope const T val, size_t seed) if (__traits(isScalar, T) && !i
         else
         {
             import core.internal.convert : floatSize, toUbyte;
-            return bytesHashWithExactSizeAndAlignment!T(toUbyte(data)[0 .. floatSize!T], seed);
+            return bytesHash(toUbyte(data)[0 .. floatSize!T], seed);
         }
     }
     else
@@ -380,7 +380,7 @@ if (is(T == __vector)) // excludes enum types
     else
     {
         import core.internal.convert : toUbyte;
-        return bytesHashAlignedBy!T(toUbyte(val), seed);
+        return bytesHash(toUbyte(val), seed);
     }
 }
 
@@ -456,7 +456,7 @@ q{
                     static if (i == 0 && !isChained) size_t h = 0;
                     static if (F.sizeof > 0 && canBitwiseHash!F)
                         // May use smallBytesHash instead of bytesHash.
-                        h = bytesHashWithExactSizeAndAlignment!F(toUbyte(val.tupleof[i]), h);
+                        h = bytesHash(toUbyte(val.tupleof[i]), h);
                     else
                         // We can avoid the "double hashing" the top-level version uses
                         // for consistency with TypeInfo.getHash.
@@ -495,7 +495,7 @@ q{
                     {
                         // May use smallBytesHash instead of bytesHash.
                         static if (i == 0 && !isChained) size_t h = 0;
-                        h = bytesHashWithExactSizeAndAlignment!F(toUbyte(val.tupleof[i]), h);
+                        h = bytesHash(toUbyte(val.tupleof[i]), h);
                     }
                     else
                     {
@@ -521,7 +521,7 @@ q{
         {
             // Not using bytesHashWithExactSizeAndAlignment here because
             // the result may differ from typeid(T).hashOf(&val).
-            return bytesHashAlignedBy!T(toUbyte(val), seed);
+            return bytesHash(toUbyte(val), seed);
         }
         else // CTFE unsupported
         {
@@ -529,7 +529,7 @@ q{
             const(ubyte)[] bytes = (() @trusted => (cast(const(ubyte)*)&val)[0 .. T.sizeof])();
             // Not using bytesHashWithExactSizeAndAlignment here because
             // the result may differ from typeid(T).hashOf(&val).
-            return bytesHashAlignedBy!T(bytes, seed);
+            return bytesHash(bytes, seed);
         }
     }
 };
@@ -657,118 +657,11 @@ size_t hashOf(T)(T aa, size_t seed) if (!is(T == enum) && __traits(isAssociative
     return hashOf(hashOf(aa), seed);
 }
 
-// MurmurHash3 was written by Austin Appleby, and is placed in the public
-// domain. The author hereby disclaims copyright to this source code.
-
-// This overload is for backwards compatibility.
-@system pure nothrow @nogc
-size_t bytesHash()(scope const(void)* buf, size_t len, size_t seed)
+@trusted @nogc pure nothrow
+private size_t bytesHash(const(ubyte)[] data, size_t seed)
 {
-    return bytesHashAlignedBy!ubyte((cast(const(ubyte)*) buf)[0 .. len], seed);
-}
-
-private template bytesHashAlignedBy(AlignType)
-{
-    alias bytesHashAlignedBy = bytesHash!(AlignType.alignof >= uint.alignof);
-}
-
-private template bytesHashWithExactSizeAndAlignment(SizeAndAlignType)
-{
-    static if (SizeAndAlignType.alignof < uint.alignof
-            ? SizeAndAlignType.sizeof <= 12
-            : SizeAndAlignType.sizeof <= 10)
-        alias bytesHashWithExactSizeAndAlignment = smallBytesHash;
-    else
-        alias bytesHashWithExactSizeAndAlignment = bytesHashAlignedBy!SizeAndAlignType;
-}
-
-// Fowler/Noll/Vo hash. http://www.isthe.com/chongo/tech/comp/fnv/
-private size_t fnv()(scope const(ubyte)[] bytes, size_t seed) @nogc nothrow pure @safe
-{
-    static if (size_t.max <= uint.max)
-        enum prime = (1U << 24) + (1U << 8) + 0x93U;
-    else static if (size_t.max <= ulong.max)
-        enum prime = (1UL << 40) + (1UL << 8) + 0xb3UL;
-    else
-        enum prime = (size_t(1) << 88) + (size_t(1) << 8) + size_t(0x3b);
-    foreach (b; bytes)
-        seed = (seed ^ b) * prime;
-    return seed;
-}
-private alias smallBytesHash = fnv;
-
-//-----------------------------------------------------------------------------
-// Block read - if your platform needs to do endian-swapping or can only
-// handle aligned reads, do the conversion here
-private uint get32bits()(scope const(ubyte)* x) @nogc nothrow pure @system
-{
-    version (BigEndian)
-    {
-        return ((cast(uint) x[0]) << 24) | ((cast(uint) x[1]) << 16) | ((cast(uint) x[2]) << 8) | (cast(uint) x[3]);
-    }
-    else
-    {
-        return ((cast(uint) x[3]) << 24) | ((cast(uint) x[2]) << 16) | ((cast(uint) x[1]) << 8) | (cast(uint) x[0]);
-    }
-}
-
-/+
-Params:
-    dataKnownToBeAligned = whether the data is known at compile time to be uint-aligned.
-+/
-@nogc nothrow pure @trusted
-private size_t bytesHash(bool dataKnownToBeAligned)(scope const(ubyte)[] bytes, size_t seed)
-{
-    auto len = bytes.length;
-    auto data = bytes.ptr;
-    auto nblocks = len / 4;
-
-    uint h1 = cast(uint)seed;
-
-    enum uint c1 = 0xcc9e2d51;
-    enum uint c2 = 0x1b873593;
-    enum uint c3 = 0xe6546b64;
-
-    //----------
-    // body
-    auto end_data = data+nblocks*uint.sizeof;
-    for (; data!=end_data; data += uint.sizeof)
-    {
-        static if (dataKnownToBeAligned)
-            uint k1 = __ctfe ? get32bits(data) : *(cast(const uint*) data);
-        else
-            uint k1 = get32bits(data);
-        k1 *= c1;
-        k1 = (k1 << 15) | (k1 >> (32 - 15));
-        k1 *= c2;
-
-        h1 ^= k1;
-        h1 = (h1 << 13) | (h1 >> (32 - 13));
-        h1 = h1*5+c3;
-    }
-
-    //----------
-    // tail
-    uint k1 = 0;
-
-    switch (len & 3)
-    {
-        case 3: k1 ^= data[2] << 16; goto case;
-        case 2: k1 ^= data[1] << 8;  goto case;
-        case 1: k1 ^= data[0];
-                k1 *= c1; k1 = (k1 << 15) | (k1 >> (32 - 15)); k1 *= c2; h1 ^= k1;
-                goto default;
-        default:
-    }
-
-    //----------
-    // finalization
-    h1 ^= len;
-    // Force all bits of the hash block to avalanche.
-    h1 = (h1 ^ (h1 >> 16)) * 0x85ebca6b;
-    h1 = (h1 ^ (h1 >> 13)) * 0xc2b2ae35;
-    h1 ^= h1 >> 16;
-    return h1;
+        import core.internal.wyhash : wyHash;
+        return cast(size_t) wyHash(seed, data);
 }
 
 //  Check that bytesHash works with CTFE
@@ -782,21 +675,4 @@ pure nothrow @system @nogc unittest
     enum test_str = "Sample string";
     enum size_t hashVal = ctfeHash(test_str);
     assert(hashVal == bytesHash(&test_str[0], test_str.length, 0));
-
-    // Detect unintended changes to bytesHash on unaligned and aligned inputs.
-    version (BigEndian)
-    {
-        const ubyte[7] a = [99, 4, 3, 2, 1, 5, 88];
-        const uint[2] b = [0x04_03_02_01, 0x05_ff_ff_ff];
-    }
-    else
-    {
-        const ubyte[7] a = [99, 1, 2, 3, 4, 5, 88];
-        const uint[2] b = [0x04_03_02_01, 0xff_ff_ff_05];
-    }
-    // It is okay to change the below values if you make a change
-    // that you expect to change the result of bytesHash.
-    assert(bytesHash(&a[1], a.length - 2, 0) == 2727459272);
-    assert(bytesHash(&b, 5, 0) == 2727459272);
-    assert(bytesHashAlignedBy!uint((cast(const ubyte*) &b)[0 .. 5], 0) == 2727459272);
 }
