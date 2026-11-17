@@ -3904,13 +3904,6 @@ private inout(TypeInfo) getElement(return scope inout TypeInfo value) @trusted p
 
 private size_t getArrayHash(const scope TypeInfo element, const scope void* ptr, const size_t count) @trusted nothrow
 {
-    if (!count)
-        return 0;
-
-    const size_t elementSize = element.tsize;
-    if (!elementSize)
-        return 0;
-
     static bool hasCustomToHash(const scope TypeInfo value) @trusted pure nothrow
     {
         const element = getElement(value);
@@ -3918,14 +3911,26 @@ private size_t getArrayHash(const scope TypeInfo element, const scope void* ptr,
         if (const struct_ = cast(const TypeInfo_Struct) element)
             return !!struct_.xtoHash;
 
+        if (element is typeid(float) || element is typeid(double) || element is typeid(real)) {
+            return true;
+        }
+
         return cast(const TypeInfo_Array) element
             || cast(const TypeInfo_AssociativeArray) element
             || cast(const ClassInfo) element
             || cast(const TypeInfo_Interface) element;
     }
 
+    const size_t elementSize = element.tsize;
+
     if (!hasCustomToHash(element))
         return hashOf(ptr[0 .. elementSize * count]);
+
+    if (!count)
+        return 0;
+
+    if (!elementSize)
+        return 0;
 
     size_t hash = 0;
     foreach (size_t i; 0 .. count)
