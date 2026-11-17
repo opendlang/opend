@@ -465,22 +465,11 @@ private size_t talign(size_t tsize, size_t algn) @safe pure nothrow @nogc
     return (tsize + mask) & ~mask;
 }
 
-// mix hash to "fix" bad hash functions
-private size_t mix(size_t h) @safe pure nothrow @nogc
-{
-    // final mix function of MurmurHash2
-    enum m = 0x5bd1e995;
-    h ^= h >> 13;
-    h *= m;
-    h ^= h >> 15;
-    return h;
-}
-
 private size_t calcHash(scope const void *pkey, scope const Impl* impl) nothrow
 {
     immutable hash = impl.hashFn(pkey);
     // highest bit is set to distinguish empty/deleted from filled buckets
-    return mix(hash) | HASH_FILLED_MARK;
+    return hash | HASH_FILLED_MARK;
 }
 
 private size_t nextpow2(const size_t n) pure nothrow @nogc
