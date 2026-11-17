@@ -18,9 +18,12 @@
 | [region.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/region.d)           | A region allocator                                                                         |
 | [response.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/response.d)       | Parse command line arguments from response files                                           |
 | [rmem.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/rmem.d)               | Allocate memory using `malloc` or the GC depending on the configuration                    |
-| [rootobject.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/rootobject.d)   | A root object that classes in dmd inherit from                                             |
 | [speller.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/speller.d)         | Try to detect typos in identifiers                                                         |
 | [string.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/string.d)           | Various string related functions                                                           |
 | [stringtable.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/stringtable.d) | Specialized associative array with string keys stored in a variable length structure       |
 | [strtold.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/strtold.d)         | D implementation of the standard C function `strtold` (String to long double)              |
 | [utf.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/root/utf.d)                 | Encoding/decoding Unicode text                                                             |
+
+This table covers the D modules in `dmd/root/`. The C++ interface headers in this directory
+are not listed here. `rootobject.d` is in `dmd/`, not in `dmd/root/`, and is listed in
+[`dmd/README.md`](../README.md).

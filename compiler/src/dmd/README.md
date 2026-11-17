@@ -26,6 +26,7 @@ this license for that file.
 DMD has a mostly flat directory structure, so this section aims to divide all source files into logical groups for easier navigation.
 The groups are roughly ordered by how late they appear in the compilation process.
 Note that these groups have no strict meaning, the category assignments are a bit subjective.
+This index lists D source modules (`*.d`); C++ interface headers (`*.h`) are not listed separately.
 
 ### Driver
 
@@ -43,6 +44,13 @@ Note that these groups have no strict meaning, the category assignments are a bi
 | [errorsink.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/errorsink.d) | Error reporting interface                                             |
 | [target.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/target.d)       | Manage target-specific parameters for cross-compiling (for LDC/GDC)   |
 | [compiler.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/compiler.d)   | Describe a back-end compiler and implements compiler-specific actions |
+
+### LDC integration
+
+| File                                                                 | Purpose                                                                                         |
+|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [hooks.d](hooks.d)                                                   | Provide LDC-specific semantic hooks, including handling `__traits()` when built with `IN_LLVM`. |
+| [ldcbindings.d](ldcbindings.d)                                       | Expose DMD frontend factories and expression constructors through an `extern(C++)` interface.   |
 
 ### Lexing / parsing
 
@@ -71,7 +79,7 @@ Note that these groups have no strict meaning, the category assignments are a bi
 | [arraytypes.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/arraytypes.d)   | For certain Declaration nodes of type `T`, provides aliases for `Array!T`                                        |
 | [declaration.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/declaration.d) | Misc. declarations of `alias`, variables, type tuples, `ClassInfo` etc.                                          |
 | [denum.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/denum.d)             | Defines `enum` declarations and enum members                                                                     |
-| [attrib.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/nogc.d)             | Declarations of 'attributes' such as `private`, `pragma()`, `immutable`, `@UDA`, `align`, `extern(C++)` and more |
+| [attrib.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/attrib.d)            | Declarations of 'attributes' such as `private`, `pragma()`, `immutable`, `@UDA`, `align`, `extern(C++)` and more |
 | [func.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/func.d)               | Define a function declaration (includes function literals, `invariant`, `unittest`)                              |
 | [dversion.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/dversion.d)       | Defines a version symbol, e.g. `version = ident`, `debug = ident`                                                |
 
@@ -125,7 +133,7 @@ Note that these groups have no strict meaning, the category assignments are a bi
 | File                                                                          | Purpose                                                                                    |
 |-------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 | [opover.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/opover.d)         | Operator overloading                                                                       |
-| [clone.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/dsymbolsem.d)      | Generate automatic `opEquals`, `opAssign` and constructors for structs                     |
+| [clone.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/clone.d)             | Generate automatic `opEquals`, `opAssign` and constructors for structs                     |
 | [blockexit.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/blockexit.d)   | Find out in what ways control flow can exit a block                                        |
 | [ctorflow.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/ctorflow.d)     | Control flow in constructors                                                               |
 | [constfold.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/constfold.d)   | Do constant folding of arithmetic expressions                                              |
@@ -220,7 +228,7 @@ Note that these groups have no strict meaning, the category assignments are a bi
 | [glue.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/glue.d)                           | Generate the object file for function declarations                                  |
 | [gluelayer.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/gluelayer.d)                 | Declarations for back-end functions that the front-end invokes                      |
 | [todt.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/todt.d)                           | Convert initializers into structures that the back-end will add to the data segment |
-| [tocvdebug.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/tovcdebug.d)                 | Generate debug info in the CV4 debug format.                                        |
+| [tocvdebug.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/tocvdebug.d)               | Generate debug info in the CV4 debug format.                                        |
 | [objc.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/objc.d)                           | Objective-C interfacing                                                             |
 | [objc_glue.d](https://github.com/dlang/dmd/blob/master/compiler/src/dmd/objc_glue.d)                 | Glue code for Objective-C interop.                                                  |
 
