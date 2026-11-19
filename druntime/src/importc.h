@@ -8,6 +8,12 @@
  * Source: $(DRUNTIMESRC importc.h)
  */
 
+/* Suppress warnings from redefining `__has_feature` and `__has_extension`
+ * below, which newer GCC versions emit when this file is force-included.
+ */
+#pragma GCC system_header
+#pragma clang system_header
+
 /**********************
  * For special casing ImportC code.
  */
