@@ -96,8 +96,8 @@ shared static this() @trusted
         foreach (i; 0 .. secret.length) {
                 memcpy(&(secret[i]), buf.ptr + (8 * i), 8);
         }
-        rtSecret = secret;
         version (unittest) rtSecret = ctfeSecret;
+        else rtSecret = secret;
 }
 
 @trusted @nogc nothrow pure
@@ -167,29 +167,6 @@ private ulong mix(ulong a, ulong b)
 }
 
 @trusted @nogc nothrow pure
-pragma(inline, true)
-private void smallKey(const(ubyte)[] p, ref ulong a, ref ulong b)
-{
-        size_t n = p.length;
-
-        if (n >= 4) {
-                size_t end = n - 4;
-                size_t q = (n >> 3) << 2;
-                a = (read4(p[0 .. $]) << 32) | read4(p[q .. $]);
-                b = (read4(p[end .. $]) << 32) | read4(p[end - q .. $]);
-        } else if (n > 0) {
-                a = (cast(ulong) p[0] << 16) |
-                    (cast(ulong) p[n >> 1] << 8) |
-                    p[n - 1];
-
-                b = 0;
-        } else {
-                a = 0;
-                b = 0;
-        }
-}
-
-@trusted @nogc nothrow pure
 ulong wyHash(const ulong seed, const(ubyte)[] data)
 {
         ulong[4] secret;
@@ -199,10 +176,32 @@ ulong wyHash(const ulong seed, const(ubyte)[] data)
         ulong n = data.length;
         ulong a;
         ulong b;
+
+        if (n <= 8) {
+                if (n >= 4) {
+                        a = (read4(data[0 .. $]) << 32) |
+                            read4(data[n - 4 .. $]);
+                } else if (n > 0) {
+                        a = (cast(ulong) data[0] << 16) |
+                            (cast(ulong) data[n >> 1] << 8) |
+                            data[n - 1];
+                }
+                b = seed ^ (n * secret[2]);
+                a ^= secret[0];
+                b ^= secret[1];
+                mum(a, b);
+                return mix(a ^ secret[0], b ^ secret[1]);
+        }
+
         ulong s0 = seed ^ mix(seed ^ secret[0], secret[1]);
 
         if (n <= 16) {
-                smallKey(data, a, b);
+                auto p = data;
+                size_t end = n - 4;
+                size_t q = (n >> 3) << 2;
+                a = (read4(p[0 .. $]) << 32) | read4(p[q .. $]);
+                b = (read4(p[end .. $]) << 32) | read4(p[end - q .. $]);
+
         } else {
                 ulong i = 0;
 
@@ -253,9 +252,9 @@ unittest
         }
 
         static immutable Vector[] vectors = [
-                Vector(0, 0x0409638ee2bde459, ""),
-                Vector(1, 0xa8412d091b5fe0a9, "a"),
-                Vector(2, 0x32dd92e4b2915153, "abc"),
+                Vector(0, 0x60c06e5aa6716029, ""),
+                Vector(1, 0xab4902b38af7d022, "a"),
+                Vector(2, 0xf1227796aab3e8d4, "abc"),
                 Vector(3, 0x8619124089a3a16b, "message digest"),
                 Vector(4, 0x7a43afb61d7f5f40, "abcdefghijklmnopqrstuvwxyz"),
                 Vector(5, 0xff42329b90e50d58, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"),
