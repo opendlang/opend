@@ -365,7 +365,7 @@ TemplateDeclaration getEponymousParent(Dsymbol s) @safe
     return (td && getEponymousMember(td)) ? td : null;
 }
 
-immutable ddoc_default = import("default_ddoc_theme." ~ ddoc_ext);
+immutable ddoc_default = "";//import("default_ddoc_theme." ~ ddoc_ext);
 immutable ddoc_decl_s = "$(DDOC_DECL ";
 immutable ddoc_decl_e = ")\n";
 immutable ddoc_decl_dd_s = "$(DDOC_DECL_DD ";
