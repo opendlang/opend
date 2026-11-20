@@ -65,6 +65,29 @@ shared static this() @trusted
                 auto res = getentropy(buf.ptr, buf.length);
                 if (res != 0) assert(0);
 
+        } else version(Posix) {
+                // fallback
+                import core.sys.posix.fcntl;
+                import core.sys.posix.unistd;
+                import core.stdc.errno;
+
+                int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+                if (fd < 0) assert(0);
+                scope(exit) close(fd);
+                ulong offset = 0;
+                while (offset < buf.length) {
+                        ptrdiff_t n = read(fd,
+                                           buf.ptr + offset,
+                                           buf.length - offset);
+
+                        if (n > 0) {
+                                offset += cast(ulong) n;
+                                continue;
+                        } else if (n == 0) assert(0);
+                        else if (errno == EINTR) continue;
+                        else assert(0);
+                }
+
         } else {
                 static assert(0, "platform not supported");
         }
