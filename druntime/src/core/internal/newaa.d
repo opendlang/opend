@@ -65,16 +65,6 @@ private struct AAShell
     Impl *impl;
 }
 
-private size_t mix(size_t h) @safe pure nothrow @nogc
-{
-    // final mix function of MurmurHash2
-    enum m = 0x5bd1e995;
-    h ^= h >> 13;
-    h *= m;
-    h ^= h >> 15;
-    return h;
-}
-
 struct Entry(K, V)
 {
     // can make this const, because we aren't really going to use it aside from
@@ -103,6 +93,11 @@ AAShell makeAA(K, V)(V[K] src) @trusted
 
     // used during runtime.
     size_t delegate(scope const void *) nothrow hashFn = (scope const void* val) {
+        import core.internal.wyhash : useCtfeSecret;
+        bool prev = useCtfeSecret;
+        useCtfeSecret = true;
+        scope (exit) useCtfeSecret = prev;
+
         auto x = cast(K*)val;
         return hashOf(*x);
     };
@@ -132,7 +127,7 @@ AAShell makeAA(K, V)(V[K] src) @trusted
     uint firstUsed = cast(uint) buckets.length;
     foreach (k, v; src)
     {
-        immutable h = hashOf(k).mix | HASH_FILLED_MARK;
+        immutable h = hashOf(k) | HASH_FILLED_MARK;
         auto location = findSlotInsert(h);
         immutable nfu = cast(uint) (location - &buckets[0]);
         if (nfu < firstUsed)

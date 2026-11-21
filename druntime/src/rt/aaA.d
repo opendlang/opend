@@ -465,22 +465,11 @@ private size_t talign(size_t tsize, size_t algn) @safe pure nothrow @nogc
     return (tsize + mask) & ~mask;
 }
 
-// mix hash to "fix" bad hash functions
-private size_t mix(size_t h) @safe pure nothrow @nogc
-{
-    // final mix function of MurmurHash2
-    enum m = 0x5bd1e995;
-    h ^= h >> 13;
-    h *= m;
-    h ^= h >> 15;
-    return h;
-}
-
 private size_t calcHash(scope const void *pkey, scope const Impl* impl) nothrow
 {
     immutable hash = impl.hashFn(pkey);
     // highest bit is set to distinguish empty/deleted from filled buckets
-    return mix(hash) | HASH_FILLED_MARK;
+    return hash | HASH_FILLED_MARK;
 }
 
 private size_t nextpow2(const size_t n) pure nothrow @nogc
@@ -847,7 +836,9 @@ extern (C) int _aaEqual(scope const TypeInfo tiRaw, scope const AA aa1, scope co
     {
         if (!b1.filled)
             continue;
-        auto pb2 = aa2.findSlotLookup(b1.hash, b1.entry, ti.key);
+        size_t h = b1.hash;
+        if (aa1.hashFn != aa2.hashFn) h = calcHash(b1.entry, aa2);
+        auto pb2 = aa2.findSlotLookup(h, b1.entry, ti.key);
         if (pb2 is null || !ti.value.equals(b1.entry + off, pb2.entry + off))
             return false;
     }
