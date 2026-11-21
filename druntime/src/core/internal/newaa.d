@@ -93,6 +93,11 @@ AAShell makeAA(K, V)(V[K] src) @trusted
 
     // used during runtime.
     size_t delegate(scope const void *) nothrow hashFn = (scope const void* val) {
+        import core.internal.wyhash : useCtfeSecret;
+        bool prev = useCtfeSecret;
+        useCtfeSecret = true;
+        scope (exit) useCtfeSecret = prev;
+
         auto x = cast(K*)val;
         return hashOf(*x);
     };

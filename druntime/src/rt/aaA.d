@@ -836,7 +836,9 @@ extern (C) int _aaEqual(scope const TypeInfo tiRaw, scope const AA aa1, scope co
     {
         if (!b1.filled)
             continue;
-        auto pb2 = aa2.findSlotLookup(b1.hash, b1.entry, ti.key);
+        size_t h = b1.hash;
+        if (aa1.hashFn != aa2.hashFn) h = calcHash(b1.entry, aa2);
+        auto pb2 = aa2.findSlotLookup(h, b1.entry, ti.key);
         if (pb2 is null || !ti.value.equals(b1.entry + off, pb2.entry + off))
             return false;
     }

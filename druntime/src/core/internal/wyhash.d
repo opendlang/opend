@@ -21,6 +21,8 @@ module core.internal.wyhash;
 
 import core.stdc.string;
 
+package(core) bool useCtfeSecret;
+
 private static immutable ulong[4] ctfeSecret = [
         0xa0761d6478bd642f,
         0xe7037ed1a0b428db,
@@ -164,11 +166,26 @@ private ulong mix(ulong a, ulong b)
         return a ^ b;
 }
 
+@trusted @nogc nothrow
+private bool getUseCtfeSecretImpure()
+{
+        return useCtfeSecret;
+}
+
+@trusted @nogc nothrow pure
+private bool getUseCtfeSecret()
+{
+        if (__ctfe) return true;
+        // bypass pure
+        auto fn = cast(bool function() nothrow @nogc pure) &getUseCtfeSecretImpure;
+        return fn();
+}
+
 @trusted @nogc nothrow pure
 ulong wyHash(const ulong seed, const(ubyte)[] data)
 {
         ulong[4] secret;
-        if (__ctfe) secret = ctfeSecret;
+        if (getUseCtfeSecret()) secret = ctfeSecret;
         else secret = rtSecret;
 
         ulong n = data.length;
