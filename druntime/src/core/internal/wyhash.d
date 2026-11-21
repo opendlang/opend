@@ -124,22 +124,20 @@ private ulong read4(const(ubyte)[] p)
 pragma(inline, true)
 private void mum(ref ulong a, ref ulong b)
 {
-        version (LDC) {
-                if (!__ctfe) {
-                        import ldc.llvmasm : __ir_pure;
+        if (!__ctfe) {
+                import ldc.llvmasm : __ir_pure;
 
-                        ulong hi = __ir_pure!(`%a = zext i64 %0 to i128
-                                               %b = zext i64 %1 to i128
-                                               %m = mul i128 %a, %b
-                                               %h = lshr i128 %m, 64
-                                               %r = trunc i128 %h to i64
-                                               ret i64 %r`,
-                                               ulong)(a, b);
+                ulong hi = __ir_pure!(`%a = zext i64 %0 to i128
+                                       %b = zext i64 %1 to i128
+                                       %m = mul i128 %a, %b
+                                       %h = lshr i128 %m, 64
+                                       %r = trunc i128 %h to i64
+                                       ret i64 %r`,
+                                       ulong)(a, b);
 
-                        a = a * b;
-                        b = hi;
-                        return;
-                }
+                a = a * b;
+                b = hi;
+                return;
         }
 
         ulong al = a & 0xffffffff;

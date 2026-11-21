@@ -578,8 +578,14 @@ size_t hashOf(T)(T aa, size_t seed) if (!is(T == enum) && __traits(isAssociative
 @trusted @nogc pure nothrow
 private size_t bytesHash(const(ubyte)[] data, size_t seed)
 {
+    version (DigitalMars) {
+        // WARNING: no HashDoS protection!
+        import core.internal.murmurhash;
+        return cast(size_t) murmurHash(seed, data);
+    } else {
         import core.internal.wyhash;
         return cast(size_t) wyHash(seed, data);
+    }
 }
 
 //  Check that bytesHash works with CTFE
